@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+/dist
+/tmp
+/out-tsc
+
+# Environment variables (Crucial: Do not commit API keys!)
+.env
+.env.local
+.env.*.local
+
+# Firebase
+.firebase/
+**-firebase-applet-config.json
+
+# IDE / Editor
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db
