@@ -1,0 +1,316 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  /* `--font-inter` は next/font/google（app/layout.tsx）が <html> に注入する CSS 変数。
+     欧文・数字は Inter、日本語はシステムの日本語フォントに自然にフォールバックする。 */
+  --font-sans:
+    var(--font-inter), "Hiragino Sans", "BIZ UDPGothic", "Yu Gothic UI",
+    system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  /* font-sans と同じ。見出し専用フォントに切り替える場合はここを変更 */
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-canvas: var(--canvas);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --font-serif: "Georgia", serif;
+  --radius: 0.625rem;
+  --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
+  --tracking-tight: calc(var(--tracking-normal) - 0.025em);
+  --tracking-wide: calc(var(--tracking-normal) + 0.025em);
+  --tracking-wider: calc(var(--tracking-normal) + 0.05em);
+  --tracking-widest: calc(var(--tracking-normal) + 0.1em);
+  --tracking-normal: var(--tracking-normal);
+  --shadow-2xl: var(--shadow-2xl);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-md: var(--shadow-md);
+  --shadow: var(--shadow);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-2xs: var(--shadow-2xs);
+  --spacing: var(--spacing);
+  --letter-spacing: var(--letter-spacing);
+  --shadow-offset-y: var(--shadow-offset-y);
+  --shadow-offset-x: var(--shadow-offset-x);
+  --shadow-spread: var(--shadow-spread);
+  --shadow-blur: var(--shadow-blur);
+  --shadow-opacity: var(--shadow-opacity);
+  --color-shadow-color: var(--shadow-color);
+  --color-destructive-foreground: var(--destructive-foreground);
+}
+
+:root {
+  --background: oklch(0.9701 0.0041 91.4464);
+  --foreground: oklch(0.2354 0.0019 286.2536);
+  --card: oklch(0.9972 0.0028 84.5587);
+  --card-foreground: oklch(0.2354 0.0019 286.2536);
+  --canvas: oklch(0.985 0.005 84);
+  --popover: oklch(0.9972 0.0028 84.5587);
+  --popover-foreground: oklch(0.2354 0.0019 286.2536);
+  --primary: oklch(0.3732 0.0635 258.276);
+  --primary-foreground: oklch(0.9816 0.0017 247.839);
+  --secondary: oklch(0.9526 0.0058 84.5665);
+  --secondary-foreground: oklch(0.3732 0.0635 258.276);
+  --muted: oklch(0.9468 0.0046 78.2976);
+  --muted-foreground: oklch(0.522 0.004 67.7376);
+  --accent: oklch(0.9526 0.0058 84.5665);
+  --accent-foreground: oklch(0.3732 0.0635 258.276);
+  --destructive: oklch(0.5624 0.0956 20.5303);
+  --border: oklch(0.9251 0.0071 88.645);
+  --input: oklch(0.9251 0.0071 88.645);
+  --ring: oklch(0.3732 0.0635 258.276);
+  --chart-1: oklch(0.6318 0.06 244.8148);
+  --chart-2: oklch(0.6441 0.0496 146.8813);
+  --chart-3: oklch(0.719 0.1077 74.6093);
+  --chart-4: oklch(0.7107 0.0351 256.7878);
+  --chart-5: oklch(0.7118 0.0129 286.0665);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.9526 0.0058 84.5665);
+  --sidebar-foreground: oklch(0.2354 0.0019 286.2536);
+  --sidebar-primary: oklch(0.3732 0.0635 258.276);
+  --sidebar-primary-foreground: oklch(0.9816 0.0017 247.839);
+  --sidebar-accent: oklch(0.9251 0.0071 88.645);
+  --sidebar-accent-foreground: oklch(0.3732 0.0635 258.276);
+  --sidebar-border: oklch(0.9039 0.0029 84.5597);
+  --sidebar-ring: oklch(0.3732 0.0635 258.276);
+  --destructive-foreground: oklch(1 0 0);
+  --font-sans:
+    var(--font-inter), "Hiragino Sans", "BIZ UDPGothic", "Yu Gothic UI",
+    system-ui, sans-serif;
+  --font-serif: "Georgia", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --shadow-color: #000000;
+  --shadow-opacity: 0.05;
+  --shadow-blur: 12px;
+  --shadow-spread: 0px;
+  --shadow-offset-x: 0px;
+  --shadow-offset-y: 4px;
+  --letter-spacing: 0;
+  --spacing: 0.25rem;
+  --shadow-2xs: 0px 4px 12px 0px hsl(0 0% 0% / 0.03);
+  --shadow-xs: 0px 4px 12px 0px hsl(0 0% 0% / 0.03);
+  --shadow-sm:
+    0px 4px 12px 0px hsl(0 0% 0% / 0.05), 0px 1px 2px -1px hsl(0 0% 0% / 0.05);
+  --shadow:
+    0px 4px 12px 0px hsl(0 0% 0% / 0.05), 0px 1px 2px -1px hsl(0 0% 0% / 0.05);
+  --shadow-md:
+    0px 4px 12px 0px hsl(0 0% 0% / 0.05), 0px 2px 4px -1px hsl(0 0% 0% / 0.05);
+  --shadow-lg:
+    0px 4px 12px 0px hsl(0 0% 0% / 0.05), 0px 4px 6px -1px hsl(0 0% 0% / 0.05);
+  --shadow-xl:
+    0px 4px 12px 0px hsl(0 0% 0% / 0.05), 0px 8px 10px -1px hsl(0 0% 0% / 0.05);
+  --shadow-2xl: 0px 4px 12px 0px hsl(0 0% 0% / 0.13);
+  --tracking-normal: 0;
+}
+
+.dark {
+  --background: oklch(0.2252 0.0049 248.0473);
+  --foreground: oklch(0.9168 0.0035 67.7802);
+  --card: oklch(0.2668 0.0071 248.094);
+  --card-foreground: oklch(0.9168 0.0035 67.7802);
+  --canvas: oklch(0.246 0.006 248.07);
+  --popover: oklch(0.2668 0.0071 248.094);
+  --popover-foreground: oklch(0.9168 0.0035 67.7802);
+  --primary: oklch(0.7441 0.1311 264.2789);
+  --primary-foreground: oklch(0.2077 0.0398 265.7549);
+  --secondary: oklch(0.2972 0 0);
+  --secondary-foreground: oklch(0.9168 0.0035 67.7802);
+  --muted: oklch(0.2972 0 0);
+  --muted-foreground: oklch(0.709 0 0);
+  --accent: oklch(0.2972 0 0);
+  --accent-foreground: oklch(0.9168 0.0035 67.7802);
+  --destructive: oklch(0.6338 0.1208 21.0422);
+  --border: oklch(0.3211 0 0);
+  --input: oklch(0.3211 0 0);
+  --ring: oklch(0.7441 0.1311 264.2789);
+  --chart-1: oklch(0.6318 0.06 244.8148);
+  --chart-2: oklch(0.6441 0.0496 146.8813);
+  --chart-3: oklch(0.719 0.1077 74.6093);
+  --chart-4: oklch(0.7107 0.0351 256.7878);
+  --chart-5: oklch(0.7118 0.0129 286.0665);
+  --sidebar: oklch(0.1989 0.0051 248.0841);
+  --sidebar-foreground: oklch(0.9168 0.0035 67.7802);
+  --sidebar-primary: oklch(0.7441 0.1311 264.2789);
+  --sidebar-primary-foreground: oklch(0.2077 0.0398 265.7549);
+  --sidebar-accent: oklch(0.2972 0 0);
+  --sidebar-accent-foreground: oklch(0.9168 0.0035 67.7802);
+  --sidebar-border: oklch(0.3211 0 0);
+  --sidebar-ring: oklch(0.7441 0.1311 264.2789);
+  --destructive-foreground: oklch(1 0 0);
+  --radius: 0.625rem;
+  --font-sans:
+    var(--font-inter), "Hiragino Sans", "BIZ UDPGothic", "Yu Gothic UI",
+    system-ui, sans-serif;
+  --font-serif: "Georgia", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --shadow-color: #000000;
+  --shadow-opacity: 0.3;
+  --shadow-blur: 20px;
+  --shadow-spread: 0px;
+  --shadow-offset-x: 0px;
+  --shadow-offset-y: 10px;
+  --letter-spacing: 0;
+  --spacing: 0.25rem;
+  --shadow-2xs: 0px 10px 20px 0px hsl(0 0% 0% / 0.15);
+  --shadow-xs: 0px 10px 20px 0px hsl(0 0% 0% / 0.15);
+  --shadow-sm:
+    0px 10px 20px 0px hsl(0 0% 0% / 0.3), 0px 1px 2px -1px hsl(0 0% 0% / 0.3);
+  --shadow:
+    0px 10px 20px 0px hsl(0 0% 0% / 0.3), 0px 1px 2px -1px hsl(0 0% 0% / 0.3);
+  --shadow-md:
+    0px 10px 20px 0px hsl(0 0% 0% / 0.3), 0px 2px 4px -1px hsl(0 0% 0% / 0.3);
+  --shadow-lg:
+    0px 10px 20px 0px hsl(0 0% 0% / 0.3), 0px 4px 6px -1px hsl(0 0% 0% / 0.3);
+  --shadow-xl:
+    0px 10px 20px 0px hsl(0 0% 0% / 0.3), 0px 8px 10px -1px hsl(0 0% 0% / 0.3);
+  --shadow-2xl: 0px 10px 20px 0px hsl(0 0% 0% / 0.75);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    letter-spacing: var(--tracking-normal);
+    line-height: 1.65;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* Markdown プレビューのスタイル（typography プラグイン不使用・役割トークンで構成）。 */
+.markdown-body {
+  @apply text-sm leading-relaxed text-foreground;
+}
+.markdown-body > :first-child {
+  margin-top: 0;
+}
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4 {
+  @apply font-heading font-semibold text-foreground;
+  margin-top: 1.5em;
+  margin-bottom: 0.6em;
+  line-height: 1.3;
+}
+.markdown-body h1 {
+  @apply text-2xl;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.3em;
+}
+.markdown-body h2 {
+  @apply text-xl;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.25em;
+}
+.markdown-body h3 {
+  @apply text-lg;
+}
+.markdown-body h4 {
+  @apply text-base;
+}
+.markdown-body p,
+.markdown-body ul,
+.markdown-body ol,
+.markdown-body blockquote,
+.markdown-body pre,
+.markdown-body table {
+  margin-top: 0.85em;
+  margin-bottom: 0.85em;
+}
+.markdown-body ul {
+  @apply list-disc;
+  padding-left: 1.5em;
+}
+.markdown-body ol {
+  @apply list-decimal;
+  padding-left: 1.5em;
+}
+.markdown-body li {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+.markdown-body li > ul,
+.markdown-body li > ol {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+.markdown-body a {
+  @apply text-primary underline underline-offset-2;
+}
+.markdown-body blockquote {
+  @apply text-muted-foreground;
+  border-left: 3px solid var(--border);
+  padding-left: 1em;
+}
+.markdown-body code {
+  @apply rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em];
+}
+.markdown-body pre {
+  @apply overflow-x-auto rounded-lg bg-muted p-4;
+}
+.markdown-body pre code {
+  @apply bg-transparent p-0 text-[0.85em];
+}
+.markdown-body table {
+  @apply w-full border-collapse text-left;
+}
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid var(--border);
+  padding: 0.4em 0.65em;
+}
+.markdown-body th {
+  @apply bg-muted font-semibold;
+}
+.markdown-body hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.5em 0;
+}
+.markdown-body img {
+  @apply max-w-full rounded-lg;
+}

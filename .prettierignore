@@ -1,0 +1,24 @@
+node_modules
+.next
+out
+build
+coverage
+
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# shadcn の素体は upstream 同期があるため整形しない
+components/ui
+
+# 配布対象外（`.distignore` と同期）。配布リポジトリには含めない領域。
+openspec/
+AGENTS.md
+.claude/commands/openspec/
+.cursor/commands/openspec-*.md
+
+# 外部由来スキル（更新時の差分取り込みと衝突するため整形対象外）
+.claude/skills/next-best-practices/
+.claude/skills/shadcn/
+.claude/skills/vercel-react-best-practices/
+
