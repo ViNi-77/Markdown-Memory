@@ -1,169 +1,265 @@
-# workspace-ui-kit
+# Markdown Memory
 
-「自分の思想を画面にする」月のひな形です。
-画面にはサンプルとして**採用管理**の4ペイン（候補者リスト・候補者の詳細・スコアカード・サイドバー）が出ますが、これを自分の仕事用に作り変えるところから月3の課題が始まります。
+Claude / ChatGPT / Gemini が生成した Markdown を保存し、どの端末からでも見返し・編集・共有できる個人用ハブ。
 
-## 起動する
+AI-Driven School 第7回課題（4ヶ月目）の提出物。旧 Vite + Firebase 構成から **Next.js 16 + Neon Postgres + Auth.js + Vercel** へ全面移行済み。
+
+**本番 URL**: https://markdown-memory.vercel.app
+
+---
+
+## できること
+
+| 機能 | 説明 |
+|---|---|
+| Google ログイン | Auth.js v5 + Drizzle アダプタ。ユーザー情報は DB に永続化 |
+| Markdown 管理 | `.md` のアップロード（D&D 対応）・新規作成・プレビュー・編集 |
+| フォルダ整理 | 階層フォルダでファイルを分類 |
+| 自動保存 | 編集はデバウンス保存。ファイル切替・プレビュー切替時にフラッシュ |
+| 公開共有 | ファイルごとにランダムトークン URL を発行。ログイン不要の読み取り専用 |
+| AI 再投入 | 本文コピー + Claude / ChatGPT / Gemini を新規タブで開く |
+| アプリ内 AI | BYOK（Gemini API キーを localStorage に保存）。要約・整形プリセット + 自由指示 |
+
+---
+
+## 画面構成（4ペイン）
+
+```
+┌─────────────┬──────────────┬────────────────────┬─────────────────┐
+│  Pane 1     │  Pane 2      │  Pane 3            │  Pane 4         │
+│  フォルダ   │  ファイル    │  プレビュー ⇄ 編集 │  詳細・アクション│
+│  ツリー     │  一覧        │  （自動保存）      │  共有 / AI 等   │
+└─────────────┴──────────────┴────────────────────┴─────────────────┘
+```
+
+- 小画面では Pane 1 を非表示にし、横スクロールで操作可能
+- 未ログイン時は `/login` へリダイレクト
+- 共有ページは `/share/[token]`（認証不要）
+
+---
+
+## 技術スタック
+
+| 層 | 採用技術 |
+|---|---|
+| フロント / サーバー | Next.js 16, React 19, TypeScript（strict） |
+| UI | Tailwind CSS v4, shadcn/ui（base-nova / `@base-ui/react`） |
+| DB | Neon PostgreSQL + Drizzle ORM |
+| 認証 | Auth.js v5（NextAuth）+ Google OAuth |
+| Markdown 表示 | react-markdown + remark-gfm |
+| AI | Google Gemini API（BYOK / サーバー側フォールバック任意） |
+| ホスティング | Vercel |
+
+---
+
+## データの保存先
+
+| 保存するもの | 置き場所 | 理由 |
+|---|---|---|
+| Markdown 本文・フォルダ・共有設定 | Neon（`document`, `folder` テーブル） | リロードしても消えない。別端末・共有 URL から同じデータにアクセスできる |
+| ログインユーザー | Neon（`user`, `account` テーブル） | どの端末からログインしても同一人物として扱える |
+| セッション | JWT Cookie | Edge で DB を引かずに認証できる |
+| Gemini API キー（BYOK） | ブラウザ `localStorage` | ユーザーの鍵をサーバーに預けない |
+| スキーマ定義 | リポジトリ（`lib/db/schema.ts`） | AI が指示なしで設計を読める SSoT（ハーネス） |
+
+---
+
+## ローカル開発
+
+### 1. クローンと依存関係
 
 ```bash
-git clone <このリポジトリのURL>
-cd workspace-ui-kit
+git clone https://github.com/ViNi-77/Markdown-Memory.git
+cd Markdown-Memory
 npm install
+```
+
+### 2. 環境変数
+
+`.env.example` をコピーして `.env.local` を作成する。
+
+```bash
+cp .env.example .env.local
+```
+
+| 変数 | 必須 | 説明 |
+|---|---|---|
+| `DATABASE_URL` | ✅ | Neon の接続文字列（pooler URL 推奨） |
+| `AUTH_SECRET` | ✅ | `npx auth secret` で生成 |
+| `AUTH_GOOGLE_ID` | ✅ | Google Cloud Console の OAuth クライアント ID |
+| `AUTH_GOOGLE_SECRET` | ✅ | 同上のクライアントシークレット |
+| `GEMINI_API_KEY` | 任意 | サーバー側フォールバック用。未設定なら BYOK のみ |
+
+### 3. データベース
+
+```bash
+npm run db:push    # スキーマを Neon に反映
+# npm run db:studio  # Drizzle Studio で中身を確認
+```
+
+### 4. Google OAuth（ローカル）
+
+[Google Cloud Console](https://console.cloud.google.com/) で Web アプリケーションの OAuth クライアントを作成し、以下を登録する。
+
+**Authorized JavaScript origins**
+
+```
+http://localhost:3000
+```
+
+**Authorized redirect URIs**
+
+```
+http://localhost:3000/api/auth/callback/google
+```
+
+OAuth 同意画面が「テスト」モードの場合、ログインする Google アカウントをテストユーザーに追加する。
+
+### 5. 起動
+
+```bash
 npm run dev
 ```
 
-ブラウザで `http://localhost:3000` を開くと、採用管理のサンプル画面が表示されます。
+`http://localhost:3000` を開き、Google でサインインする。
 
-![採用管理のサンプル画面：左から「部署/ポジション」「候補者リスト」「候補者ダッシュボード」「選考ステージ詳細」の4ペイン構造](docs/screenshot-workspace.png)
+---
 
-## 構成
+## Vercel へのデプロイ
 
-### 技術スタック
-
-- **Next.js 16** / **React 19** / **TypeScript**（strict）
-- **Tailwind CSS v4**（`app/globals.css` の `@theme` で CSS 変数を一元管理）
-- **shadcn/ui**（`base-nova` スタイル / `@base-ui/react` ベース）
-- **lucide-react**（アイコン）/ **zod**（実行時の型検証）
-
-### ディレクトリ構成
+1. GitHub リポジトリを Vercel に接続する
+2. Vercel Storage から Neon を追加し、`DATABASE_URL` を環境変数に設定する
+3. 以下を Production 環境変数に追加する
 
 ```
-app/                Next.js App Router の画面エントリ
-  page.tsx          トップページ（ここから Workspace を呼んでいる）
-  globals.css       色・角丸・余白などのデザイントークン
-components/
-  ui/               shadcn の UI 部品（Button, Card, Dialog 等。編集 OK）
-  primitives/       このプロジェクト独自の編集 UI 部品
-  workspace/        4ペイン本体（Pane1〜4 と関連ダイアログ）
-data/               サンプルの種データ（JSON）
-hooks/              React のカスタムフック
-lib/                型定義（zod スキーマ）・ユーティリティ
-openspec/           設計の決定記録（ADR、参考資料）
-__tests__/          テスト
+AUTH_SECRET
+AUTH_GOOGLE_ID
+AUTH_GOOGLE_SECRET
+AUTH_URL=https://<your-domain>.vercel.app
+NEXTAUTH_URL=https://<your-domain>.vercel.app
 ```
 
-> 道A（踏襲ルート）でよく触る場所は **`components/workspace/`**（画面の中身）と **`app/globals.css`**（色や角丸）です。
+4. Google Cloud Console の同じ OAuth クライアントに **本番 URL も追加**する（ローカルだけでは本番ログインできない）
 
-### 開発コマンド
+**Authorized JavaScript origins**
+
+```
+https://<your-domain>.vercel.app
+```
+
+**Authorized redirect URIs**
+
+```
+https://<your-domain>.vercel.app/api/auth/callback/google
+```
+
+5. `git push` で自動デプロイ、または `vercel --prod` で手動デプロイ
+
+---
+
+## 開発コマンド
 
 | コマンド | 役割 |
 |---|---|
 | `npm run dev` | 開発サーバー起動 |
 | `npm run build` | 本番ビルド |
-| `npm run lint` | ESLint チェック |
-| `npm run test` | スモークテスト（Vitest） |
+| `npm run start` | 本番サーバー起動 |
+| `npm run lint` | ESLint |
+| `npm run test` | Vitest スモークテスト |
 | `npm run format` | Prettier で整形 |
-| `npm run check:radius` | 角丸ドリフト検出（独自スクリプト） |
+| `npm run check:radius` | 角丸ドリフト検出 |
+| `npm run db:generate` | Drizzle マイグレーション SQL 生成 |
+| `npm run db:push` | スキーマを DB に反映 |
+| `npm run db:migrate` | マイグレーション実行 |
+| `npm run db:studio` | Drizzle Studio 起動 |
 
-## 同梱されている "AI への操縦マニュアル"
+---
 
-このリポジトリには、UI を作る作業を AI が手伝ってくれるように、あらかじめ「お手本」と「ルール集」が同梱されています。これを **スキル**と呼びます。
+## ディレクトリ構成
 
-スキルとは、AI が作業を始めるときに自動で読みに行く**指示書**のことです。たとえば「ボタンを変えて」と頼むと、該当するスキルを AI が見つけて、「このプロジェクトでの正しい書き方はこれ」「やってはいけないことはこれ」を読んだ上で作業します。AI が暴走しにくくなります。
+```
+app/
+  page.tsx                    認証ガード付きワークスペース
+  login/page.tsx              Google サインイン
+  share/[token]/page.tsx      公開共有（読み取り専用）
+  api/auth/[...nextauth]/     Auth.js エンドポイント
+  api/ai/route.ts             Gemini プロキシ（BYOK 未設定時のフォールバック）
+auth.ts                       Auth.js 設定
+components/
+  markdown/                   Markdown Memory 本体 UI
+    MarkdownWorkspace.tsx     4ペイン統合
+    MarkdownView.tsx          Markdown レンダラ
+    AiAssistPanel.tsx         アプリ内 AI パネル
+  auth/UserButton.tsx         ユーザー表示・サインアウト
+  ui/                         shadcn 部品
+  primitives/                 インライン編集部品
+lib/
+  db/schema.ts                DB スキーマ SSoT
+  db/index.ts                 Drizzle クライアント
+  data.ts                     サーバー側データ取得
+  actions.ts                  Server Actions（CRUD・共有）
+  ai-handoff.ts               外部 AI サービス URL
+drizzle/                      マイグレーション SQL
+.claude/skills/               AI 向けスキル（designing-workspace-ui, shadcn 等）
+```
 
-このリポジトリに入っているスキルは2種類:
+---
 
-- **`shadcn` スキル（純正）**
-  shadcn/ui（このリポジトリで使っている UI ライブラリ）を使うときの一般的なルール集。「新しい部品を入れる」「使い方を調べる」など、shadcn 操作全般に効きます。shadcn/ui の中身を覚えていなくても、AI が代わりに調べてくれます。
-  なお、中身は英語のままです。これは shadcn の **公式が配布しているものをそのまま置いている**だけだからです（特別にカスタマイズはしていません。誰でも同じ手順で導入できます）。AI が読むので、人間が読む必要はありません。読みたくなったら AI に翻訳してもらえば OK です。
+## アーキテクチャ概要
 
-- **`designing-workspace-ui` スキル（このプロジェクト固有）**
-  この採用管理サンプルの **4ペイン構造**を尊重するためのルール集。「ペインの責務」「色や角丸の階層」「インライン編集の保存規約」など、このサンプルが採っている思想を AI に守らせます。
+```mermaid
+flowchart LR
+  Browser["ブラウザ"]
+  Next["Next.js App Router"]
+  Auth["Auth.js / Google OAuth"]
+  Neon["Neon PostgreSQL"]
+  Gemini["Gemini API"]
 
-両者は独立しており、AI が片方を起動しても、もう片方は自動では起動しません。**どちらを使うかは、あなたが進む "道" によって決まります**。
+  Browser --> Next
+  Next --> Auth
+  Auth --> Neon
+  Next --> Neon
+  Browser -. BYOK .-> Gemini
+  Next -. フォールバック .-> Gemini
+```
 
-## 2つの道：踏襲ルート / 自由ルート
+- **読み取り**: Server Component が `auth()` で認証確認 → `getWorkspaceData()` で DB から取得
+- **書き込み**: Client Component から Server Actions（`lib/actions.ts`）経由で DB 更新
+- **共有**: `shareToken` で `/share/[token]` にルーティング。`isPublic` が true のドキュメントのみ表示
 
-このサンプルを使った課題には、2つの進め方があります。正解はひとつではありません。**自分の業務と性格に合う方を選んでください**。
+---
 
-### 道A: 踏襲ルート（このリポジトリで改造）
+## AI スキル（同梱）
 
-採用管理のサンプル UI を**土台にして**、自分の業務（顧客管理 / 在庫管理 / プロジェクト管理など）に作り変える道です。
+UI 変更や shadcn 部品追加時に、Cursor / Claude Code が自動で読む指示書。
 
-- 使うスキル: `designing-workspace-ui` がメイン。必要に応じて `shadcn` も併用
-- 立ち上がり: 速い。Day1 から動くものがある状態でスタート
-- 規律: 強い。スキルが「サンプルの思想」を守らせる
-- 自由度: 中。**4ペイン構造**と既存の色・角丸ルールに沿う必要がある
-- 向いている人:
-  - 業務が「リスト + 詳細 + サブパネル」的な構造で表現できる
-  - まず動かしてから考えたい
-  - AI 開発に慣れていない
+| スキル | 用途 |
+|---|---|
+| `designing-workspace-ui` | 4ペイン UI の規律・トークン・インライン編集パターン |
+| `shadcn` | shadcn/ui 部品の追加・カスタマイズ |
+| `next-best-practices` | Next.js 16 のファイル規約・RSC 境界 |
+| `vercel-react-best-practices` | React パフォーマンス最適化 |
 
-### 道B: 自由ルート（別リポジトリでゼロから）
+詳細は `CLAUDE.md` を参照。
 
-このリポジトリは**参考資料**として残し、**別の空のリポジトリ**で shadcn/ui を使ってゼロから作る道です。
+---
 
-- 使うスキル: `shadcn`（純正）がメイン。自分でプロジェクトを初期化する
-- 立ち上がり: 遅い。Next.js セットアップ、shadcn 初期化から自分でやる
-- 規律: 弱い（=自由）。サンプルの規律はないので、**自分で決める**
-- 自由度: 高。**4ペイン構造に縛られない**。3ペインでも単一ページでも可
-- 向いている人:
-  - 業務が4ペインで表現しきれない（チャット型・カレンダー型・ボード型など）
-  - 自分の思想を最初から全部決めたい
-  - shadcn の純正スキルで AI を操縦する練習もしたい
+## よくあるつまずき
 
-## どちらを選ぶか
+### 本番で Google ログインが「リクエストは無効です」
 
-迷ったら、以下の3問に答えてみてください。
+Google Cloud Console の OAuth クライアントに **本番の redirect URI** が登録されていない。上記「Vercel へのデプロイ」の手順 4 を確認。
 
-1. **あなたの業務は「リスト → 詳細 → 操作パネル」的な構造ですか？**
-   - YES → 道A（踏襲ルート）が楽
-   - NO → 道B（自由ルート）を検討
-2. **早く何か動くものを見たいですか？それとも遅くても自分の思想を貫きたいですか？**
-   - 早く動かしたい → 道A
-   - 遅くても自分の思想 → 道B
-3. **AI と shadcn/ui に慣れていますか？**
-   - 慣れていない → 道A（規律が守ってくれる）
-   - ある程度慣れた → 道B（自由を活かせる）
+### ローカルは動くが本番だけ失敗する
 
-### 途中で道を変えてもOK
+Vercel の環境変数（`AUTH_SECRET`, `DATABASE_URL`, `AUTH_GOOGLE_*`, `AUTH_URL`）が Production に設定されているか確認。
 
-最初は **道A** で立ち上げ、途中で「やっぱり構造が合わない」と感じたら **道B** に切り替える進め方も可能です。そのときは「サンプルから何を残すか」を自分で決めるので、**`designing-workspace-ui` スキルがむしろ足枷になります**。道Bへ移ったら、このスキルは無効化（=`.claude/skills/designing-workspace-ui/` を削除）し、shadcn 純正スキルだけで進めてください。
+### 共有リンクが `localhost` になる
 
-逆に、道Bから道Aに移るのは現実的ではないので、**最初の判断は慎重に**。迷ったら担当講師に相談してください。
+本番デプロイ後は `window.location.origin` を使うため、本番 URL で共有を有効化し直す。
 
-## 自分の仕事に作り変える
+---
 
-選んだ道に応じて、Cursor または Claude Code で AI に作業させます。
+## ライセンス / 課題
 
-### AI と一緒に UI を作るときの現実
-
-最新の AI と shadcn/ui を使っても、「いい感じの UI を作って」という抽象的な指示で**完璧な UI が完成するわけではありません**。実際には、
-
-- どの shadcn/ui 部品を**そのまま使う**か、**カスタマイズする**かを判断する
-- 一つの変更ごとに **AI の出力を確認して微調整する**
-- 言葉で表現できる粒度（例: 「Pane 3 のカードの間隔を1段詰めて」「Badge を success トークンの色に変えて」）まで噛み砕いて伝える
-
-を**一つずつ丁寧に積み重ねる**作業になります。最初の数日は遠回りに感じるかもしれませんが、これが「自分の思想を画面にする」唯一の道です。
-
-### 道A（踏襲ルート）の場合
-
-AI に依頼するときは「`designing-workspace-ui` スキルを使って」と一言添えると、規律に沿った変更が返ってきます。
-例: 「Pane 3 のカード並びを変えたい。designing-workspace-ui を使って」
-
-### 道B（自由ルート）の場合
-
-別のリポジトリで `npx shadcn@latest init` から始めてください。AI には「shadcn スキルで進めて」と頼むと、純正のレジストリ機能を使った部品検索 + 追加をやってくれます。
-
-### 独自性を強めるなら、自分専用のデザインスキルも育てる
-
-道B を選んだ場合、あるいは道A から始めても**採用管理のサンプル思想から離れていく**にしたがって、あなたの新しいデザイン思想を AI に教えるための **専用スキル**を作っていくのが本筋です。スキルが古いままだと、AI は「採用管理の世界観」のままコードを書き続けてしまい、せっかくの独自デザインと噛み合わなくなります。
-
-ゼロから書く必要はありません。同梱の `.claude/skills/designing-workspace-ui/SKILL.md` を**参考雛形**として、自分のプロジェクトの言葉で書き直していくのがおすすめです。
-
-- 「ペインの責務」 → あなたの画面構造の責務に
-- 「採用管理」 → 自分の業務名に
-- 角丸ルールや色のトークン規律も、自分の流派で書き換える
-
-スキルを育てるほど、AI は**あなたの思想を理解した上で**動くようになり、独自デザインでも一貫性のある変更が積み上がります。**スキルを育てること自体が、デザインを言語化する訓練**にもなります。
-
-課題の取り組み方の詳細は**受講生ポータル**を参照してください。
-
-## 提出する
-
-提出物・期限・中間発表のフォーマットは**受講生ポータル**を見てください。
-
-## 詰まったら
-
-エラーメッセージをそのままAIに貼り付けて聞いてください。
-ほとんどのつまずきはそれで解決します。
+AI-Driven School の課題提出物。提出物のフォーマット・期限は受講生ポータルを参照。
