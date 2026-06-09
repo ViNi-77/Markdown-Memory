@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Sparkles,
   Loader2,
@@ -32,34 +32,30 @@ type Props = {
 };
 
 export function AiAssistPanel({ document, onContentChange, onError }: Props) {
-  const [apiKey, setApiKey] = useState("");
+  const [apiKey, setApiKey] = useState(() =>
+    typeof window === "undefined"
+      ? ""
+      : (localStorage.getItem(API_KEY_STORAGE) ?? ""),
+  );
   const [showSettings, setShowSettings] = useState(false);
   const [customPrompt, setCustomPrompt] = useState("");
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    setApiKey(localStorage.getItem(API_KEY_STORAGE) ?? "");
-  }, []);
-
-  useEffect(() => {
-    setResult("");
-    setCustomPrompt("");
-  }, [document.id]);
-
   function saveApiKey() {
-    localStorage.setItem(API_KEY_STORAGE, apiKey.trim());
+    const trimmed = apiKey.trim();
+    if (trimmed) {
+      localStorage.setItem(API_KEY_STORAGE, trimmed);
+    } else {
+      localStorage.removeItem(API_KEY_STORAGE);
+    }
+    setApiKey(trimmed);
     setShowSettings(false);
   }
 
   async function runAi(task: string, prompt?: string) {
     const key = localStorage.getItem(API_KEY_STORAGE)?.trim();
-    if (!key) {
-      setShowSettings(true);
-      onError("Gemini APIキーを設定してください。");
-      return;
-    }
     if (!document.content.trim()) {
       onError("本文が空です。AIに渡す内容がありません。");
       return;
@@ -75,7 +71,7 @@ export function AiAssistPanel({ document, onContentChange, onError }: Props) {
           documentContent: document.content,
           task,
           customPrompt: prompt ?? customPrompt,
-          apiKey: key,
+          ...(key ? { apiKey: key } : {}),
         }),
       });
       const data = await res.json();
@@ -90,9 +86,16 @@ export function AiAssistPanel({ document, onContentChange, onError }: Props) {
 
   async function applyReplace() {
     if (!result) return;
-    await actions.updateDocumentContent(document.id, result);
-    onContentChange(result);
-    setResult("");
+    setLoading(true);
+    try {
+      await actions.updateDocumentContent(document.id, result);
+      onContentChange(result);
+      setResult("");
+    } catch (e) {
+      onError(e instanceof Error ? e.message : "本文の置き換えに失敗しました");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function applyAppend() {
@@ -100,9 +103,16 @@ export function AiAssistPanel({ document, onContentChange, onError }: Props) {
     const newContent = document.content.trim()
       ? `${document.content.trim()}\n\n${result}`
       : result;
-    await actions.updateDocumentContent(document.id, newContent);
-    onContentChange(newContent);
-    setResult("");
+    setLoading(true);
+    try {
+      await actions.updateDocumentContent(document.id, newContent);
+      onContentChange(newContent);
+      setResult("");
+    } catch (e) {
+      onError(e instanceof Error ? e.message : "本文の追記に失敗しました");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function copyResult() {
@@ -134,7 +144,9 @@ export function AiAssistPanel({ document, onContentChange, onError }: Props) {
 
       {showSettings && (
         <div className="flex flex-col gap-2 rounded-lg bg-muted/50 p-3">
-          <label className="text-xs text-muted-foreground">Gemini APIキー</label>
+          <label className="text-xs text-muted-foreground">
+            Gemini APIキー
+          </label>
           <Input
             type="password"
             value={apiKey}
@@ -142,8 +154,9 @@ export function AiAssistPanel({ document, onContentChange, onError }: Props) {
             placeholder="AIza..."
             className="font-mono text-xs"
           />
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            ブラウザにのみ保存されます。AI実行時だけサーバーに送られ、保存されません。
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            空欄ならサーバー側の GEMINI_API_KEY
+            を使います。入力したキーはブラウザにのみ保存され、AI実行時だけサーバーに送られます。
           </p>
           <Button size="sm" onClick={saveApiKey}>
             保存

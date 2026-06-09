@@ -22,3 +22,6 @@ AGENTS.md
 .claude/skills/shadcn/
 .claude/skills/vercel-react-best-practices/
 
+# Agent-installed local skill references are vendored documentation.
+.agents/
+.claude/skills/

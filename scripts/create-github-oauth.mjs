@@ -52,14 +52,20 @@ async function main() {
   await page.getByRole("button", { name: "Register application" }).click();
   await page.waitForURL(/\/settings\/applications\/\d+/, { timeout: 60000 });
 
-  const clientId = await page.locator("#oauth_application_client_id").inputValue();
-  await page.getByRole("button", { name: "Generate a new client secret" }).click();
+  const clientId = await page
+    .locator("#oauth_application_client_id")
+    .inputValue();
+  await page
+    .getByRole("button", { name: "Generate a new client secret" })
+    .click();
   await page.waitForTimeout(2000);
   const clientSecret = await page
     .locator("#oauth_application_client_secret")
     .inputValue()
     .catch(async () => {
-      const text = await page.locator(".oauth-application-client-secret").textContent();
+      const text = await page
+        .locator(".oauth-application-client-secret")
+        .textContent();
       return text?.trim() ?? "";
     });
 

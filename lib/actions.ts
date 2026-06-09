@@ -15,6 +15,26 @@ async function requireUserId(): Promise<string> {
   return userId;
 }
 
+async function requireOwnedFolder(
+  folderId: string,
+  userId: string,
+): Promise<void> {
+  const [folder] = await db
+    .select({ id: folders.id })
+    .from(folders)
+    .where(and(eq(folders.id, folderId), eq(folders.userId, userId)))
+    .limit(1);
+
+  if (!folder) throw new Error("移動先フォルダが見つかりません。");
+}
+
+function assertMutation(
+  row: { id: string } | undefined,
+  message: string,
+): void {
+  if (!row) throw new Error(message);
+}
+
 // ===== フォルダ =====
 
 export async function createFolder(name: string): Promise<Folder> {
@@ -32,18 +52,22 @@ export async function renameFolder(id: string, name: string): Promise<void> {
   const userId = await requireUserId();
   const trimmed = name.trim();
   if (!trimmed) throw new Error("フォルダ名を入力してください。");
-  await db
+  const [row] = await db
     .update(folders)
     .set({ name: trimmed })
-    .where(and(eq(folders.id, id), eq(folders.userId, userId)));
+    .where(and(eq(folders.id, id), eq(folders.userId, userId)))
+    .returning({ id: folders.id });
+  assertMutation(row, "フォルダが見つかりません。");
 }
 
 export async function deleteFolder(id: string): Promise<void> {
   const userId = await requireUserId();
   // documents.folderId は onDelete: "set null" なので、中のファイルはルートへ戻る（削除しない）。
-  await db
+  const [row] = await db
     .delete(folders)
-    .where(and(eq(folders.id, id), eq(folders.userId, userId)));
+    .where(and(eq(folders.id, id), eq(folders.userId, userId)))
+    .returning({ id: folders.id });
+  assertMutation(row, "フォルダが見つかりません。");
 }
 
 // ===== ドキュメント =====
@@ -55,6 +79,7 @@ export async function createDocument(input: {
 }): Promise<Document> {
   const userId = await requireUserId();
   const name = input.name.trim() || "無題.md";
+  if (input.folderId) await requireOwnedFolder(input.folderId, userId);
   const [row] = await db
     .insert(documents)
     .values({
@@ -72,20 +97,24 @@ export async function updateDocumentContent(
   content: string,
 ): Promise<void> {
   const userId = await requireUserId();
-  await db
+  const [row] = await db
     .update(documents)
     .set({ content, updatedAt: new Date() })
-    .where(and(eq(documents.id, id), eq(documents.userId, userId)));
+    .where(and(eq(documents.id, id), eq(documents.userId, userId)))
+    .returning({ id: documents.id });
+  assertMutation(row, "ファイルが見つかりません。");
 }
 
 export async function renameDocument(id: string, name: string): Promise<void> {
   const userId = await requireUserId();
   const trimmed = name.trim();
   if (!trimmed) throw new Error("ファイル名を入力してください。");
-  await db
+  const [row] = await db
     .update(documents)
     .set({ name: trimmed, updatedAt: new Date() })
-    .where(and(eq(documents.id, id), eq(documents.userId, userId)));
+    .where(and(eq(documents.id, id), eq(documents.userId, userId)))
+    .returning({ id: documents.id });
+  assertMutation(row, "ファイルが見つかりません。");
 }
 
 export async function moveDocument(
@@ -93,28 +122,42 @@ export async function moveDocument(
   folderId: string | null,
 ): Promise<void> {
   const userId = await requireUserId();
-  await db
+  if (folderId) await requireOwnedFolder(folderId, userId);
+  const [row] = await db
     .update(documents)
     .set({ folderId, updatedAt: new Date() })
-    .where(and(eq(documents.id, id), eq(documents.userId, userId)));
+    .where(and(eq(documents.id, id), eq(documents.userId, userId)))
+    .returning({ id: documents.id });
+  assertMutation(row, "ファイルが見つかりません。");
 }
 
 export async function deleteDocument(id: string): Promise<void> {
   const userId = await requireUserId();
-  await db
+  const [row] = await db
     .delete(documents)
-    .where(and(eq(documents.id, id), eq(documents.userId, userId)));
+    .where(and(eq(documents.id, id), eq(documents.userId, userId)))
+    .returning({ id: documents.id });
+  assertMutation(row, "ファイルが見つかりません。");
 }
 
-// ===== 共有（Phase 6 で UI 接続） =====
+// ===== 共有 =====
 
-/** 公開リンクを発行（or 既存トークンを返す）して on にする。 */
+/** 公開リンクを発行（公開済みなら既存トークンを返す）して on にする。 */
 export async function enableShare(id: string): Promise<string> {
   const userId = await requireUserId();
+  const [current] = await db
+    .select({ shareToken: documents.shareToken, isPublic: documents.isPublic })
+    .from(documents)
+    .where(and(eq(documents.id, id), eq(documents.userId, userId)))
+    .limit(1);
+
+  if (!current) throw new Error("ファイルが見つかりません。");
+  if (current.isPublic && current.shareToken) return current.shareToken;
+
   const token = randomBytes(16).toString("base64url");
   const [row] = await db
     .update(documents)
-    .set({ isPublic: true, shareToken: token })
+    .set({ isPublic: true, shareToken: token, updatedAt: new Date() })
     .where(and(eq(documents.id, id), eq(documents.userId, userId)))
     .returning({ shareToken: documents.shareToken });
   if (!row?.shareToken) throw new Error("共有の有効化に失敗しました。");
@@ -124,8 +167,10 @@ export async function enableShare(id: string): Promise<string> {
 /** 公開を停止する（トークンは破棄）。 */
 export async function disableShare(id: string): Promise<void> {
   const userId = await requireUserId();
-  await db
+  const [row] = await db
     .update(documents)
-    .set({ isPublic: false, shareToken: null })
-    .where(and(eq(documents.id, id), eq(documents.userId, userId)));
+    .set({ isPublic: false, shareToken: null, updatedAt: new Date() })
+    .where(and(eq(documents.id, id), eq(documents.userId, userId)))
+    .returning({ id: documents.id });
+  assertMutation(row, "ファイルが見つかりません。");
 }

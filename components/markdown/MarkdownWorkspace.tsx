@@ -83,7 +83,9 @@ export function MarkdownWorkspace({
         await fn();
       } catch (e) {
         setError(
-          e instanceof Error ? e.message : "操作に失敗しました。時間をおいて再試行してください。",
+          e instanceof Error
+            ? e.message
+            : "操作に失敗しました。時間をおいて再試行してください。",
         );
       }
     });
@@ -114,7 +116,9 @@ export function MarkdownWorkspace({
         // 失敗しても editContent には内容が残るので、ユーザーは再保存できる。
         pendingSave.current = { id, content };
         setSaveState("idle");
-        setError("保存に失敗しました。通信状況を確認してください（内容は保持されています）。");
+        setError(
+          "保存に失敗しました。通信状況を確認してください（内容は保持されています）。",
+        );
       }
     });
   }, []);
@@ -142,21 +146,6 @@ export function MarkdownWorkspace({
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
       );
   }, [documents, selectedFolderId, search]);
-
-  // ドキュメント選択が変わったら、まず前のファイルの保留保存を確定し、
-  // 新しい本文を読み込んでプレビュー表示に戻す。
-  useEffect(() => {
-    flushSave();
-    if (selectedDoc) {
-      setEditContent(selectedDoc.content);
-      setSaveState("idle");
-    }
-    setMode("preview");
-    setCopied(false);
-    setContentCopied(false);
-    // selectedDocId 変更時のみ実行（本文の外部更新では再読込しない）
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDocId]);
 
   // 編集中に保留保存があるままタブを閉じようとしたら警告する（取りこぼし防止）。
   useEffect(() => {
@@ -222,6 +211,29 @@ export function MarkdownWorkspace({
     });
   }
 
+  function selectDocument(
+    doc: Document,
+    nextMode: "preview" | "edit" = "preview",
+  ) {
+    flushSave();
+    setSelectedDocId(doc.id);
+    setEditContent(doc.content);
+    setSaveState("idle");
+    setMode(nextMode);
+    setCopied(false);
+    setContentCopied(false);
+  }
+
+  function clearSelectedDocument() {
+    flushSave();
+    setSelectedDocId(null);
+    setEditContent("");
+    setSaveState("idle");
+    setMode("preview");
+    setCopied(false);
+    setContentCopied(false);
+  }
+
   // ===== ドキュメント操作 =====
 
   function handleNewDocument() {
@@ -229,8 +241,7 @@ export function MarkdownWorkspace({
     run(async () => {
       const doc = await actions.createDocument({ name: "無題.md", folderId });
       setDocuments((prev) => [doc, ...prev]);
-      setSelectedDocId(doc.id);
-      setMode("edit");
+      selectDocument(doc, "edit");
     });
   }
 
@@ -238,7 +249,7 @@ export function MarkdownWorkspace({
     if (!fileList || fileList.length === 0) return;
     const folderId = selectedFolderId === "all" ? null : selectedFolderId;
     run(async () => {
-      let lastId: string | null = null;
+      let lastDoc: Document | null = null;
       for (const file of Array.from(fileList)) {
         const lower = file.name.toLowerCase();
         if (!lower.endsWith(".md") && !lower.endsWith(".markdown")) {
@@ -252,9 +263,9 @@ export function MarkdownWorkspace({
           folderId,
         });
         setDocuments((prev) => [doc, ...prev]);
-        lastId = doc.id;
+        lastDoc = doc;
       }
-      if (lastId) setSelectedDocId(lastId);
+      if (lastDoc) selectDocument(lastDoc);
     });
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
@@ -281,11 +292,12 @@ export function MarkdownWorkspace({
   }
 
   function handleDeleteDoc(doc: Document) {
-    if (!window.confirm(`「${doc.name}」を削除します。よろしいですか？`)) return;
+    if (!window.confirm(`「${doc.name}」を削除します。よろしいですか？`))
+      return;
     run(async () => {
       await actions.deleteDocument(doc.id);
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
-      if (selectedDocId === doc.id) setSelectedDocId(null);
+      if (selectedDocId === doc.id) clearSelectedDocument();
     });
   }
 
@@ -317,7 +329,11 @@ export function MarkdownWorkspace({
   }
 
   function handleDisableShare(doc: Document) {
-    if (!window.confirm("公開を停止します。共有URLは無効になります。よろしいですか？"))
+    if (
+      !window.confirm(
+        "公開を停止します。共有URLは無効になります。よろしいですか？",
+      )
+    )
       return;
     run(async () => {
       await actions.disableShare(doc.id);
@@ -406,9 +422,7 @@ export function MarkdownWorkspace({
               active={selectedFolderId === folder.id}
               icon={<FolderIcon className="size-4" />}
               label={folder.name}
-              count={
-                documents.filter((d) => d.folderId === folder.id).length
-              }
+              count={documents.filter((d) => d.folderId === folder.id).length}
               onClick={() => setSelectedFolderId(folder.id)}
               onRename={() => handleRenameFolder(folder)}
               onDelete={() => handleDeleteFolder(folder)}
@@ -423,7 +437,7 @@ export function MarkdownWorkspace({
       <section
         className={cn(
           "flex w-56 shrink-0 flex-col border-r border-border md:w-72",
-          isDragging && "bg-primary/5 ring-2 ring-inset ring-primary/40",
+          isDragging && "bg-primary/5 ring-2 ring-primary/40 ring-inset",
         )}
         onDragOver={(e) => {
           e.preventDefault();
@@ -490,7 +504,7 @@ export function MarkdownWorkspace({
               <li key={doc.id}>
                 <button
                   type="button"
-                  onClick={() => setSelectedDocId(doc.id)}
+                  onClick={() => selectDocument(doc)}
                   className={cn(
                     "flex w-full flex-col gap-0.5 rounded-md px-2.5 py-2 text-left transition-colors",
                     selectedDocId === doc.id
@@ -635,11 +649,15 @@ export function MarkdownWorkspace({
           <dl className="flex flex-col gap-2 text-xs">
             <div className="flex justify-between gap-2">
               <dt className="text-muted-foreground">作成</dt>
-              <dd>{format(new Date(selectedDoc.createdAt), "yyyy/MM/dd HH:mm")}</dd>
+              <dd>
+                {format(new Date(selectedDoc.createdAt), "yyyy/MM/dd HH:mm")}
+              </dd>
             </div>
             <div className="flex justify-between gap-2">
               <dt className="text-muted-foreground">更新</dt>
-              <dd>{format(new Date(selectedDoc.updatedAt), "yyyy/MM/dd HH:mm")}</dd>
+              <dd>
+                {format(new Date(selectedDoc.updatedAt), "yyyy/MM/dd HH:mm")}
+              </dd>
             </div>
           </dl>
 
@@ -712,12 +730,14 @@ export function MarkdownWorkspace({
                 </Button>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              本文をコピーしてから各AIを開きます。貼り付け（Ctrl+V / ⌘V）で渡せます。
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              本文をコピーしてから各AIを開きます。貼り付け（Ctrl+V /
+              ⌘V）で渡せます。
             </p>
           </div>
 
           <AiAssistPanel
+            key={selectedDoc.id}
             document={selectedDoc}
             onContentChange={handleAiContentChange}
             onError={setError}
@@ -785,7 +805,9 @@ function FolderRow({
     <div
       className={cn(
         "group/folder flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
-        active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "hover:bg-sidebar-accent/50",
+        active
+          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+          : "hover:bg-sidebar-accent/50",
       )}
     >
       <button

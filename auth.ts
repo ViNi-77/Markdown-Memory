@@ -12,15 +12,19 @@ import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "@/lib/db";
 import { users, accounts, sessions, verificationTokens } from "@/lib/db/schema";
 
+const adapter = process.env.DATABASE_URL
+  ? DrizzleAdapter(db, {
+      usersTable: users,
+      accountsTable: accounts,
+      sessionsTable: sessions,
+      verificationTokensTable: verificationTokens,
+    })
+  : undefined;
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   // Vercel 本番ではホスト検証を信頼する（AUTH_URL 未設定でも動作）
   trustHost: true,
-  adapter: DrizzleAdapter(db, {
-    usersTable: users,
-    accountsTable: accounts,
-    sessionsTable: sessions,
-    verificationTokensTable: verificationTokens,
-  }),
+  ...(adapter ? { adapter } : {}),
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,

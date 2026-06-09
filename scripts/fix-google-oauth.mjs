@@ -48,7 +48,14 @@ async function collectInputValues(page) {
   const count = await inputs.count();
   const values = [];
   for (let i = 0; i < count; i++) {
-    values.push((await inputs.nth(i).inputValue().catch(() => "")).trim());
+    values.push(
+      (
+        await inputs
+          .nth(i)
+          .inputValue()
+          .catch(() => "")
+      ).trim(),
+    );
   }
   return values;
 }
@@ -66,7 +73,12 @@ async function addUri(page, uri) {
     page.locator("button").filter({ hasText: /URI/i }),
   ];
   for (const btn of addButtons) {
-    if (await btn.first().isVisible().catch(() => false)) {
+    if (
+      await btn
+        .first()
+        .isVisible()
+        .catch(() => false)
+    ) {
       await btn.first().click();
       break;
     }
@@ -75,7 +87,12 @@ async function addUri(page, uri) {
   const inputs = page.locator("input:visible");
   const count = await inputs.count();
   for (let i = count - 1; i >= 0; i--) {
-    const value = (await inputs.nth(i).inputValue().catch(() => "")).trim();
+    const value = (
+      await inputs
+        .nth(i)
+        .inputValue()
+        .catch(() => "")
+    ).trim();
     if (!value) {
       await inputs.nth(i).fill(uri);
       console.log(`Added: ${uri}`);
@@ -116,7 +133,10 @@ async function main() {
 
   await waitForLogin(page);
   await page.waitForTimeout(6000);
-  await page.screenshot({ path: "/tmp/mdmem-oauth-before.png", fullPage: true });
+  await page.screenshot({
+    path: "/tmp/mdmem-oauth-before.png",
+    fullPage: true,
+  });
 
   const bodyText = (await page.locator("body").innerText()).toLowerCase();
   if (bodyText.includes("redirect") || bodyText.includes("リダイレクト")) {
@@ -135,7 +155,9 @@ async function main() {
 
   await page.screenshot({ path: "/tmp/mdmem-oauth-after.png", fullPage: true });
   await context.close();
-  console.log("Done. Screenshots: /tmp/mdmem-oauth-before.png /tmp/mdmem-oauth-after.png");
+  console.log(
+    "Done. Screenshots: /tmp/mdmem-oauth-before.png /tmp/mdmem-oauth-after.png",
+  );
 }
 
 main().catch((err) => {

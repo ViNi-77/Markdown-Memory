@@ -9,16 +9,31 @@ import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
 import * as schema from "./schema";
 
-const connectionString = process.env.DATABASE_URL;
+const MISSING_DATABASE_URL_MESSAGE =
+  "DATABASE_URL が未設定です。Vercel で Neon を追加し、.env.local に DATABASE_URL を設定してください。";
 
-if (!connectionString) {
-  throw new Error(
-    "DATABASE_URL が未設定です。Vercel で Neon を追加し、.env.local に DATABASE_URL を設定してください。",
-  );
+function createMissingDatabaseClient(): ReturnType<typeof drizzle> {
+  return new Proxy(
+    {},
+    {
+      get(_target, property) {
+        // Promise-like と誤判定されないよう `then` は undefined を返す。
+        if (property === "then") return undefined;
+        throw new Error(MISSING_DATABASE_URL_MESSAGE);
+      },
+    },
+  ) as ReturnType<typeof drizzle>;
 }
 
-const sql = neon(connectionString);
+const connectionString = process.env.DATABASE_URL;
+const sql = connectionString ? neon(connectionString) : null;
 
-export const db = drizzle(sql, { schema });
+/**
+ * DB 未設定の CI / build でも Route Handler の import だけで落ちないようにする。
+ * 実際に DB 操作へ進んだ場合は、上の Proxy が明示的な設定エラーを投げる。
+ */
+export const db = sql
+  ? drizzle(sql, { schema })
+  : createMissingDatabaseClient();
 
 export { schema };

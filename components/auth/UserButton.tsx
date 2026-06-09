@@ -29,7 +29,12 @@ export async function UserButton() {
           await signOut({ redirectTo: "/login" });
         }}
       >
-        <Button type="submit" variant="ghost" size="icon-sm" title="サインアウト">
+        <Button
+          type="submit"
+          variant="ghost"
+          size="icon-sm"
+          title="サインアウト"
+        >
           <LogOut />
         </Button>
       </form>

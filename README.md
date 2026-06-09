@@ -10,15 +10,15 @@ AI-Driven School 第7回課題（4ヶ月目）の提出物。旧 Vite + Firebase
 
 ## できること
 
-| 機能 | 説明 |
-|---|---|
-| Google ログイン | Auth.js v5 + Drizzle アダプタ。ユーザー情報は DB に永続化 |
-| Markdown 管理 | `.md` のアップロード（D&D 対応）・新規作成・プレビュー・編集 |
-| フォルダ整理 | 階層フォルダでファイルを分類 |
-| 自動保存 | 編集はデバウンス保存。ファイル切替・プレビュー切替時にフラッシュ |
-| 公開共有 | ファイルごとにランダムトークン URL を発行。ログイン不要の読み取り専用 |
-| AI 再投入 | 本文コピー + Claude / ChatGPT / Gemini を新規タブで開く |
-| アプリ内 AI | BYOK（Gemini API キーを localStorage に保存）。要約・整形プリセット + 自由指示 |
+| 機能            | 説明                                                                           |
+| --------------- | ------------------------------------------------------------------------------ |
+| Google ログイン | Auth.js v5 + Drizzle アダプタ。ユーザー情報は DB に永続化                      |
+| Markdown 管理   | `.md` のアップロード（D&D 対応）・新規作成・プレビュー・編集                   |
+| フォルダ整理    | 階層フォルダでファイルを分類                                                   |
+| 自動保存        | 編集はデバウンス保存。ファイル切替・プレビュー切替時にフラッシュ               |
+| 公開共有        | ファイルごとにランダムトークン URL を発行。ログイン不要の読み取り専用          |
+| AI 再投入       | 本文コピー + Claude / ChatGPT / Gemini を新規タブで開く                        |
+| アプリ内 AI     | BYOK（Gemini API キーを localStorage に保存）。要約・整形プリセット + 自由指示 |
 
 ---
 
@@ -40,27 +40,27 @@ AI-Driven School 第7回課題（4ヶ月目）の提出物。旧 Vite + Firebase
 
 ## 技術スタック
 
-| 層 | 採用技術 |
-|---|---|
-| フロント / サーバー | Next.js 16, React 19, TypeScript（strict） |
-| UI | Tailwind CSS v4, shadcn/ui（base-nova / `@base-ui/react`） |
-| DB | Neon PostgreSQL + Drizzle ORM |
-| 認証 | Auth.js v5（NextAuth）+ Google OAuth |
-| Markdown 表示 | react-markdown + remark-gfm |
-| AI | Google Gemini API（BYOK / サーバー側フォールバック任意） |
-| ホスティング | Vercel |
+| 層                  | 採用技術                                                   |
+| ------------------- | ---------------------------------------------------------- |
+| フロント / サーバー | Next.js 16, React 19, TypeScript（strict）                 |
+| UI                  | Tailwind CSS v4, shadcn/ui（base-nova / `@base-ui/react`） |
+| DB                  | Neon PostgreSQL + Drizzle ORM                              |
+| 認証                | Auth.js v5（NextAuth）+ Google OAuth                       |
+| Markdown 表示       | react-markdown + remark-gfm                                |
+| AI                  | Google Gemini API（BYOK / サーバー側フォールバック任意）   |
+| ホスティング        | Vercel                                                     |
 
 ---
 
 ## データの保存先
 
-| 保存するもの | 置き場所 | 理由 |
-|---|---|---|
+| 保存するもの                      | 置き場所                              | 理由                                                                    |
+| --------------------------------- | ------------------------------------- | ----------------------------------------------------------------------- |
 | Markdown 本文・フォルダ・共有設定 | Neon（`document`, `folder` テーブル） | リロードしても消えない。別端末・共有 URL から同じデータにアクセスできる |
-| ログインユーザー | Neon（`user`, `account` テーブル） | どの端末からログインしても同一人物として扱える |
-| セッション | JWT Cookie | Edge で DB を引かずに認証できる |
-| Gemini API キー（BYOK） | ブラウザ `localStorage` | ユーザーの鍵をサーバーに預けない |
-| スキーマ定義 | リポジトリ（`lib/db/schema.ts`） | AI が指示なしで設計を読める SSoT（ハーネス） |
+| ログインユーザー                  | Neon（`user`, `account` テーブル）    | どの端末からログインしても同一人物として扱える                          |
+| セッション                        | JWT Cookie                            | Edge で DB を引かずに認証できる                                         |
+| Gemini API キー（BYOK）           | ブラウザ `localStorage`               | ユーザーの鍵をサーバーに預けない                                        |
+| スキーマ定義                      | リポジトリ（`lib/db/schema.ts`）      | AI が指示なしで設計を読める SSoT（ハーネス）                            |
 
 ---
 
@@ -82,13 +82,13 @@ npm install
 cp .env.example .env.local
 ```
 
-| 変数 | 必須 | 説明 |
-|---|---|---|
-| `DATABASE_URL` | ✅ | Neon の接続文字列（pooler URL 推奨） |
-| `AUTH_SECRET` | ✅ | `npx auth secret` で生成 |
-| `AUTH_GOOGLE_ID` | ✅ | Google Cloud Console の OAuth クライアント ID |
-| `AUTH_GOOGLE_SECRET` | ✅ | 同上のクライアントシークレット |
-| `GEMINI_API_KEY` | 任意 | サーバー側フォールバック用。未設定なら BYOK のみ |
+| 変数                 | 必須 | 説明                                             |
+| -------------------- | ---- | ------------------------------------------------ |
+| `DATABASE_URL`       | ✅   | Neon の接続文字列（pooler URL 推奨）             |
+| `AUTH_SECRET`        | ✅   | `npx auth secret` で生成                         |
+| `AUTH_GOOGLE_ID`     | ✅   | Google Cloud Console の OAuth クライアント ID    |
+| `AUTH_GOOGLE_SECRET` | ✅   | 同上のクライアントシークレット                   |
+| `GEMINI_API_KEY`     | 任意 | サーバー側フォールバック用。未設定なら BYOK のみ |
 
 ### 3. データベース
 
@@ -159,19 +159,18 @@ https://<your-domain>.vercel.app/api/auth/callback/google
 
 ## 開発コマンド
 
-| コマンド | 役割 |
-|---|---|
-| `npm run dev` | 開発サーバー起動 |
-| `npm run build` | 本番ビルド |
-| `npm run start` | 本番サーバー起動 |
-| `npm run lint` | ESLint |
-| `npm run test` | Vitest スモークテスト |
-| `npm run format` | Prettier で整形 |
-| `npm run check:radius` | 角丸ドリフト検出 |
+| コマンド              | 役割                              |
+| --------------------- | --------------------------------- |
+| `npm run dev`         | 開発サーバー起動                  |
+| `npm run build`       | 本番ビルド                        |
+| `npm run start`       | 本番サーバー起動                  |
+| `npm run lint`        | ESLint                            |
+| `npm run test`        | Vitest スモークテスト             |
+| `npm run format`      | Prettier で整形                   |
 | `npm run db:generate` | Drizzle マイグレーション SQL 生成 |
-| `npm run db:push` | スキーマを DB に反映 |
-| `npm run db:migrate` | マイグレーション実行 |
-| `npm run db:studio` | Drizzle Studio 起動 |
+| `npm run db:push`     | スキーマを DB に反映              |
+| `npm run db:migrate`  | マイグレーション実行              |
+| `npm run db:studio`   | Drizzle Studio 起動               |
 
 ---
 
@@ -192,16 +191,26 @@ components/
     AiAssistPanel.tsx         アプリ内 AI パネル
   auth/UserButton.tsx         ユーザー表示・サインアウト
   ui/                         shadcn 部品
-  primitives/                 インライン編集部品
 lib/
   db/schema.ts                DB スキーマ SSoT
   db/index.ts                 Drizzle クライアント
   data.ts                     サーバー側データ取得
   actions.ts                  Server Actions（CRUD・共有）
+  ai.ts                       AIリクエスト検証・プロンプト生成
   ai-handoff.ts               外部 AI サービス URL
 drizzle/                      マイグレーション SQL
-.claude/skills/               AI 向けスキル（designing-workspace-ui, shadcn 等）
 ```
+
+---
+
+## 品質方針
+
+このリポジトリは Markdown Memory 本体に集中するため、旧採用管理ワークスペース雛形のコード・サンプルデータ・テストを削除済みです。今後の変更では、Markdown 管理、認証、共有、AI補助に直接関係するコードだけを残し、迷いのない構成を維持します。
+
+- 不要なドメインコードを残さない
+- Server Actions は所有者チェックと失敗時の明示エラーを徹底する
+- AI API は純粋関数で入力検証・プロンプト生成をテストする
+- 主要画面は Vitest / Testing Library で退行を検知する
 
 ---
 
@@ -226,21 +235,6 @@ flowchart LR
 - **読み取り**: Server Component が `auth()` で認証確認 → `getWorkspaceData()` で DB から取得
 - **書き込み**: Client Component から Server Actions（`lib/actions.ts`）経由で DB 更新
 - **共有**: `shareToken` で `/share/[token]` にルーティング。`isPublic` が true のドキュメントのみ表示
-
----
-
-## AI スキル（同梱）
-
-UI 変更や shadcn 部品追加時に、Cursor / Claude Code が自動で読む指示書。
-
-| スキル | 用途 |
-|---|---|
-| `designing-workspace-ui` | 4ペイン UI の規律・トークン・インライン編集パターン |
-| `shadcn` | shadcn/ui 部品の追加・カスタマイズ |
-| `next-best-practices` | Next.js 16 のファイル規約・RSC 境界 |
-| `vercel-react-best-practices` | React パフォーマンス最適化 |
-
-詳細は `CLAUDE.md` を参照。
 
 ---
 
