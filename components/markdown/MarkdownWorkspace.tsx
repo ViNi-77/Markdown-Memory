@@ -32,12 +32,13 @@ import {
   ExternalLink,
   GripVertical,
   Maximize2,
+  MessageSquare,
 } from "lucide-react";
 import { AI_HANDOFF_SERVICES } from "@/lib/ai-handoff";
 import type { Folder, Document } from "@/lib/db/schema";
 import * as actions from "@/lib/actions";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MarkdownView } from "@/components/markdown/MarkdownView";
@@ -66,6 +67,8 @@ const PANE_LIMITS: Record<PaneKey, { min: number; max: number }> = {
 };
 
 const DEMO_USER_ID = "demo-user";
+const FEEDBACK_URL =
+  "https://github.com/ViNi-77/Markdown-Memory/issues/new/choose";
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
@@ -606,7 +609,21 @@ export function MarkdownWorkspace({
           ))}
         </nav>
 
-        <div className="border-t border-border pt-3">{userSlot}</div>
+        <div className="flex flex-col gap-2 border-t border-border pt-3">
+          {userSlot}
+          <a
+            href={FEEDBACK_URL}
+            target="_blank"
+            rel="noreferrer"
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "justify-start",
+            )}
+          >
+            <MessageSquare />
+            フィードバック
+          </a>
+        </div>
       </aside>
 
       <PaneResizeHandle

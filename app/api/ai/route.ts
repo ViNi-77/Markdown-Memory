@@ -8,7 +8,12 @@ import {
   parseAiRequestBody,
   resolveAiInstruction,
 } from "@/lib/ai";
-import { getRequestId, logError, logInfo } from "@/lib/monitoring";
+import {
+  getRequestId,
+  logError,
+  logInfo,
+  reportOperationalError,
+} from "@/lib/monitoring";
 
 export async function POST(request: Request) {
   const start = Date.now();
@@ -104,7 +109,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    logError("ai.request.failed", error, {
+    await reportOperationalError("ai.request.failed", error, {
       route: "/api/ai",
       requestId,
       status: 500,
