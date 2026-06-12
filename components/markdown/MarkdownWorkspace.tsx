@@ -765,6 +765,15 @@ export function MarkdownWorkspace({
                   <PencilLine />
                   編集
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  title="削除"
+                  className="text-destructive hover:text-destructive focus-visible:text-destructive"
+                  onClick={() => handleDeleteDoc(selectedDoc)}
+                >
+                  <Trash2 />
+                </Button>
               </div>
             </header>
 
@@ -889,15 +898,6 @@ export function MarkdownWorkspace({
               >
                 <Download />
                 ダウンロード
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="justify-start"
-                onClick={() => handleDeleteDoc(selectedDoc)}
-              >
-                <Trash2 />
-                削除
               </Button>
             </div>
 
