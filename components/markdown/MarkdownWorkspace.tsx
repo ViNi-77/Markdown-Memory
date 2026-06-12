@@ -45,14 +45,49 @@ type Props = {
   initialFolders: Folder[];
   initialDocuments: Document[];
   userSlot: React.ReactNode;
+  demoMode?: boolean;
 };
 
 type SaveState = "idle" | "saving" | "saved";
+const DEMO_USER_ID = "demo-user";
+
+function createLocalId(prefix: string): string {
+  return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? Date.now().toString(36)}`;
+}
+
+function createLocalFolder(name: string): Folder {
+  return {
+    id: createLocalId("folder"),
+    userId: DEMO_USER_ID,
+    name,
+    createdAt: new Date(),
+  };
+}
+
+function createLocalDocument(input: {
+  name: string;
+  content?: string;
+  folderId?: string | null;
+}): Document {
+  const now = new Date();
+  return {
+    id: createLocalId("doc"),
+    userId: DEMO_USER_ID,
+    folderId: input.folderId ?? null,
+    name: input.name,
+    content: input.content ?? "",
+    isPublic: false,
+    shareToken: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
 
 export function MarkdownWorkspace({
   initialFolders,
   initialDocuments,
   userSlot,
+  demoMode = false,
 }: Props) {
   const [folders, setFolders] = useState<Folder[]>(initialFolders);
   const [documents, setDocuments] = useState<Document[]>(initialDocuments);
@@ -102,6 +137,15 @@ export function MarkdownWorkspace({
       saveTimer.current = null;
     }
     const { id, content } = pending;
+    if (demoMode) {
+      const now = new Date();
+      setDocuments((prev) =>
+        prev.map((d) => (d.id === id ? { ...d, content, updatedAt: now } : d)),
+      );
+      setSaveState("saved");
+      return;
+    }
+
     startTransition(async () => {
       try {
         await actions.updateDocumentContent(id, content);
@@ -121,7 +165,7 @@ export function MarkdownWorkspace({
         );
       }
     });
-  }, []);
+  }, [demoMode]);
 
   const selectedDoc = useMemo(
     () => documents.find((d) => d.id === selectedDocId) ?? null,
@@ -174,20 +218,32 @@ export function MarkdownWorkspace({
 
   function handleCreateFolder() {
     const name = window.prompt("フォルダ名を入力してください");
-    if (!name?.trim()) return;
+    const trimmed = name?.trim();
+    if (!trimmed) return;
+    if (demoMode) {
+      setFolders((prev) => [...prev, createLocalFolder(trimmed)]);
+      return;
+    }
     run(async () => {
-      const folder = await actions.createFolder(name);
+      const folder = await actions.createFolder(trimmed);
       setFolders((prev) => [...prev, folder]);
     });
   }
 
   function handleRenameFolder(folder: Folder) {
     const name = window.prompt("新しいフォルダ名", folder.name);
-    if (!name?.trim() || name.trim() === folder.name) return;
-    run(async () => {
-      await actions.renameFolder(folder.id, name);
+    const trimmed = name?.trim();
+    if (!trimmed || trimmed === folder.name) return;
+    if (demoMode) {
       setFolders((prev) =>
-        prev.map((f) => (f.id === folder.id ? { ...f, name: name.trim() } : f)),
+        prev.map((f) => (f.id === folder.id ? { ...f, name: trimmed } : f)),
+      );
+      return;
+    }
+    run(async () => {
+      await actions.renameFolder(folder.id, trimmed);
+      setFolders((prev) =>
+        prev.map((f) => (f.id === folder.id ? { ...f, name: trimmed } : f)),
       );
     });
   }
@@ -199,6 +255,16 @@ export function MarkdownWorkspace({
       )
     )
       return;
+    if (demoMode) {
+      setFolders((prev) => prev.filter((f) => f.id !== folder.id));
+      setDocuments((prev) =>
+        prev.map((d) =>
+          d.folderId === folder.id ? { ...d, folderId: null } : d,
+        ),
+      );
+      if (selectedFolderId === folder.id) setSelectedFolderId("all");
+      return;
+    }
     run(async () => {
       await actions.deleteFolder(folder.id);
       setFolders((prev) => prev.filter((f) => f.id !== folder.id));
@@ -238,6 +304,12 @@ export function MarkdownWorkspace({
 
   function handleNewDocument() {
     const folderId = selectedFolderId === "all" ? null : selectedFolderId;
+    if (demoMode) {
+      const doc = createLocalDocument({ name: "無題.md", folderId });
+      setDocuments((prev) => [doc, ...prev]);
+      selectDocument(doc, "edit");
+      return;
+    }
     run(async () => {
       const doc = await actions.createDocument({ name: "無題.md", folderId });
       setDocuments((prev) => [doc, ...prev]);
@@ -248,6 +320,28 @@ export function MarkdownWorkspace({
   function handleFiles(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;
     const folderId = selectedFolderId === "all" ? null : selectedFolderId;
+    if (demoMode) {
+      startTransition(async () => {
+        let lastDoc: Document | null = null;
+        for (const file of Array.from(fileList)) {
+          const lower = file.name.toLowerCase();
+          if (!lower.endsWith(".md") && !lower.endsWith(".markdown")) {
+            window.alert(`${file.name} は Markdown ファイルではありません。`);
+            continue;
+          }
+          const doc = createLocalDocument({
+            name: file.name,
+            content: await file.text(),
+            folderId,
+          });
+          setDocuments((prev) => [doc, ...prev]);
+          lastDoc = doc;
+        }
+        if (lastDoc) selectDocument(lastDoc);
+      });
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
     run(async () => {
       let lastDoc: Document | null = null;
       for (const file of Array.from(fileList)) {
@@ -272,17 +366,30 @@ export function MarkdownWorkspace({
 
   function handleRenameDoc(doc: Document) {
     const name = window.prompt("新しいファイル名", doc.name);
-    if (!name?.trim() || name.trim() === doc.name) return;
-    run(async () => {
-      await actions.renameDocument(doc.id, name);
+    const trimmed = name?.trim();
+    if (!trimmed || trimmed === doc.name) return;
+    if (demoMode) {
       setDocuments((prev) =>
-        prev.map((d) => (d.id === doc.id ? { ...d, name: name.trim() } : d)),
+        prev.map((d) => (d.id === doc.id ? { ...d, name: trimmed } : d)),
+      );
+      return;
+    }
+    run(async () => {
+      await actions.renameDocument(doc.id, trimmed);
+      setDocuments((prev) =>
+        prev.map((d) => (d.id === doc.id ? { ...d, name: trimmed } : d)),
       );
     });
   }
 
   function handleMoveDoc(doc: Document, value: string) {
     const folderId = value === "root" ? null : value;
+    if (demoMode) {
+      setDocuments((prev) =>
+        prev.map((d) => (d.id === doc.id ? { ...d, folderId } : d)),
+      );
+      return;
+    }
     run(async () => {
       await actions.moveDocument(doc.id, folderId);
       setDocuments((prev) =>
@@ -294,6 +401,11 @@ export function MarkdownWorkspace({
   function handleDeleteDoc(doc: Document) {
     if (!window.confirm(`「${doc.name}」を削除します。よろしいですか？`))
       return;
+    if (demoMode) {
+      setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
+      if (selectedDocId === doc.id) clearSelectedDocument();
+      return;
+    }
     run(async () => {
       await actions.deleteDocument(doc.id);
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
@@ -318,6 +430,12 @@ export function MarkdownWorkspace({
   }
 
   function handleEnableShare(doc: Document) {
+    if (demoMode) {
+      setError(
+        "デモでは公開リンクを作成できません。保存と共有はサインイン後に利用できます。",
+      );
+      return;
+    }
     run(async () => {
       const token = await actions.enableShare(doc.id);
       setDocuments((prev) =>
@@ -335,6 +453,14 @@ export function MarkdownWorkspace({
       )
     )
       return;
+    if (demoMode) {
+      setDocuments((prev) =>
+        prev.map((d) =>
+          d.id === doc.id ? { ...d, isPublic: false, shareToken: null } : d,
+        ),
+      );
+      return;
+    }
     run(async () => {
       await actions.disableShare(doc.id);
       setDocuments((prev) =>
@@ -739,6 +865,7 @@ export function MarkdownWorkspace({
           <AiAssistPanel
             key={selectedDoc.id}
             document={selectedDoc}
+            demoMode={demoMode}
             onContentChange={handleAiContentChange}
             onError={setError}
           />

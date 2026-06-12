@@ -27,11 +27,17 @@ const PRESETS = [
 
 type Props = {
   document: Document;
+  demoMode?: boolean;
   onContentChange: (content: string) => void;
   onError: (message: string) => void;
 };
 
-export function AiAssistPanel({ document, onContentChange, onError }: Props) {
+export function AiAssistPanel({
+  document,
+  demoMode = false,
+  onContentChange,
+  onError,
+}: Props) {
   const [apiKey, setApiKey] = useState(() =>
     typeof window === "undefined"
       ? ""
@@ -86,6 +92,11 @@ export function AiAssistPanel({ document, onContentChange, onError }: Props) {
 
   async function applyReplace() {
     if (!result) return;
+    if (demoMode) {
+      onContentChange(result);
+      setResult("");
+      return;
+    }
     setLoading(true);
     try {
       await actions.updateDocumentContent(document.id, result);
@@ -103,6 +114,11 @@ export function AiAssistPanel({ document, onContentChange, onError }: Props) {
     const newContent = document.content.trim()
       ? `${document.content.trim()}\n\n${result}`
       : result;
+    if (demoMode) {
+      onContentChange(newContent);
+      setResult("");
+      return;
+    }
     setLoading(true);
     try {
       await actions.updateDocumentContent(document.id, newContent);
@@ -155,8 +171,9 @@ export function AiAssistPanel({ document, onContentChange, onError }: Props) {
             className="font-mono text-xs"
           />
           <p className="text-xs leading-relaxed text-muted-foreground">
-            空欄ならサーバー側の GEMINI_API_KEY
-            を使います。入力したキーはブラウザにのみ保存され、AI実行時だけサーバーに送られます。
+            {demoMode
+              ? "デモではブラウザに保存したキーだけを使います。入力したキーはAI実行時だけサーバーに送られます。"
+              : "空欄ならサーバー側の GEMINI_API_KEY を使います。入力したキーはブラウザにのみ保存され、AI実行時だけサーバーに送られます。"}
           </p>
           <Button size="sm" onClick={saveApiKey}>
             保存

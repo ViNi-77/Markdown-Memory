@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { FileText } from "lucide-react";
 import { auth, signIn } from "@/auth";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export default async function LoginPage() {
   const session = await auth();
@@ -32,16 +34,27 @@ export default async function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form
-            action={async () => {
-              "use server";
-              await signIn("google", { redirectTo: "/" });
-            }}
-          >
-            <Button type="submit" size="lg" className="w-full">
-              Googleでサインイン
-            </Button>
-          </form>
+          <div className="flex flex-col gap-2">
+            <form
+              action={async () => {
+                "use server";
+                await signIn("google", { redirectTo: "/" });
+              }}
+            >
+              <Button type="submit" size="lg" className="w-full">
+                Googleでサインイン
+              </Button>
+            </form>
+            <Link
+              href="/demo"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "lg" }),
+                "w-full",
+              )}
+            >
+              ログインせずにデモを見る
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </main>

@@ -10,14 +10,21 @@ import {
 } from "@/lib/ai";
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
-  }
-
   try {
     const payload = parseAiRequestBody(await request.json());
-    const apiKey = payload.apiKey?.trim() || process.env.GEMINI_API_KEY;
+    const userApiKey = payload.apiKey?.trim();
+    const session = await auth();
+    if (!session?.user && !userApiKey) {
+      return NextResponse.json(
+        {
+          error:
+            "ログインするか、デモでは設定からGemini APIキーを登録してください。",
+        },
+        { status: 401 },
+      );
+    }
+
+    const apiKey = userApiKey || process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
         {
