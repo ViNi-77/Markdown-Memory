@@ -26,4 +26,6 @@ Markdown Memory は公開リポジトリとして運用しています。
 - GitHub Actions で lint / test / build / format / E2E を実行
 - production dependencies は high 以上の `npm audit` を CI で検知
 - Vercel Runtime Logs に Markdown 本文やAPIキーを出さない
+- 任意の外部エラー通知でも Markdown 本文、APIキー、DB接続URL、stack trace を送らない
 - 共有リンクは、明示的に公開したファイルだけ閲覧可能
+- `backups/` は `.gitignore` で除外

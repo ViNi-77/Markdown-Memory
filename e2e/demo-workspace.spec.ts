@@ -8,6 +8,12 @@ test.describe("デモワークスペース", () => {
 
     await expect(page.getByText("Markdown Memory").first()).toBeVisible();
     await expect(page.getByText("デモモード")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "フィードバック" }),
+    ).toHaveAttribute(
+      "href",
+      "https://github.com/ViNi-77/Markdown-Memory/issues/new/choose",
+    );
 
     await page.getByRole("button", { name: "新規作成" }).click();
     await expect(page.locator("header h1")).toContainText("無題.md");

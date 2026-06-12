@@ -8,20 +8,21 @@ Markdown Memory は、AI が生成した Markdown を保存・整理・編集・
 
 ## 現在の仕様
 
-| 項目                 | 内容                                                         |
-| -------------------- | ------------------------------------------------------------ |
-| 認証                 | Google ログイン                                              |
-| 保存先               | Neon PostgreSQL                                              |
-| Markdown             | 作成、編集、プレビュー、アップロード、ダウンロード           |
-| フォルダ             | Markdown ファイルの整理                                      |
-| 自動保存             | 編集内容をデバウンス保存                                     |
-| 共有                 | 選択したファイルだけ公開リンクを発行                         |
-| AI 連携              | Claude / ChatGPT / Gemini に本文をコピーして開く             |
-| アプリ内 AI          | Gemini API による要約・整形。BYOK またはサーバー側キーを使用 |
-| 全画面表示           | ログイン後、自分の Markdown を別ウィンドウで閲覧             |
-| ペイン調整           | フォルダ、ファイル一覧、詳細ペインの幅を調整                 |
-| 未ログイン時の確認用 | `/demo` で保存なしのデモ画面を表示                           |
-| 監視                 | Vercel Analytics / Speed Insights / Runtime Logs             |
+| 項目                 | 内容                                                           |
+| -------------------- | -------------------------------------------------------------- |
+| 認証                 | Google ログイン                                                |
+| 保存先               | Neon PostgreSQL                                                |
+| Markdown             | 作成、編集、プレビュー、アップロード、ダウンロード             |
+| フォルダ             | Markdown ファイルの整理                                        |
+| 自動保存             | 編集内容をデバウンス保存                                       |
+| 共有                 | 選択したファイルだけ公開リンクを発行                           |
+| AI 連携              | Claude / ChatGPT / Gemini に本文をコピーして開く               |
+| アプリ内 AI          | Gemini API による要約・整形。BYOK またはサーバー側キーを使用   |
+| 全画面表示           | ログイン後、自分の Markdown を別ウィンドウで閲覧               |
+| ペイン調整           | フォルダ、ファイル一覧、詳細ペインの幅を調整                   |
+| 未ログイン時の確認用 | `/demo` で保存なしのデモ画面を表示                             |
+| 監視                 | Vercel Analytics / Speed Insights / Runtime Logs / 任意Webhook |
+| フィードバック       | GitHub Issues への導線                                         |
 
 ## 公開範囲とデータ
 
@@ -87,9 +88,11 @@ AUTH_SECRET
 AUTH_GOOGLE_ID
 AUTH_GOOGLE_SECRET
 GEMINI_API_KEY
+ERROR_REPORT_WEBHOOK_URL
 ```
 
 `GEMINI_API_KEY` は任意です。未設定でも、ユーザーが画面から自分の Gemini API キーを保存すれば AI 機能を利用できます。
+`ERROR_REPORT_WEBHOOK_URL` も任意です。設定すると、本文やAPIキーを含まないサーバーエラー通知をHTTPS Webhookへ送ります。
 
 ## Google OAuth 設定
 
@@ -200,6 +203,8 @@ Pull Request の説明やコメントは日本語で記載します。
 - AI API の構造化ログ
 - Security Policy
 - 運用手順: [`docs/OPERATIONS.md`](docs/OPERATIONS.md)
+- main保護手順: [`docs/BRANCH_PROTECTION.md`](docs/BRANCH_PROTECTION.md)
+- バックアップ/復元手順: [`docs/BACKUP_RESTORE.md`](docs/BACKUP_RESTORE.md)
 
 ## 本番確認済み
 
