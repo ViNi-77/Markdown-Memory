@@ -33,6 +33,22 @@ export async function getWorkspaceData(): Promise<{
   return { folders: folderRows, documents: docRows };
 }
 
+/** ログイン中ユーザーが所有するドキュメントを1件取得する（全画面表示用）。 */
+export async function getOwnedDocument(
+  documentId: string,
+): Promise<Document | null> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return null;
+
+  const rows = await db
+    .select()
+    .from(documents)
+    .where(and(eq(documents.id, documentId), eq(documents.userId, userId)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
 /**
  * 公開トークンから閲覧専用でドキュメントを1件取得する（共有ページ用・ログイン不要）。
  * isPublic が false のものは返さない。

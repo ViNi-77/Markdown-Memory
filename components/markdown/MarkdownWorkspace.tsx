@@ -30,6 +30,8 @@ import {
   X,
   Sparkles,
   ExternalLink,
+  GripVertical,
+  Maximize2,
 } from "lucide-react";
 import { AI_HANDOFF_SERVICES } from "@/lib/ai-handoff";
 import type { Folder, Document } from "@/lib/db/schema";
@@ -49,7 +51,25 @@ type Props = {
 };
 
 type SaveState = "idle" | "saving" | "saved";
+type PaneKey = "folders" | "files" | "details";
+
+const DEFAULT_PANE_WIDTHS: Record<PaneKey, number> = {
+  folders: 224,
+  files: 288,
+  details: 288,
+};
+
+const PANE_LIMITS: Record<PaneKey, { min: number; max: number }> = {
+  folders: { min: 180, max: 360 },
+  files: { min: 220, max: 560 },
+  details: { min: 240, max: 440 },
+};
+
 const DEMO_USER_ID = "demo-user";
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
 
 function createLocalId(prefix: string): string {
   return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? Date.now().toString(36)}`;
@@ -103,6 +123,7 @@ export function MarkdownWorkspace({
   const [copied, setCopied] = useState(false);
   const [contentCopied, setContentCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paneWidths, setPaneWidths] = useState(DEFAULT_PANE_WIDTHS);
   const [, startTransition] = useTransition();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -212,6 +233,23 @@ export function MarkdownWorkspace({
     setSaveState("saving");
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(flushSave, 800);
+  }
+
+  function resizePane(key: PaneKey, delta: number) {
+    setPaneWidths((prev) => {
+      const limits = PANE_LIMITS[key];
+      return {
+        ...prev,
+        [key]: clamp(prev[key] + delta, limits.min, limits.max),
+      };
+    });
+  }
+
+  function resetPane(key: PaneKey) {
+    setPaneWidths((prev) => ({
+      ...prev,
+      [key]: DEFAULT_PANE_WIDTHS[key],
+    }));
   }
 
   // ===== フォルダ操作 =====
@@ -513,10 +551,22 @@ export function MarkdownWorkspace({
     }
   }
 
+  function handleOpenFullView(doc: Document) {
+    if (demoMode) {
+      setError("デモでは全画面表示を開けません。ログイン後に利用できます。");
+      return;
+    }
+    flushSave();
+    window.open(`/view/${doc.id}`, "_blank", "noopener,noreferrer");
+  }
+
   return (
     <div className="flex h-dvh w-full overflow-x-auto overflow-y-hidden bg-background">
       {/* ===== ペイン1: フォルダ（スマホでは非表示・横スクロールで他ペイン優先） ===== */}
-      <aside className="hidden w-48 shrink-0 flex-col gap-3 border-r border-border bg-sidebar p-3 sm:flex md:w-56">
+      <aside
+        className="hidden shrink-0 flex-col gap-3 border-r border-border bg-sidebar p-3 sm:flex"
+        style={{ width: paneWidths.folders }}
+      >
         <div className="flex items-center gap-2 px-1">
           <FileText className="size-5 text-primary" />
           <span className="font-heading text-sm font-semibold">
@@ -559,12 +609,19 @@ export function MarkdownWorkspace({
         <div className="border-t border-border pt-3">{userSlot}</div>
       </aside>
 
+      <PaneResizeHandle
+        label="フォルダペインの幅を調整"
+        onResize={(delta) => resizePane("folders", delta)}
+        onReset={() => resetPane("folders")}
+      />
+
       {/* ===== ペイン2: ファイル一覧 ===== */}
       <section
         className={cn(
-          "flex w-56 shrink-0 flex-col border-r border-border md:w-72",
+          "flex shrink-0 flex-col border-r border-border",
           isDragging && "bg-primary/5 ring-2 ring-primary/40 ring-inset",
         )}
+        style={{ width: paneWidths.files }}
         onDragOver={(e) => {
           e.preventDefault();
           setIsDragging(true);
@@ -652,6 +709,12 @@ export function MarkdownWorkspace({
         </ul>
       </section>
 
+      <PaneResizeHandle
+        label="ファイル一覧ペインの幅を調整"
+        onResize={(delta) => resizePane("files", delta)}
+        onReset={() => resetPane("files")}
+      />
+
       {/* ===== ペイン3: 本文（プレビュー / 編集） ===== */}
       <section className="flex min-w-[min(100%,320px)] flex-1 flex-col sm:min-w-[280px]">
         {selectedDoc ? (
@@ -675,6 +738,14 @@ export function MarkdownWorkspace({
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleOpenFullView(selectedDoc)}
+                >
+                  <Maximize2 />
+                  全画面
+                </Button>
                 <Button
                   variant={mode === "preview" ? "secondary" : "ghost"}
                   size="sm"
@@ -734,163 +805,188 @@ export function MarkdownWorkspace({
 
       {/* ===== ペイン4: 詳細・アクション ===== */}
       {selectedDoc && (
-        <aside className="flex w-64 shrink-0 flex-col gap-5 border-l border-border bg-card p-4 md:w-72">
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-muted-foreground">
-              ファイル名
-            </span>
-            <div className="flex items-center justify-between gap-2">
-              <span className="truncate text-sm font-medium">
-                {selectedDoc.name}
+        <>
+          <PaneResizeHandle
+            label="詳細ペインの幅を調整"
+            onResize={(delta) => resizePane("details", -delta)}
+            onReset={() => resetPane("details")}
+          />
+          <aside
+            className="flex shrink-0 flex-col gap-5 border-l border-border bg-card p-4"
+            style={{ width: paneWidths.details }}
+          >
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-muted-foreground">
+                ファイル名
               </span>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                title="名前を変更"
-                onClick={() => handleRenameDoc(selectedDoc)}
-              >
-                <Pencil />
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-muted-foreground">
-              フォルダ
-            </span>
-            <select
-              value={selectedDoc.folderId ?? "root"}
-              onChange={(e) => handleMoveDoc(selectedDoc, e.target.value)}
-              className="h-8 rounded-md border border-input bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-            >
-              <option value="root">ルート（フォルダなし）</option>
-              {folders.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <dl className="flex flex-col gap-2 text-xs">
-            <div className="flex justify-between gap-2">
-              <dt className="text-muted-foreground">作成</dt>
-              <dd>
-                {format(new Date(selectedDoc.createdAt), "yyyy/MM/dd HH:mm")}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-2">
-              <dt className="text-muted-foreground">更新</dt>
-              <dd>
-                {format(new Date(selectedDoc.updatedAt), "yyyy/MM/dd HH:mm")}
-              </dd>
-            </div>
-          </dl>
-
-          <div className="flex flex-col gap-2 border-t border-border pt-4">
-            <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <Share2 className="size-3.5" />
-              共有
-            </span>
-            {selectedDoc.isPublic && selectedDoc.shareToken ? (
-              <div className="flex flex-col gap-2">
-                <span className="flex items-center gap-1.5 text-xs text-primary">
-                  <Globe className="size-3.5" />
-                  公開中（リンクを知る全員が閲覧可）
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate text-sm font-medium">
+                  {selectedDoc.name}
                 </span>
-                <div className="flex gap-1.5">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="flex-1 justify-start"
-                    onClick={() => handleCopyShareUrl(selectedDoc.shareToken!)}
-                  >
-                    {copied ? <Check /> : <Copy />}
-                    {copied ? "コピーしました" : "URLをコピー"}
-                  </Button>
-                </div>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="justify-start text-destructive"
-                  onClick={() => handleDisableShare(selectedDoc)}
+                  size="icon-sm"
+                  title="名前を変更"
+                  onClick={() => handleRenameDoc(selectedDoc)}
                 >
-                  公開を停止
+                  <Pencil />
                 </Button>
               </div>
-            ) : (
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-muted-foreground">
+                フォルダ
+              </span>
+              <select
+                value={selectedDoc.folderId ?? "root"}
+                onChange={(e) => handleMoveDoc(selectedDoc, e.target.value)}
+                className="h-8 rounded-md border border-input bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <option value="root">ルート（フォルダなし）</option>
+                {folders.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <dl className="flex flex-col gap-2 text-xs">
+              <div className="flex justify-between gap-2">
+                <dt className="text-muted-foreground">作成</dt>
+                <dd>
+                  {format(new Date(selectedDoc.createdAt), "yyyy/MM/dd HH:mm")}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="text-muted-foreground">更新</dt>
+                <dd>
+                  {format(new Date(selectedDoc.updatedAt), "yyyy/MM/dd HH:mm")}
+                </dd>
+              </div>
+            </dl>
+
+            <div className="flex flex-col gap-2 border-t border-border pt-4">
+              <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <FileText className="size-3.5" />
+                ファイル操作
+              </span>
               <Button
                 variant="outline"
                 size="sm"
                 className="justify-start"
-                onClick={() => handleEnableShare(selectedDoc)}
+                onClick={() => handleOpenFullView(selectedDoc)}
               >
-                <Globe />
-                公開リンクを作成
+                <Maximize2 />
+                全画面
               </Button>
-            )}
-          </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="justify-start"
+                onClick={() => handleDownload(selectedDoc)}
+              >
+                <Download />
+                ダウンロード
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="justify-start"
+                onClick={() => handleDeleteDoc(selectedDoc)}
+              >
+                <Trash2 />
+                削除
+              </Button>
+            </div>
 
-          <div className="flex flex-col gap-2 border-t border-border pt-4">
-            <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <Sparkles className="size-3.5" />
-              AIへ渡す
-            </span>
-            {contentCopied && (
-              <span className="flex items-center gap-1.5 text-xs text-primary">
-                <Check className="size-3.5" />
-                本文をコピーしました。開いたタブに貼り付けてください。
+            <div className="flex flex-col gap-2 border-t border-border pt-4">
+              <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <Share2 className="size-3.5" />
+                共有
               </span>
-            )}
-            <div className="flex flex-col gap-1.5">
-              {AI_HANDOFF_SERVICES.map((service) => (
+              {selectedDoc.isPublic && selectedDoc.shareToken ? (
+                <div className="flex flex-col gap-2">
+                  <span className="flex items-center gap-1.5 text-xs text-primary">
+                    <Globe className="size-3.5" />
+                    公開中（リンクを知る全員が閲覧可）
+                  </span>
+                  <div className="flex gap-1.5">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="flex-1 justify-start"
+                      onClick={() =>
+                        handleCopyShareUrl(selectedDoc.shareToken!)
+                      }
+                    >
+                      {copied ? <Check /> : <Copy />}
+                      {copied ? "コピーしました" : "URLをコピー"}
+                    </Button>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="justify-start text-destructive"
+                    onClick={() => handleDisableShare(selectedDoc)}
+                  >
+                    公開を停止
+                  </Button>
+                </div>
+              ) : (
                 <Button
-                  key={service.id}
                   variant="outline"
                   size="sm"
-                  className="justify-between"
-                  onClick={() => handleAiHandoff(selectedDoc, service.url)}
+                  className="justify-start"
+                  onClick={() => handleEnableShare(selectedDoc)}
                 >
-                  <span>{service.label} を開く</span>
-                  <ExternalLink className="size-3.5 text-muted-foreground" />
+                  <Globe />
+                  公開リンクを作成
                 </Button>
-              ))}
+              )}
             </div>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              本文をコピーしてから各AIを開きます。貼り付け（Ctrl+V /
-              ⌘V）で渡せます。
-            </p>
-          </div>
 
-          <AiAssistPanel
-            key={selectedDoc.id}
-            document={selectedDoc}
-            demoMode={demoMode}
-            onContentChange={handleAiContentChange}
-            onError={setError}
-          />
+            <div className="flex flex-col gap-2 border-t border-border pt-4">
+              <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <Sparkles className="size-3.5" />
+                AIへ渡す
+              </span>
+              {contentCopied && (
+                <span className="flex items-center gap-1.5 text-xs text-primary">
+                  <Check className="size-3.5" />
+                  本文をコピーしました。開いたタブに貼り付けてください。
+                </span>
+              )}
+              <div className="flex flex-col gap-1.5">
+                {AI_HANDOFF_SERVICES.map((service) => (
+                  <Button
+                    key={service.id}
+                    variant="outline"
+                    size="sm"
+                    className="justify-between"
+                    onClick={() => handleAiHandoff(selectedDoc, service.url)}
+                  >
+                    <span>{service.label} を開く</span>
+                    <ExternalLink className="size-3.5 text-muted-foreground" />
+                  </Button>
+                ))}
+              </div>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                本文をコピーしてから各AIを開きます。貼り付け（Ctrl+V /
+                ⌘V）で渡せます。
+              </p>
+            </div>
 
-          <div className="mt-auto flex flex-col gap-2 border-t border-border pt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              className="justify-start"
-              onClick={() => handleDownload(selectedDoc)}
-            >
-              <Download />
-              ダウンロード
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              className="justify-start"
-              onClick={() => handleDeleteDoc(selectedDoc)}
-            >
-              <Trash2 />
-              削除
-            </Button>
-          </div>
-        </aside>
+            <AiAssistPanel
+              key={selectedDoc.id}
+              document={selectedDoc}
+              demoMode={demoMode}
+              onContentChange={handleAiContentChange}
+              onError={setError}
+            />
+          </aside>
+        </>
       )}
 
       {error && (
@@ -907,6 +1003,66 @@ export function MarkdownWorkspace({
           </Button>
         </div>
       )}
+    </div>
+  );
+}
+
+function PaneResizeHandle({
+  label,
+  onResize,
+  onReset,
+}: {
+  label: string;
+  onResize: (delta: number) => void;
+  onReset: () => void;
+}) {
+  const lastX = useRef<number | null>(null);
+
+  function endDrag() {
+    lastX.current = null;
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+  }
+
+  return (
+    <div
+      aria-label={label}
+      aria-orientation="vertical"
+      role="separator"
+      tabIndex={0}
+      title={`${label}（ダブルクリックでリセット）`}
+      className="group hidden w-2 shrink-0 cursor-col-resize items-center justify-center bg-transparent transition-colors outline-none hover:bg-primary/10 focus-visible:bg-primary/10 sm:flex"
+      onDoubleClick={onReset}
+      onKeyDown={(e) => {
+        if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          onResize(-16);
+        }
+        if (e.key === "ArrowRight") {
+          e.preventDefault();
+          onResize(16);
+        }
+        if (e.key === "Home") {
+          e.preventDefault();
+          onReset();
+        }
+      }}
+      onPointerDown={(e) => {
+        lastX.current = e.clientX;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        document.body.style.cursor = "col-resize";
+        document.body.style.userSelect = "none";
+      }}
+      onPointerMove={(e) => {
+        if (lastX.current === null) return;
+        const delta = e.clientX - lastX.current;
+        lastX.current = e.clientX;
+        onResize(delta);
+      }}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
+    >
+      <GripVertical className="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
     </div>
   );
 }
