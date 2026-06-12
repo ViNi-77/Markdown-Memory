@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -24,6 +26,8 @@ export default function RootLayout({
         {/* shadcn/ui の Sidebar コンポーネント（SidebarMenuButton の collapsed
             時 tooltip 等）が要求するためアプリ全体をラップする。 */}
         <TooltipProvider delay={300}>{children}</TooltipProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

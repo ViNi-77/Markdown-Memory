@@ -1,0 +1,40 @@
+name: 不具合報告
+description: Markdown Memory の不具合を報告する
+title: "[不具合] "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: 起きていること
+      description: 何が起きているか、短く書いてください。
+      placeholder: 例：共有リンクを作成してもURLをコピーできない
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      description: どの操作で起きるかを書いてください。
+      placeholder: |
+        1. ログインする
+        2. ファイルを選ぶ
+        3. 公開リンクを作成する
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待した動き
+      placeholder: 例：URLがコピーされる
+  - type: textarea
+    id: environment
+    attributes:
+      label: 利用環境
+      placeholder: 例：macOS / Chrome、iPhone / Safari
+  - type: textarea
+    id: notes
+    attributes:
+      label: 補足
+      description: スクリーンショットがある場合は添付してください。APIキーや個人情報は貼らないでください。
