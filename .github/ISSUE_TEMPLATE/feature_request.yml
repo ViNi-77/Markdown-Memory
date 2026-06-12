@@ -1,0 +1,36 @@
+name: 改善提案
+description: Markdown Memory の改善案や追加機能を提案する
+title: "[改善] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 困っていること
+      description: どんな場面で不便かを書いてください。
+      placeholder: 例：スマホで長いMarkdownを読むときに目次がほしい
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: あるとうれしい動き
+      placeholder: 例：見出しから自動で目次を作り、タップで移動できる
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 優先度の感覚
+      options:
+        - 低：あるとうれしい
+        - 中：日常利用で助かる
+        - 高：ないと運用しづらい
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: 補足
+      description: 参考URLやスクリーンショットがあれば添付してください。

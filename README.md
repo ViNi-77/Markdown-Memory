@@ -18,7 +18,10 @@ Markdown Memory は、AI が生成した Markdown を保存・整理・編集・
 | 共有                 | 選択したファイルだけ公開リンクを発行                         |
 | AI 連携              | Claude / ChatGPT / Gemini に本文をコピーして開く             |
 | アプリ内 AI          | Gemini API による要約・整形。BYOK またはサーバー側キーを使用 |
+| 全画面表示           | ログイン後、自分の Markdown を別ウィンドウで閲覧             |
+| ペイン調整           | フォルダ、ファイル一覧、詳細ペインの幅を調整                 |
 | 未ログイン時の確認用 | `/demo` で保存なしのデモ画面を表示                           |
+| 監視                 | Vercel Analytics / Speed Insights / Runtime Logs             |
 
 ## 公開範囲とデータ
 
@@ -57,6 +60,8 @@ Markdown Memory は、AI が生成した Markdown を保存・整理・編集・
 | `/login`                  | Google ログイン画面                   |
 | `/demo`                   | 未ログインで確認できるデモ画面        |
 | `/share/[token]`          | 公開共有された Markdown の閲覧画面    |
+| `/view/[id]`              | ログイン済みユーザー向けの全画面閲覧  |
+| `/api/health`             | 本番監視用の軽量ヘルスチェック        |
 | `/api/auth/[...nextauth]` | Auth.js の認証エンドポイント          |
 | `/api/ai`                 | Gemini API 用のサーバーエンドポイント |
 
@@ -153,7 +158,48 @@ npm run lint
 npm test
 npm run build
 npm run format:check
+npm run test:e2e
 ```
+
+E2E は Playwright を使い、`/demo` の作成・編集・プレビューを確認します。
+
+初回だけブラウザを入れる場合があります。
+
+```bash
+npx playwright install chromium
+```
+
+## 開発フロー
+
+`main` に直接変更を入れず、ブランチと Pull Request を使います。
+
+1. `main` から作業ブランチを作る
+2. ブランチで実装する
+3. ローカルでチェックコマンドを実行する
+4. Pull Request を作る
+5. GitHub Actions と Vercel Preview を確認する
+6. 問題がなければ `main` にマージする
+7. Vercel Production を確認する
+
+Pull Request の説明やコメントは日本語で記載します。
+
+## 運用
+
+フェーズ5では、公開MVPを小さく運用しながら安定性を上げていきます。
+
+現在リポジトリに入っている運用基盤:
+
+- GitHub Actions CI
+- Dependabot
+- Pull Request Template
+- Issue Template
+- Playwright E2E
+- Vercel Analytics
+- Vercel Speed Insights
+- `/api/health`
+- AI API の構造化ログ
+- Security Policy
+- 運用手順: [`docs/OPERATIONS.md`](docs/OPERATIONS.md)
 
 ## 本番確認済み
 
@@ -166,6 +212,8 @@ npm run format:check
 - 公開リンク作成
 - 共有 URL の未ログイン閲覧
 - フォルダ作成とファイル移動
+- ペイン幅調整
+- 全画面表示
 
 ## リポジトリに置かないもの
 
