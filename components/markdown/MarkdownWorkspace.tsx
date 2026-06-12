@@ -765,6 +765,15 @@ export function MarkdownWorkspace({
                   <PencilLine />
                   編集
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  title="削除"
+                  className="text-destructive hover:text-destructive focus-visible:text-destructive"
+                  onClick={() => handleDeleteDoc(selectedDoc)}
+                >
+                  <Trash2 />
+                </Button>
               </div>
             </header>
 
@@ -812,7 +821,7 @@ export function MarkdownWorkspace({
             onReset={() => resetPane("details")}
           />
           <aside
-            className="flex shrink-0 flex-col gap-5 border-l border-border bg-card p-4"
+            className="flex min-h-0 shrink-0 flex-col gap-5 overflow-y-auto border-l border-border bg-card p-4 pb-8"
             style={{ width: paneWidths.details }}
           >
             <div className="flex flex-col gap-1">
@@ -889,15 +898,6 @@ export function MarkdownWorkspace({
               >
                 <Download />
                 ダウンロード
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="justify-start"
-                onClick={() => handleDeleteDoc(selectedDoc)}
-              >
-                <Trash2 />
-                削除
               </Button>
             </div>
 
