@@ -108,6 +108,22 @@ Authorized redirect URIs:
 https://markdown-memory.vercel.app/api/auth/callback/google
 ```
 
+### `401: deleted_client` が出る場合
+
+Google ログイン画面で `The OAuth client was deleted.` または `401: deleted_client` が出る場合、Vercel の `AUTH_GOOGLE_ID` が、Google Cloud 側で削除済みの OAuth クライアント ID を指しています。
+
+復旧手順:
+
+1. Google Cloud Console で新しい OAuth 2.0 Client ID を作成する
+2. Application type は `Web application` を選ぶ
+3. 本番の Authorized JavaScript origins に `https://markdown-memory.vercel.app` を追加する
+4. 本番の Authorized redirect URIs に `https://markdown-memory.vercel.app/api/auth/callback/google` を追加する
+5. 発行された Client ID を Vercel の `AUTH_GOOGLE_ID` に設定する
+6. 発行された Client Secret を Vercel の `AUTH_GOOGLE_SECRET` に設定する
+7. Vercel で Production を Redeploy する
+
+古い Client ID / Client Secret は使い回さず、新しく発行された値に置き換えてください。
+
 ## Vercel 設定
 
 Vercel には以下を Production 環境変数として設定します。
