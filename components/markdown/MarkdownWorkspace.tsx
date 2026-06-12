@@ -821,7 +821,7 @@ export function MarkdownWorkspace({
             onReset={() => resetPane("details")}
           />
           <aside
-            className="flex shrink-0 flex-col gap-5 border-l border-border bg-card p-4"
+            className="flex min-h-0 shrink-0 flex-col gap-5 overflow-y-auto border-l border-border bg-card p-4 pb-8"
             style={{ width: paneWidths.details }}
           >
             <div className="flex flex-col gap-1">
