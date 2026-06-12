@@ -44,3 +44,36 @@ test.describe("デモワークスペース", () => {
     ).toBeVisible();
   });
 });
+
+test.describe("デモワークスペース: モバイル前段確認", () => {
+  test.use({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+  });
+
+  test("スマホ幅でもファイル一覧から本文ペインへ移動して内容を読める", async ({
+    page,
+  }) => {
+    await page.goto("/demo");
+
+    const workspace = page.getByTestId("markdown-workspace");
+    await expect(page.getByTestId("file-list-pane")).toBeVisible();
+    await page
+      .getByRole("button", { name: /Markdown Memory の使い方/ })
+      .click();
+
+    await workspace.evaluate((element) => {
+      const documentPane = document.querySelector<HTMLElement>(
+        '[data-testid="document-pane"]',
+      );
+      if (!documentPane) throw new Error("document pane not found");
+      element.scrollLeft = documentPane.offsetLeft;
+    });
+
+    await expect(
+      page.getByRole("heading", { name: "Markdown Memory", exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("できること")).toBeVisible();
+  });
+});

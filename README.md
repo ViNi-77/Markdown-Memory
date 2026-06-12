@@ -21,6 +21,7 @@ Markdown Memory は、AI が生成した Markdown を保存・整理・編集・
 | 全画面表示           | ログイン後、自分の Markdown を別ウィンドウで閲覧               |
 | ペイン調整           | フォルダ、ファイル一覧、詳細ペインの幅を調整                   |
 | 未ログイン時の確認用 | `/demo` で保存なしのデモ画面を表示                             |
+| モバイル前段確認     | スマホ幅でファイル一覧から本文へ移動できることをE2Eで確認      |
 | 監視                 | Vercel Analytics / Speed Insights / Runtime Logs / 任意Webhook |
 | フィードバック       | GitHub Issues への導線                                         |
 
@@ -205,6 +206,7 @@ Pull Request の説明やコメントは日本語で記載します。
 - 運用手順: [`docs/OPERATIONS.md`](docs/OPERATIONS.md)
 - main保護手順: [`docs/BRANCH_PROTECTION.md`](docs/BRANCH_PROTECTION.md)
 - バックアップ/復元手順: [`docs/BACKUP_RESTORE.md`](docs/BACKUP_RESTORE.md)
+- モバイル/PWA準備メモ: [`docs/MOBILE_PWA_PREP.md`](docs/MOBILE_PWA_PREP.md)
 
 ## 本番確認済み
 

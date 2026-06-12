@@ -564,7 +564,10 @@ export function MarkdownWorkspace({
   }
 
   return (
-    <div className="flex h-dvh w-full overflow-x-auto overflow-y-hidden bg-background">
+    <div
+      data-testid="markdown-workspace"
+      className="flex h-dvh w-full overflow-x-auto overflow-y-hidden bg-background"
+    >
       {/* ===== ペイン1: フォルダ（スマホでは非表示・横スクロールで他ペイン優先） ===== */}
       <aside
         className="hidden shrink-0 flex-col gap-3 border-r border-border bg-sidebar p-3 sm:flex"
@@ -634,6 +637,7 @@ export function MarkdownWorkspace({
 
       {/* ===== ペイン2: ファイル一覧 ===== */}
       <section
+        data-testid="file-list-pane"
         className={cn(
           "flex shrink-0 flex-col border-r border-border",
           isDragging && "bg-primary/5 ring-2 ring-primary/40 ring-inset",
@@ -733,7 +737,10 @@ export function MarkdownWorkspace({
       />
 
       {/* ===== ペイン3: 本文（プレビュー / 編集） ===== */}
-      <section className="flex min-w-[min(100%,320px)] flex-1 flex-col sm:min-w-[280px]">
+      <section
+        data-testid="document-pane"
+        className="flex min-w-[min(100%,320px)] flex-1 flex-col sm:min-w-[280px]"
+      >
         {selectedDoc ? (
           <>
             <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-3">
@@ -838,6 +845,7 @@ export function MarkdownWorkspace({
             onReset={() => resetPane("details")}
           />
           <aside
+            data-testid="details-pane"
             className="flex min-h-0 shrink-0 flex-col gap-5 overflow-y-auto border-l border-border bg-card p-4 pb-8"
             style={{ width: paneWidths.details }}
           >

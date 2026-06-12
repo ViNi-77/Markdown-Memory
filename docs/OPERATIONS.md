@@ -12,6 +12,16 @@
 | D    | バックアップ         | Neon の復元機能と `pg_dump` / `pg_restore` の前段スクリプトを追加                   |
 | E    | 利用者フィードバック | GitHub Issue Template、PR Template、アプリ内フィードバック導線を追加                |
 
+## モバイル / PWA 前段
+
+スマホ対応とPWA化は、いきなり本実装せず、まず閲覧導線を壊さない自動確認から進めます。
+
+- `/demo` をスマホ幅で開ける
+- ファイル一覧から本文ペインへ移動できる
+- Markdown本文を読める
+
+詳細: [`docs/MOBILE_PWA_PREP.md`](MOBILE_PWA_PREP.md)
+
 ## 開発フロー
 
 1. `main` から `codex/...` または機能名のブランチを作る
