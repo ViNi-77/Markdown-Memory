@@ -11,6 +11,9 @@ yarn.lock
 # shadcn の素体は upstream 同期があるため整形しない
 components/ui
 
+# Prettier 3 + current parser setup does not infer SVG here.
+public/icons/*.svg
+
 # 配布対象外（`.distignore` と同期）。配布リポジトリには含めない領域。
 openspec/
 AGENTS.md

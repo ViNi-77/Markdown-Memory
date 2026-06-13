@@ -57,23 +57,25 @@ test.describe("デモワークスペース: モバイル前段確認", () => {
   }) => {
     await page.goto("/demo");
 
-    const workspace = page.getByTestId("markdown-workspace");
     await expect(page.getByTestId("file-list-pane")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "フィードバックを送る" }),
+    ).toHaveAttribute(
+      "href",
+      "https://github.com/ViNi-77/Markdown-Memory/issues/new/choose",
+    );
+
     await page
       .getByRole("button", { name: /Markdown Memory の使い方/ })
       .click();
 
-    await workspace.evaluate((element) => {
-      const documentPane = document.querySelector<HTMLElement>(
-        '[data-testid="document-pane"]',
-      );
-      if (!documentPane) throw new Error("document pane not found");
-      element.scrollLeft = documentPane.offsetLeft;
-    });
-
+    await page.getByRole("button", { name: "本文ペインを表示" }).click();
     await expect(
       page.getByRole("heading", { name: "Markdown Memory", exact: true }),
     ).toBeVisible();
     await expect(page.getByText("できること")).toBeVisible();
+
+    await page.getByRole("button", { name: "詳細ペインを表示" }).click();
+    await expect(page.getByTestId("details-pane")).toBeVisible();
   });
 });

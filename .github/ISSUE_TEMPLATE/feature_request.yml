@@ -34,3 +34,10 @@ body:
     attributes:
       label: 補足
       description: 参考URLやスクリーンショットがあれば添付してください。
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 公開してよい情報か確認
+      options:
+        - label: APIキー、DB接続URL、OAuth Secret、個人情報、非公開Markdown本文を含めていません。
+          required: true

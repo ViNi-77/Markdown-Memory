@@ -1,0 +1,44 @@
+name: モバイル / PWA フィードバック
+description: スマホ閲覧やPWA準備に関する使い勝手を共有する
+title: "[モバイル/PWA] "
+labels:
+  - mobile
+  - pwa
+body:
+  - type: textarea
+    id: situation
+    attributes:
+      label: 使った場面
+      description: どの端末・ブラウザで、何をしようとしたかを書いてください。
+      placeholder: 例：iPhone Safari で、外出先から共有済みMarkdownを読みたかった
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: 困ったこと
+      placeholder: 例：本文ペインに移動する方法が分かりにくかった
+    validations:
+      required: true
+  - type: dropdown
+    id: impact
+    attributes:
+      label: 影響度
+      options:
+        - 低：少し気になる
+        - 中：日常利用で不便
+        - 高：スマホでは使いづらい
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: こうなるとうれしい
+      placeholder: 例：画面下のボタンで一覧・本文・詳細を切り替えたい
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 公開してよい情報か確認
+      options:
+        - label: APIキー、DB接続URL、OAuth Secret、個人情報、非公開Markdown本文を含めていません。
+          required: true
