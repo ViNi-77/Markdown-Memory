@@ -34,6 +34,7 @@ import {
   GripVertical,
   Maximize2,
   MessageSquare,
+  ChevronDown,
 } from "lucide-react";
 import { AI_HANDOFF_SERVICES } from "@/lib/ai-handoff";
 import type { Folder, Document } from "@/lib/db/schema";
@@ -768,7 +769,10 @@ export function MarkdownWorkspace({
       >
         {selectedDoc ? (
           <>
-            <header className="flex items-center justify-between gap-2 border-b border-border px-3 py-2 sm:gap-3 sm:px-5 sm:py-3">
+            <header
+              data-testid="document-header"
+              className="flex items-center justify-between gap-2 border-b border-border px-3 py-2 sm:gap-3 sm:px-5 sm:py-3"
+            >
               <div className="flex min-w-0 items-center gap-2">
                 <h1 className="truncate font-heading text-sm font-semibold sm:text-base">
                   {selectedDoc.name}
@@ -833,7 +837,10 @@ export function MarkdownWorkspace({
               </div>
             </header>
 
-            <div className="min-h-0 flex-1 overflow-y-auto">
+            <div
+              data-testid="document-scroll-area"
+              className="min-h-0 flex-1 overflow-y-auto"
+            >
               {mode === "edit" ? (
                 <Textarea
                   value={editContent}
@@ -879,7 +886,7 @@ export function MarkdownWorkspace({
           <aside
             ref={detailsPaneRef}
             data-testid="details-pane"
-            className="flex min-h-0 min-w-[100dvw] shrink-0 snap-start flex-col gap-5 overflow-y-auto border-l border-border bg-card p-4 pb-24 sm:min-w-0 sm:pb-8"
+            className="flex min-h-0 min-w-[100dvw] shrink-0 snap-start flex-col gap-3 overflow-y-auto border-l border-border bg-card p-3 pb-24 sm:min-w-0 sm:gap-5 sm:p-4 sm:pb-8"
             style={{ width: paneWidths.details }}
           >
             <div className="flex flex-col gap-1">
@@ -934,11 +941,10 @@ export function MarkdownWorkspace({
               </div>
             </dl>
 
-            <div className="flex flex-col gap-2 border-t border-border pt-4">
-              <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                <FileText className="size-3.5" />
-                ファイル操作
-              </span>
+            <DetailsActionGroup
+              title="ファイル操作"
+              icon={<FileText className="size-3.5" />}
+            >
               <Button
                 variant="outline"
                 size="sm"
@@ -957,13 +963,13 @@ export function MarkdownWorkspace({
                 <Download />
                 ダウンロード
               </Button>
-            </div>
+            </DetailsActionGroup>
 
-            <div className="flex flex-col gap-2 border-t border-border pt-4">
-              <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                <Share2 className="size-3.5" />
-                共有
-              </span>
+            <DetailsActionGroup
+              title="共有"
+              icon={<Share2 className="size-3.5" />}
+              defaultOpen
+            >
               {selectedDoc.isPublic && selectedDoc.shareToken ? (
                 <div className="flex flex-col gap-2">
                   <span className="flex items-center gap-1.5 text-xs text-primary">
@@ -1003,13 +1009,12 @@ export function MarkdownWorkspace({
                   公開リンクを作成
                 </Button>
               )}
-            </div>
+            </DetailsActionGroup>
 
-            <div className="flex flex-col gap-2 border-t border-border pt-4">
-              <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                <Sparkles className="size-3.5" />
-                AIへ渡す
-              </span>
+            <DetailsActionGroup
+              title="AIへ渡す"
+              icon={<Sparkles className="size-3.5" />}
+            >
               {contentCopied && (
                 <span className="flex items-center gap-1.5 text-xs text-primary">
                   <Check className="size-3.5" />
@@ -1034,7 +1039,7 @@ export function MarkdownWorkspace({
                 本文をコピーしてから各AIを開きます。貼り付け（Ctrl+V /
                 ⌘V）で渡せます。
               </p>
-            </div>
+            </DetailsActionGroup>
 
             <AiAssistPanel
               key={selectedDoc.id}
@@ -1113,6 +1118,42 @@ export function MarkdownWorkspace({
         </div>
       )}
     </div>
+  );
+}
+
+function DetailsActionGroup({
+  title,
+  icon,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <section className="flex flex-col border-t border-border pt-3 sm:pt-4">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="-mx-2 justify-between px-2"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span className="flex items-center gap-1.5">
+          {icon}
+          {title}
+        </span>
+        <ChevronDown
+          className={cn("size-3.5 transition-transform", open && "rotate-180")}
+        />
+      </Button>
+      {open && <div className="mt-2 flex flex-col gap-2">{children}</div>}
+    </section>
   );
 }
 

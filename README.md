@@ -28,7 +28,7 @@
 | 全画面表示     | ログイン後、自分の Markdown を別ウィンドウで閲覧                  |
 | ペイン調整     | フォルダ、ファイル一覧、詳細ペインの幅を調整                      |
 | デモ           | `/demo` で未ログインのまま操作感を確認                            |
-| モバイル前段   | スマホ幅で一覧・本文・詳細へ移動できる導線を用意                  |
+| モバイル前段   | スマホ幅で本文閲覧へ誘導し、詳細操作を折りたたみで整理            |
 | PWA下地        | manifest、アイコン、オフラインページ、限定的 Service Worker       |
 | 運用監視       | Vercel Analytics / Speed Insights / Runtime Logs / Cron / Webhook |
 | フィードバック | GitHub Issues への導線。スマホ下部にも送信リンクを表示            |
@@ -311,6 +311,7 @@ Pull Request の説明やコメントは日本語で記載します。
 - main保護手順: [`docs/BRANCH_PROTECTION.md`](docs/BRANCH_PROTECTION.md)
 - バックアップ/復元手順: [`docs/BACKUP_RESTORE.md`](docs/BACKUP_RESTORE.md)
 - モバイル/PWA準備メモ: [`docs/MOBILE_PWA_PREP.md`](docs/MOBILE_PWA_PREP.md)
+- スマホ実機確認チェックリスト: [`docs/MOBILE_PWA_PREP.md`](docs/MOBILE_PWA_PREP.md#スマホ実機確認チェックリスト)
 
 ## Roadmap
 
