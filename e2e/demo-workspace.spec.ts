@@ -82,7 +82,6 @@ test.describe("デモワークスペース: モバイル前段確認", () => {
       .getByRole("button", { name: /Markdown Memory の使い方/ })
       .click();
 
-    await page.getByRole("button", { name: "本文ペインを表示" }).click();
     await expectWorkspaceScrolledPast(page, 300);
     await expect(
       page.getByRole("heading", { name: "Markdown Memory", exact: true }),
@@ -107,10 +106,8 @@ test.describe("デモワークスペース: モバイル前段確認", () => {
     ).toBeDisabled();
 
     await page.getByRole("button", { name: "新規作成" }).click();
-    await page.getByRole("button", { name: "本文ペインを表示" }).click();
     await expectWorkspaceScrolledPast(page, 300);
 
-    await page.getByRole("button", { name: "編集" }).click();
     await page
       .getByPlaceholder("# Markdown を入力...")
       .fill("# スマホ確認\n\nPhase 6 の前準備");
