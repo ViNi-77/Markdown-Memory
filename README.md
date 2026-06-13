@@ -35,22 +35,63 @@
 
 ## システム構成
 
-READMEでは全体像を優先し、細かい役割は下の表で補足します。
+READMEでは C4 Model の Container Diagram に近い粒度で、ユーザー操作、アプリ本体、外部サービス、運用監視の役割が分かるように整理しています。
 
 ```mermaid
 flowchart TB
-    Browser["Browser / PWA"]
-    App["Next.js App<br/>on Vercel"]
-    Neon[("Neon PostgreSQL")]
-    OAuth["Google OAuth"]
-    Gemini["Gemini API"]
-    Ops["GitHub Actions<br/>Vercel Observability"]
+    User["User<br/>Markdownを閲覧・編集・共有"]
 
-    Browser --> App
-    App --> Neon
-    App --> OAuth
-    App --> Gemini
-    Ops -.-> App
+    subgraph Client["Client"]
+        Workspace["Workspace UI<br/>Markdownエディタ・プレビュー・共有操作"]
+        LocalKey["Browser Storage<br/>BYOKのGemini APIキーを保存"]
+        SW["Service Worker<br/>デモ・オフライン画面・静的資産のみキャッシュ"]
+    end
+
+    subgraph App["Vercel / Next.js App"]
+        Pages["App Pages<br/>ログイン・デモ・共有・全画面表示"]
+        Actions["Server Actions<br/>文書・フォルダ・共有設定を処理"]
+        Auth["Auth.js<br/>GoogleログインとJWTセッションを管理"]
+        AiApi["AI API<br/>Geminiへ要約・整形を依頼"]
+        Health["Health APIs<br/>公開ヘルスチェックとCron内部チェック"]
+    end
+
+    subgraph Data["Data / External Services"]
+        Neon[("Neon PostgreSQL<br/>ユーザー・フォルダ・Markdown本文・共有トークンを保存")]
+        Google["Google OAuth<br/>ユーザー認証"]
+        Gemini["Gemini API<br/>Markdownの要約・整形・プロンプト化"]
+        Env[["Vercel Environment Variables<br/>DB接続URL・OAuth Secret・APIキーを保管"]]
+    end
+
+    subgraph Ops["Operations"]
+        GitHub["GitHub Actions<br/>lint・test・build・E2E・audit"]
+        VercelLogs["Vercel Observability<br/>Analytics・Speed Insights・Runtime Logs・Cron"]
+        Webhook["Error Webhook<br/>秘密情報を除いたエラー通知"]
+    end
+
+    User --> Workspace
+    Workspace --> Pages
+    Workspace --> LocalKey
+    Workspace <--> SW
+
+    Pages --> Actions
+    Pages --> Auth
+    Pages --> AiApi
+    Pages --> Health
+
+    Actions --> Neon
+    Auth --> Google
+    Auth --> Neon
+    AiApi --> Gemini
+    Health --> VercelLogs
+
+    Env -.-> Auth
+    Env -.-> AiApi
+    Env -.-> Actions
+    Env -.-> Health
+
+    GitHub -.-> App
+    App -.-> VercelLogs
+    AiApi -.-> Webhook
 ```
 
 ### 主要コンポーネント
