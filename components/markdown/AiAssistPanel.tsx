@@ -9,6 +9,7 @@ import {
   Plus,
   Copy,
   Check,
+  ChevronDown,
 } from "lucide-react";
 import type { Document } from "@/lib/db/schema";
 import * as actions from "@/lib/actions";
@@ -48,6 +49,7 @@ export function AiAssistPanel({
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
 
   function saveApiKey() {
     const trimmed = apiKey.trim();
@@ -142,114 +144,132 @@ export function AiAssistPanel({
   }
 
   return (
-    <div className="flex flex-col gap-3 border-t border-border pt-4">
+    <div className="flex flex-col gap-3 border-t border-border pt-3 sm:pt-4">
       <div className="flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-          <Sparkles className="size-3.5" />
-          アプリ内AI
-        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-2 flex-1 justify-between px-2"
+          aria-expanded={panelOpen}
+          onClick={() => setPanelOpen((v) => !v)}
+        >
+          <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <Sparkles className="size-3.5" />
+            アプリ内AI
+          </span>
+          <ChevronDown
+            className={`size-3.5 text-muted-foreground transition-transform ${panelOpen ? "rotate-180" : ""}`}
+          />
+        </Button>
         <Button
           variant="ghost"
           size="icon-xs"
           title="APIキー設定"
-          onClick={() => setShowSettings((v) => !v)}
+          onClick={() => {
+            setPanelOpen(true);
+            setShowSettings((v) => !v);
+          }}
         >
           <Settings />
         </Button>
       </div>
 
-      {showSettings && (
-        <div className="flex flex-col gap-2 rounded-lg bg-muted/50 p-3">
-          <label className="text-xs text-muted-foreground">
-            Gemini APIキー
-          </label>
-          <Input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="AIza..."
-            className="font-mono text-xs"
+      {panelOpen && (
+        <>
+          {showSettings && (
+            <div className="flex flex-col gap-2 rounded-lg bg-muted/50 p-3">
+              <label className="text-xs text-muted-foreground">
+                Gemini APIキー
+              </label>
+              <Input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="AIza..."
+                className="font-mono text-xs"
+              />
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                {demoMode
+                  ? "デモではブラウザに保存したキーだけを使います。入力したキーはAI実行時だけサーバーに送られます。"
+                  : "空欄ならサーバー側の GEMINI_API_KEY を使います。入力したキーはブラウザにのみ保存され、AI実行時だけサーバーに送られます。"}
+              </p>
+              <Button size="sm" onClick={saveApiKey}>
+                保存
+              </Button>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-1.5">
+            {PRESETS.map((preset) => (
+              <Button
+                key={preset.id}
+                variant="outline"
+                size="xs"
+                disabled={loading}
+                onClick={() => {
+                  setCustomPrompt(
+                    preset.id === "summarize"
+                      ? "3〜5行で要約してください"
+                      : preset.id === "noise-removal"
+                        ? "あいさつや絵文字を削って中身だけ残してください"
+                        : "再利用できる指示文テンプレに変換してください",
+                  );
+                  runAi(preset.id);
+                }}
+              >
+                {preset.label}
+              </Button>
+            ))}
+          </div>
+
+          <Textarea
+            value={customPrompt}
+            onChange={(e) => setCustomPrompt(e.target.value)}
+            placeholder="自由指示（例: 見出しを整理して読みやすくして）"
+            rows={2}
+            className="text-xs"
           />
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            {demoMode
-              ? "デモではブラウザに保存したキーだけを使います。入力したキーはAI実行時だけサーバーに送られます。"
-              : "空欄ならサーバー側の GEMINI_API_KEY を使います。入力したキーはブラウザにのみ保存され、AI実行時だけサーバーに送られます。"}
-          </p>
-          <Button size="sm" onClick={saveApiKey}>
-            保存
-          </Button>
-        </div>
-      )}
-
-      <div className="flex flex-wrap gap-1.5">
-        {PRESETS.map((preset) => (
           <Button
-            key={preset.id}
-            variant="outline"
-            size="xs"
-            disabled={loading}
-            onClick={() => {
-              setCustomPrompt(
-                preset.id === "summarize"
-                  ? "3〜5行で要約してください"
-                  : preset.id === "noise-removal"
-                    ? "あいさつや絵文字を削って中身だけ残してください"
-                    : "再利用できる指示文テンプレに変換してください",
-              );
-              runAi(preset.id);
-            }}
+            size="sm"
+            disabled={loading || !customPrompt.trim()}
+            onClick={() => runAi("custom", customPrompt)}
           >
-            {preset.label}
+            {loading ? <Loader2 className="animate-spin" /> : <Sparkles />}
+            AIで整形
           </Button>
-        ))}
-      </div>
 
-      <Textarea
-        value={customPrompt}
-        onChange={(e) => setCustomPrompt(e.target.value)}
-        placeholder="自由指示（例: 見出しを整理して読みやすくして）"
-        rows={2}
-        className="text-xs"
-      />
-      <Button
-        size="sm"
-        disabled={loading || !customPrompt.trim()}
-        onClick={() => runAi("custom", customPrompt)}
-      >
-        {loading ? <Loader2 className="animate-spin" /> : <Sparkles />}
-        AIで整形
-      </Button>
+          {loading && (
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 className="size-3 animate-spin" />
+              処理中...
+            </p>
+          )}
 
-      {loading && (
-        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Loader2 className="size-3 animate-spin" />
-          処理中...
-        </p>
-      )}
-
-      {result && (
-        <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/30 p-3">
-          <span className="text-xs font-medium text-muted-foreground">
-            提案（適用するまで原文は変わりません）
-          </span>
-          <div className="max-h-48 overflow-y-auto text-sm">
-            <MarkdownView content={result} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Button size="sm" variant="secondary" onClick={applyReplace}>
-              <Replace />
-              本文を置き換え
-            </Button>
-            <Button size="sm" variant="outline" onClick={applyAppend}>
-              <Plus />
-              末尾に追記
-            </Button>
-            <Button size="sm" variant="ghost" onClick={copyResult}>
-              {copied ? <Check /> : <Copy />}
-              {copied ? "コピーしました" : "コピー"}
-            </Button>
-          </div>
-        </div>
+          {result && (
+            <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/30 p-3">
+              <span className="text-xs font-medium text-muted-foreground">
+                提案（適用するまで原文は変わりません）
+              </span>
+              <div className="max-h-48 overflow-y-auto text-sm">
+                <MarkdownView content={result} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Button size="sm" variant="secondary" onClick={applyReplace}>
+                  <Replace />
+                  本文を置き換え
+                </Button>
+                <Button size="sm" variant="outline" onClick={applyAppend}>
+                  <Plus />
+                  末尾に追記
+                </Button>
+                <Button size="sm" variant="ghost" onClick={copyResult}>
+                  {copied ? <Check /> : <Copy />}
+                  {copied ? "コピーしました" : "コピー"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
