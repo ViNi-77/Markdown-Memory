@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Markdown Memory icon">
+  <rect width="512" height="512" rx="112" fill="#2d3b56"/>
+  <path d="M152 92h172l72 72v256H152z" fill="#f8f7f4"/>
+  <path d="M324 92v72h72" fill="#dce6f2"/>
+  <path d="M194 241h124M194 285h124M194 329h84" fill="none" stroke="#2d3b56" stroke-width="22" stroke-linecap="round"/>
+  <path d="M150 92h174l72 72" fill="none" stroke="#1a2435" stroke-width="18" stroke-linejoin="round"/>
+</svg>

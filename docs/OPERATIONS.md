@@ -4,21 +4,23 @@
 
 ## フェーズ5 A-E の対象
 
-| 区分 | 内容                 | 今回の状態                                                                          |
-| ---- | -------------------- | ----------------------------------------------------------------------------------- |
-| A    | CI/CD                | GitHub Actions で lint / test / build / format / E2E / 高リスク脆弱性チェックを実行 |
-| B    | E2E テスト           | Playwright で `/demo` の作成・編集・プレビューを確認                                |
-| C    | 監視・エラー把握     | Vercel Analytics / Speed Insights、`/api/health`、AI API の構造化ログ               |
-| D    | バックアップ         | Neon の復元機能と `pg_dump` / `pg_restore` の前段スクリプトを追加                   |
-| E    | 利用者フィードバック | GitHub Issue Template、PR Template、アプリ内フィードバック導線を追加                |
+| 区分 | 内容                 | 今回の状態                                                                           |
+| ---- | -------------------- | ------------------------------------------------------------------------------------ |
+| A    | CI/CD                | GitHub Actions で lint / test / build / format / E2E / 高リスク脆弱性チェックを実行  |
+| B    | E2E テスト           | Playwright で `/demo` の作成・編集・プレビューを確認                                 |
+| C    | 監視・エラー把握     | Vercel Analytics / Speed Insights、`/api/health`、Cron内部ヘルスチェック、構造化ログ |
+| D    | バックアップ         | Neon の復元機能、手動 `pg_dump`、復元ドリル手順                                      |
+| E    | 利用者フィードバック | GitHub Issue Template、PR Template、アプリ内・スマホ下部のフィードバック導線         |
 
 ## モバイル / PWA 前段
 
-スマホ対応とPWA化は、いきなり本実装せず、まず閲覧導線を壊さない自動確認から進めます。
+スマホ対応とPWA化は、まず閲覧導線を壊さない自動確認と、安全なPWA下地から進めます。
 
 - `/demo` をスマホ幅で開ける
-- ファイル一覧から本文ペインへ移動できる
+- ファイル一覧から本文・詳細ペインへ移動できる
 - Markdown本文を読める
+- manifest、アイコン、オフラインページ、Service Worker を用意する
+- ログイン後のMarkdown本文、API応答、共有ページはキャッシュしない
 
 詳細: [`docs/MOBILE_PWA_PREP.md`](MOBILE_PWA_PREP.md)
 
@@ -99,12 +101,29 @@ Production 反映後は以下を確認します。
 - Vercel Speed Insights
 - Vercel Runtime Logs
 - `/api/health`
+- `/api/cron/health`
 - `/api/ai` の構造化ログ
 - 任意の外部エラー通知Webhook
 
 AI API のログには Markdown 本文、Gemini API キー、DB 接続URLを出しません。記録するのは、リクエストID、処理結果、HTTPステータス、処理時間などの運用メタデータだけです。
 
 本番で問題が出た場合は、Vercel Dashboard の Runtime Logs で `ai.request.failed` や 500 エラーを確認します。
+
+### ヘルスチェック
+
+`/api/health` は外部から見える軽量チェックです。秘密値や環境変数の設定有無は返しません。
+
+`/api/cron/health` は Vercel Cron 用の内部チェックです。`CRON_SECRET` を Vercel Environment Variables に設定し、Vercel Cron から `Authorization: Bearer <CRON_SECRET>` 付きで呼び出します。
+
+チェック内容:
+
+- `DATABASE_URL`
+- `AUTH_SECRET` または `NEXTAUTH_SECRET`
+- `AUTH_GOOGLE_ID`
+- `AUTH_GOOGLE_SECRET`
+- `AUTH_URL` または `NEXTAUTH_URL`
+
+Cron は毎日 07:00 JST（22:00 UTC）に動きます。必須設定が不足している場合は `cron.health.degraded` を Runtime Logs と任意Webhookに記録します。
 
 ### 外部エラー通知
 
@@ -153,6 +172,14 @@ npm run db:backup
 
 復元練習は、本番DBではなく検証用DBで行います。
 
+推奨タイミング:
+
+- DBスキーマを変更する前
+- 大きめのリリース前後
+- 月1回の復元ドリル
+
+復元ドリルの結果は、GitHub Issue またはローカルの運用メモに「日時、バックアップファイル名、検証用DB、確認結果」だけを残します。DB接続URLや個人情報は書きません。
+
 詳細: [`docs/BACKUP_RESTORE.md`](BACKUP_RESTORE.md)
 
 ## 利用者フィードバック
@@ -161,7 +188,9 @@ GitHub Issues を小さな受付窓口にします。
 
 - 不具合報告: `.github/ISSUE_TEMPLATE/bug_report.yml`
 - 改善提案: `.github/ISSUE_TEMPLATE/feature_request.yml`
+- モバイル/PWA: `.github/ISSUE_TEMPLATE/mobile_pwa_feedback.yml`
 - アプリ内: 左下の `フィードバック` リンク
+- スマホ幅: 画面下部の `送信` リンク
 
 Issue には APIキー、DB接続URL、個人情報、非公開Markdown本文を貼らないよう案内します。
 

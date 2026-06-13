@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  type RefObject,
   useCallback,
   useEffect,
   useMemo,
@@ -130,6 +131,10 @@ export function MarkdownWorkspace({
   const [, startTransition] = useTransition();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const fileListPaneRef = useRef<HTMLElement>(null);
+  const documentPaneRef = useRef<HTMLElement>(null);
+  const detailsPaneRef = useRef<HTMLElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // 保存待ちの編集内容（id と本文）。デバウンス保存・フラッシュの単一の真実。
   const pendingSave = useRef<{ id: string; content: string } | null>(null);
@@ -253,6 +258,16 @@ export function MarkdownWorkspace({
       ...prev,
       [key]: DEFAULT_PANE_WIDTHS[key],
     }));
+  }
+
+  function scrollToMobilePane(ref: RefObject<HTMLElement | null>) {
+    const workspace = workspaceRef.current;
+    const pane = ref.current;
+    if (!workspace || !pane) return;
+    workspace.scrollTo({
+      left: pane.offsetLeft,
+      behavior: "smooth",
+    });
   }
 
   // ===== フォルダ操作 =====
@@ -565,8 +580,9 @@ export function MarkdownWorkspace({
 
   return (
     <div
+      ref={workspaceRef}
       data-testid="markdown-workspace"
-      className="flex h-dvh w-full overflow-x-auto overflow-y-hidden bg-background"
+      className="flex h-dvh w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden scroll-smooth bg-background sm:snap-none"
     >
       {/* ===== ペイン1: フォルダ（スマホでは非表示・横スクロールで他ペイン優先） ===== */}
       <aside
@@ -637,9 +653,10 @@ export function MarkdownWorkspace({
 
       {/* ===== ペイン2: ファイル一覧 ===== */}
       <section
+        ref={fileListPaneRef}
         data-testid="file-list-pane"
         className={cn(
-          "flex shrink-0 flex-col border-r border-border",
+          "flex min-w-[100dvw] shrink-0 snap-start flex-col border-r border-border sm:min-w-0",
           isDragging && "bg-primary/5 ring-2 ring-primary/40 ring-inset",
         )}
         style={{ width: paneWidths.files }}
@@ -738,8 +755,9 @@ export function MarkdownWorkspace({
 
       {/* ===== ペイン3: 本文（プレビュー / 編集） ===== */}
       <section
+        ref={documentPaneRef}
         data-testid="document-pane"
-        className="flex min-w-[min(100%,320px)] flex-1 flex-col sm:min-w-[280px]"
+        className="flex min-w-[100dvw] flex-1 snap-start flex-col sm:min-w-[280px]"
       >
         {selectedDoc ? (
           <>
@@ -845,8 +863,9 @@ export function MarkdownWorkspace({
             onReset={() => resetPane("details")}
           />
           <aside
+            ref={detailsPaneRef}
             data-testid="details-pane"
-            className="flex min-h-0 shrink-0 flex-col gap-5 overflow-y-auto border-l border-border bg-card p-4 pb-8"
+            className="flex min-h-0 min-w-[100dvw] shrink-0 snap-start flex-col gap-5 overflow-y-auto border-l border-border bg-card p-4 pb-24 sm:min-w-0 sm:pb-8"
             style={{ width: paneWidths.details }}
           >
             <div className="flex flex-col gap-1">
@@ -1014,8 +1033,59 @@ export function MarkdownWorkspace({
         </>
       )}
 
+      <nav className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-4 gap-1 rounded-md border border-border bg-background/95 p-1 shadow-lg backdrop-blur sm:hidden">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-10 px-2"
+          aria-label="ファイル一覧ペインを表示"
+          onClick={() => scrollToMobilePane(fileListPaneRef)}
+        >
+          <FileText />
+          一覧
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-10 px-2"
+          aria-label="本文ペインを表示"
+          disabled={!selectedDoc}
+          onClick={() => scrollToMobilePane(documentPaneRef)}
+        >
+          <Eye />
+          本文
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-10 px-2"
+          aria-label="詳細ペインを表示"
+          disabled={!selectedDoc}
+          onClick={() => scrollToMobilePane(detailsPaneRef)}
+        >
+          <Share2 />
+          詳細
+        </Button>
+        <a
+          href={FEEDBACK_URL}
+          target="_blank"
+          rel="noreferrer"
+          aria-label="フィードバックを送る"
+          className={cn(
+            buttonVariants({ variant: "ghost", size: "sm" }),
+            "h-10 px-2",
+          )}
+        >
+          <MessageSquare />
+          送信
+        </a>
+      </nav>
+
       {error && (
-        <div className="fixed bottom-4 left-1/2 z-50 flex max-w-md -translate-x-1/2 items-center gap-3 rounded-lg bg-destructive/10 px-4 py-2.5 text-sm text-destructive shadow-lg ring-1 ring-destructive/20">
+        <div className="fixed bottom-20 left-1/2 z-50 flex max-w-md -translate-x-1/2 items-center gap-3 rounded-lg bg-destructive/10 px-4 py-2.5 text-sm text-destructive shadow-lg ring-1 ring-destructive/20 sm:bottom-4">
           <span className="flex-1">{error}</span>
           <Button
             variant="ghost"
