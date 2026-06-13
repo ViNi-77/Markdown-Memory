@@ -75,6 +75,10 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
+function shouldUseMobilePaneNavigation(): boolean {
+  return window.matchMedia("(max-width: 639px)").matches;
+}
+
 function createLocalId(prefix: string): string {
   return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? Date.now().toString(36)}`;
 }
@@ -344,6 +348,9 @@ export function MarkdownWorkspace({
     setMode(nextMode);
     setCopied(false);
     setContentCopied(false);
+    if (shouldUseMobilePaneNavigation()) {
+      requestAnimationFrame(() => scrollToMobilePane(documentPaneRef));
+    }
   }
 
   function clearSelectedDocument() {
@@ -761,9 +768,9 @@ export function MarkdownWorkspace({
       >
         {selectedDoc ? (
           <>
-            <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-3">
+            <header className="flex items-center justify-between gap-2 border-b border-border px-3 py-2 sm:gap-3 sm:px-5 sm:py-3">
               <div className="flex min-w-0 items-center gap-2">
-                <h1 className="truncate font-heading text-base font-semibold">
+                <h1 className="truncate font-heading text-sm font-semibold sm:text-base">
                   {selectedDoc.name}
                 </h1>
                 {saveState === "saving" && (
@@ -779,38 +786,45 @@ export function MarkdownWorkspace({
                   </span>
                 )}
               </div>
-              <div className="flex shrink-0 items-center gap-1">
+              <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
                 <Button
                   variant="ghost"
                   size="sm"
+                  className="max-sm:size-9 max-sm:px-0"
+                  aria-label="全画面"
                   onClick={() => handleOpenFullView(selectedDoc)}
                 >
                   <Maximize2 />
-                  全画面
+                  <span className="hidden sm:inline">全画面</span>
                 </Button>
                 <Button
                   variant={mode === "preview" ? "secondary" : "ghost"}
                   size="sm"
+                  className="max-sm:size-9 max-sm:px-0"
+                  aria-label="プレビュー"
                   onClick={() => {
                     flushSave();
                     setMode("preview");
                   }}
                 >
                   <Eye />
-                  プレビュー
+                  <span className="hidden sm:inline">プレビュー</span>
                 </Button>
                 <Button
                   variant={mode === "edit" ? "secondary" : "ghost"}
                   size="sm"
+                  className="max-sm:size-9 max-sm:px-0"
+                  aria-label="編集"
                   onClick={() => setMode("edit")}
                 >
                   <PencilLine />
-                  編集
+                  <span className="hidden sm:inline">編集</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon-sm"
                   title="削除"
+                  aria-label="削除"
                   className="text-destructive hover:text-destructive focus-visible:text-destructive"
                   onClick={() => handleDeleteDoc(selectedDoc)}
                 >
