@@ -35,6 +35,7 @@ import {
   Maximize2,
   MessageSquare,
   ChevronDown,
+  UserCircle,
 } from "lucide-react";
 import { AI_HANDOFF_SERVICES } from "@/lib/ai-handoff";
 import type { Folder, Document } from "@/lib/db/schema";
@@ -55,6 +56,7 @@ type Props = {
 
 type SaveState = "idle" | "saving" | "saved";
 type PaneKey = "folders" | "files" | "details";
+type MobilePanel = "folders" | "account" | null;
 
 const DEFAULT_PANE_WIDTHS: Record<PaneKey, number> = {
   folders: 224,
@@ -133,6 +135,7 @@ export function MarkdownWorkspace({
   const [contentCopied, setContentCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paneWidths, setPaneWidths] = useState(DEFAULT_PANE_WIDTHS);
+  const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null);
   const [, startTransition] = useTransition();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -683,7 +686,29 @@ export function MarkdownWorkspace({
         }}
       >
         <div className="flex flex-col gap-2 border-b border-border p-3">
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="justify-start sm:hidden"
+              aria-label="フォルダ管理を開く"
+              onClick={() => setMobilePanel("folders")}
+            >
+              <FolderIcon />
+              フォルダ
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="justify-start sm:hidden"
+              aria-label="アカウントメニューを開く"
+              onClick={() => setMobilePanel("account")}
+            >
+              <UserCircle />
+              アカウント
+            </Button>
             <Button
               size="sm"
               className="flex-1"
@@ -1103,6 +1128,75 @@ export function MarkdownWorkspace({
         </a>
       </nav>
 
+      <MobileActionSheet
+        open={mobilePanel === "folders"}
+        title="フォルダ"
+        onClose={() => setMobilePanel(null)}
+      >
+        <div className="flex min-h-0 flex-col gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="justify-start"
+            onClick={handleCreateFolder}
+          >
+            <FolderPlus />
+            フォルダを追加
+          </Button>
+
+          <div className="flex min-h-0 flex-col gap-1 overflow-y-auto">
+            <MobileFolderRow
+              active={selectedFolderId === "all"}
+              icon={<Inbox className="size-4" />}
+              label="すべてのファイル"
+              count={documents.length}
+              onSelect={() => {
+                setSelectedFolderId("all");
+                setMobilePanel(null);
+              }}
+            />
+            {folders.map((folder) => (
+              <MobileFolderRow
+                key={folder.id}
+                active={selectedFolderId === folder.id}
+                icon={<FolderIcon className="size-4" />}
+                label={folder.name}
+                count={documents.filter((d) => d.folderId === folder.id).length}
+                onSelect={() => {
+                  setSelectedFolderId(folder.id);
+                  setMobilePanel(null);
+                }}
+                onRename={() => handleRenameFolder(folder)}
+                onDelete={() => handleDeleteFolder(folder)}
+              />
+            ))}
+          </div>
+        </div>
+      </MobileActionSheet>
+
+      <MobileActionSheet
+        open={mobilePanel === "account"}
+        title="アカウント"
+        onClose={() => setMobilePanel(null)}
+      >
+        <div className="flex flex-col gap-3">
+          {userSlot}
+          <a
+            href={FEEDBACK_URL}
+            target="_blank"
+            rel="noreferrer"
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "justify-start",
+            )}
+          >
+            <MessageSquare />
+            フィードバック
+          </a>
+        </div>
+      </MobileActionSheet>
+
       {error && (
         <div className="fixed bottom-20 left-1/2 z-50 flex max-w-md -translate-x-1/2 items-center gap-3 rounded-lg bg-destructive/10 px-4 py-2.5 text-sm text-destructive shadow-lg ring-1 ring-destructive/20 sm:bottom-4">
           <span className="flex-1">{error}</span>
@@ -1117,6 +1211,51 @@ export function MarkdownWorkspace({
           </Button>
         </div>
       )}
+    </div>
+  );
+}
+
+function MobileActionSheet({
+  open,
+  title,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 sm:hidden">
+      <button
+        type="button"
+        aria-label="閉じる"
+        className="absolute inset-0 bg-black/20"
+        onClick={onClose}
+      />
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col gap-3 rounded-t-lg border border-border bg-popover p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] text-popover-foreground shadow-lg"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-heading text-base font-semibold">{title}</h2>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="閉じる"
+            onClick={onClose}
+          >
+            <X />
+          </Button>
+        </div>
+        <div className="min-h-0">{children}</div>
+      </section>
     </div>
   );
 }
@@ -1154,6 +1293,74 @@ function DetailsActionGroup({
       </Button>
       {open && <div className="mt-2 flex flex-col gap-2">{children}</div>}
     </section>
+  );
+}
+
+function MobileFolderRow({
+  active,
+  icon,
+  label,
+  count,
+  onSelect,
+  onRename,
+  onDelete,
+}: {
+  active: boolean;
+  icon: React.ReactNode;
+  label: string;
+  count: number;
+  onSelect: () => void;
+  onRename?: () => void;
+  onDelete?: () => void;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+        active
+          ? "bg-accent text-accent-foreground"
+          : "focus-within:bg-muted hover:bg-muted",
+      )}
+    >
+      <button
+        type="button"
+        onClick={onSelect}
+        className="flex min-w-0 flex-1 items-center gap-2 text-left"
+      >
+        <span className="shrink-0 text-muted-foreground">{icon}</span>
+        <span className="truncate">{label}</span>
+        <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+          {count}
+        </span>
+      </button>
+      {(onRename || onDelete) && (
+        <div className="flex shrink-0 items-center gap-0.5">
+          {onRename && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label={`${label} の名前を変更`}
+              onClick={onRename}
+            >
+              <Pencil />
+            </Button>
+          )}
+          {onDelete && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label={`${label} を削除`}
+              className="text-destructive hover:text-destructive"
+              onClick={onDelete}
+            >
+              <Trash2 />
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

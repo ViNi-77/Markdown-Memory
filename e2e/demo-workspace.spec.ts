@@ -72,6 +72,12 @@ test.describe("デモワークスペース: モバイル前段確認", () => {
 
     await expect(page.getByTestId("file-list-pane")).toBeVisible();
     await expect(
+      page.getByRole("button", { name: "フォルダ管理を開く" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "アカウントメニューを開く" }),
+    ).toBeVisible();
+    await expect(
       page.getByRole("link", { name: "フィードバックを送る" }),
     ).toHaveAttribute(
       "href",
@@ -144,6 +150,83 @@ test.describe("デモワークスペース: モバイル前段確認", () => {
           .evaluate((element) => Math.round(element.scrollLeft)),
       )
       .toBeLessThanOrEqual(50);
+  });
+
+  test("スマホ幅でもフォルダ作成・選択・名前変更・削除とアカウント導線を使える", async ({
+    page,
+  }) => {
+    await page.goto("/demo");
+
+    await page.getByRole("button", { name: "フォルダ管理を開く" }).click();
+    await expect(page.getByRole("dialog", { name: "フォルダ" })).toBeVisible();
+
+    page.once("dialog", async (dialog) => {
+      expect(dialog.message()).toContain("フォルダ名");
+      await dialog.accept("スマホ確認");
+    });
+    await page.getByRole("button", { name: "フォルダを追加" }).click();
+    await expect(
+      page.getByRole("button", { name: "スマホ確認 0" }),
+    ).toBeVisible();
+
+    page.once("dialog", async (dialog) => {
+      expect(dialog.message()).toContain("新しいフォルダ名");
+      await dialog.accept("スマホ整理");
+    });
+    await page.getByRole("button", { name: "スマホ確認 の名前を変更" }).click();
+    await expect(
+      page.getByRole("button", { name: "スマホ整理 0" }),
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: "スマホ整理 0" }).click();
+    await page.getByRole("button", { name: "新規作成" }).click();
+    await expectWorkspaceScrolledPast(page, 300);
+
+    await page.getByRole("button", { name: "詳細ペインを表示" }).click();
+    await expectWorkspaceScrolledPast(page, 700);
+    await expect
+      .poll(async () =>
+        page
+          .getByTestId("details-pane")
+          .locator("select")
+          .evaluate(
+            (element) =>
+              (element as HTMLSelectElement).selectedOptions[0]?.textContent,
+          ),
+      )
+      .toContain("スマホ整理");
+
+    await page
+      .getByRole("button", { name: "ファイル一覧ペインを表示" })
+      .click();
+    await expect
+      .poll(async () =>
+        page
+          .getByTestId("markdown-workspace")
+          .evaluate((element) => Math.round(element.scrollLeft)),
+      )
+      .toBeLessThanOrEqual(50);
+
+    await page.getByRole("button", { name: "フォルダ管理を開く" }).click();
+    page.once("dialog", async (dialog) => {
+      expect(dialog.message()).toContain("フォルダ「スマホ整理」を削除");
+      await dialog.accept();
+    });
+    await page.getByRole("button", { name: "スマホ整理 を削除" }).click();
+    await expect(page.getByRole("button", { name: /スマホ整理/ })).toHaveCount(
+      0,
+    );
+
+    await page.getByRole("button", { name: "閉じる" }).last().click();
+    await page
+      .getByRole("button", { name: "アカウントメニューを開く" })
+      .click();
+    const accountDialog = page.getByRole("dialog", { name: "アカウント" });
+    await expect(accountDialog).toBeVisible();
+    await expect(accountDialog.getByText("デモモード")).toBeVisible();
+    await expect(
+      accountDialog.getByRole("link", { name: "ログイン" }),
+    ).toHaveAttribute("href", "/login");
   });
 
   test("長いファイル名と長文Markdownでもスマホ幅で本文を読める", async ({
