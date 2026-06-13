@@ -35,71 +35,48 @@
 
 ## システム構成
 
+READMEでは全体像を優先し、細かい役割は下の表で補足します。
+
 ```mermaid
-flowchart TD
-    Browser["Browser / PWA<br/>Markdownの閲覧・編集・共有"]
-    SW["Service Worker<br/>デモ・オフライン画面・静的資産のみキャッシュ<br/>非公開Markdownはキャッシュしない"]
-    LocalStorage[("Browser Storage<br/>BYOKのGemini APIキーをlocalStorageに保存")]
+flowchart TB
+    Browser["Browser / PWA"]
+    App["Next.js App<br/>on Vercel"]
+    Neon[("Neon PostgreSQL")]
+    OAuth["Google OAuth"]
+    Gemini["Gemini API"]
+    Ops["GitHub Actions<br/>Vercel Observability"]
 
-    subgraph GitHub["GitHub"]
-        Repo["Public Repository<br/>公開ソースコードを管理"]
-        CI["GitHub Actions<br/>lint / test / build / E2E / auditを実行"]
-    end
-
-    subgraph Vercel["Vercel — Next.js 16 App Router"]
-        Pages["App Pages<br/>ワークスペース・ログイン・デモ・共有・全画面表示"]
-        Actions["Server Actions<br/>文書・フォルダ・共有設定を処理"]
-        Auth["Auth.js v5<br/>Google OAuthとJWTセッションを管理"]
-        AiApi["AI API<br/>Geminiへ要約・整形リクエストを送信"]
-        Health["Health API<br/>外部公開の軽量ヘルスチェック"]
-        CronHealth["Cron Health API<br/>CRON_SECRETで保護した内部ヘルスチェック"]
-        Drizzle["Drizzle ORM<br/>型付きでPostgreSQLへアクセス"]
-        Env[["Vercel Environment Variables<br/>DB接続URL・OAuth Secret・APIキー・CRON_SECRETを保管"]]
-    end
-
-    GoogleOAuth["Google OAuth<br/>ユーザーログインを認証"]
-    Gemini["Gemini API<br/>Markdownの要約・整形・プロンプト化"]
-    Neon[("Neon PostgreSQL<br/>ユーザー・フォルダ・文書・共有トークンを保存")]
-
-    subgraph Observability["Operations / Observability"]
-        Analytics["Vercel Analytics<br/>利用状況を確認"]
-        Speed["Speed Insights<br/>表示速度を確認"]
-        Logs["Runtime Logs<br/>APIエラーやCron結果を確認"]
-        Cron["Vercel Cron<br/>定期ヘルスチェックを実行"]
-        Webhook["Error Webhook<br/>秘密情報を除いたエラー通知"]
-    end
-
-    Repo --> CI
-    CI --> Vercel
-
-    Browser --> Pages
-    Browser <--> SW
-    Browser --> LocalStorage
-
-    Pages --> Actions
-    Pages --> Auth
-    Pages --> AiApi
-
-    Actions --> Drizzle
-    Auth --> Drizzle
-    Drizzle --> Neon
-
-    Auth <--> GoogleOAuth
-    AiApi --> Gemini
-
-    Env -.-> Auth
-    Env -.-> AiApi
-    Env -.-> Drizzle
-    Env -.-> CronHealth
-
-    Browser -.-> Analytics
-    Browser -.-> Speed
-    AiApi -.-> Logs
-    CronHealth -.-> Logs
-    AiApi -.-> Webhook
-
-    Cron --> CronHealth
+    Browser --> App
+    App --> Neon
+    App --> OAuth
+    App --> Gemini
+    Ops -.-> App
 ```
+
+### 主要コンポーネント
+
+| Component                    | 役割                                                                 |
+| ---------------------------- | -------------------------------------------------------------------- |
+| Browser / PWA                | Markdownの閲覧・編集・共有。BYOKのGemini APIキーはlocalStorageに保存 |
+| Service Worker               | `/demo`、`/offline`、静的資産のみキャッシュ。非公開Markdownは対象外  |
+| Next.js App on Vercel        | 画面、Server Actions、API Routes、共有ページ、全画面表示を提供       |
+| Auth.js                      | Google OAuth と JWT セッションを管理                                 |
+| Drizzle ORM                  | Neon PostgreSQL への型付きアクセス                                   |
+| Neon PostgreSQL              | ユーザー、フォルダ、文書、共有トークンを保存                         |
+| Gemini API                   | Markdownの要約・整形・プロンプト化                                   |
+| Vercel Environment Variables | DB接続URL、OAuth Secret、APIキー、CRON_SECRETを保管                  |
+| GitHub Actions               | lint / test / build / E2E / audit を実行                             |
+| Vercel Observability         | Analytics、Speed Insights、Runtime Logs、Cron、Webhookで運用確認     |
+
+### 主要フロー
+
+| Flow       | 経路                                                     | 補足                                             |
+| ---------- | -------------------------------------------------------- | ------------------------------------------------ |
+| Login      | Browser → Auth.js → Google OAuth                         | セッションはJWTで管理                            |
+| Save       | Browser → Server Actions → Drizzle ORM → Neon PostgreSQL | Markdown本文・フォルダ・共有状態を保存           |
+| AI Assist  | Browser → AI API → Gemini API                            | BYOKキーまたはVercel側の `GEMINI_API_KEY` を使用 |
+| Share      | Browser → Server Actions → `/share/[token]`              | 公開リンクを知っている人だけが閲覧可能           |
+| Monitoring | Vercel Cron → Cron Health API → Runtime Logs / Webhook   | `CRON_SECRET` で内部ヘルスチェックを保護         |
 
 ## データ保護方針
 
