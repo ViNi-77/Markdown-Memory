@@ -1,44 +1,121 @@
 # Markdown Memory
 
-Markdown Memory は、AI が生成した Markdown を保存・整理・編集・共有するための Web アプリです。
+[![CI](https://github.com/ViNi-77/Markdown-Memory/actions/workflows/ci.yml/badge.svg)](https://github.com/ViNi-77/Markdown-Memory/actions/workflows/ci.yml)
+![Next.js](https://img.shields.io/badge/Next.js-16-black)
+![React](https://img.shields.io/badge/React-19-149eca)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6)
+![Deploy](https://img.shields.io/badge/Deploy-Vercel-black)
+![Status](https://img.shields.io/badge/Status-Public_MVP-2d3b56)
 
-- Repository: <https://github.com/ViNi-77/Markdown-Memory>
-- Production: <https://markdown-memory.vercel.app>
-- Demo: <https://markdown-memory.vercel.app/demo>
+> AIが生成したMarkdownを、あとから探しやすい形で保存・整理・編集・共有するための個人用Markdownワークスペース。
 
-## 現在の仕様
+| Production                           | Demo                                      | Repository                                   |
+| ------------------------------------ | ----------------------------------------- | -------------------------------------------- |
+| <https://markdown-memory.vercel.app> | <https://markdown-memory.vercel.app/demo> | <https://github.com/ViNi-77/Markdown-Memory> |
 
-| 項目                 | 内容                                                              |
-| -------------------- | ----------------------------------------------------------------- |
-| 認証                 | Google ログイン                                                   |
-| 保存先               | Neon PostgreSQL                                                   |
-| Markdown             | 作成、編集、プレビュー、アップロード、ダウンロード                |
-| フォルダ             | Markdown ファイルの整理                                           |
-| 自動保存             | 編集内容をデバウンス保存                                          |
-| 共有                 | 選択したファイルだけ公開リンクを発行                              |
-| AI 連携              | Claude / ChatGPT / Gemini に本文をコピーして開く                  |
-| アプリ内 AI          | Gemini API による要約・整形。BYOK またはサーバー側キーを使用      |
-| 全画面表示           | ログイン後、自分の Markdown を別ウィンドウで閲覧                  |
-| ペイン調整           | フォルダ、ファイル一覧、詳細ペインの幅を調整                      |
-| 未ログイン時の確認用 | `/demo` で保存なしのデモ画面を表示                                |
-| モバイル前段確認     | スマホ幅で一覧・本文・詳細へ移動できることをE2Eで確認             |
-| PWA下地              | manifest、アイコン、オフラインページ、限定的Service Worker        |
-| 監視                 | Vercel Analytics / Speed Insights / Runtime Logs / Cron / Webhook |
-| フィードバック       | GitHub Issues への導線。スマホ下部にも送信リンクを表示            |
+![Markdown Memory workspace](docs/images/screenshot-workspace.png)
 
-## 公開範囲とデータ
+## できること
+
+| 機能           | 内容                                                              |
+| -------------- | ----------------------------------------------------------------- |
+| Markdown管理   | 作成、編集、プレビュー、アップロード、ダウンロード                |
+| フォルダ整理   | Markdown ファイルをフォルダで整理                                 |
+| 自動保存       | 編集内容をデバウンス保存                                          |
+| 共有           | 選択したファイルだけ公開リンクを発行                              |
+| AI連携         | Claude / ChatGPT / Gemini に本文をコピーして開く                  |
+| アプリ内AI     | Gemini API による要約・整形。BYOK またはサーバー側キーを使用      |
+| 全画面表示     | ログイン後、自分の Markdown を別ウィンドウで閲覧                  |
+| ペイン調整     | フォルダ、ファイル一覧、詳細ペインの幅を調整                      |
+| デモ           | `/demo` で未ログインのまま操作感を確認                            |
+| モバイル前段   | スマホ幅で一覧・本文・詳細へ移動できる導線を用意                  |
+| PWA下地        | manifest、アイコン、オフラインページ、限定的 Service Worker       |
+| 運用監視       | Vercel Analytics / Speed Insights / Runtime Logs / Cron / Webhook |
+| フィードバック | GitHub Issues への導線。スマホ下部にも送信リンクを表示            |
+
+## システム構成
+
+```mermaid
+flowchart TD
+    Browser["Browser / PWA<br/>Markdownの閲覧・編集・共有"]
+    SW["Service Worker<br/>デモ・オフライン画面・静的資産のみキャッシュ<br/>非公開Markdownはキャッシュしない"]
+    LocalStorage[("Browser Storage<br/>BYOKのGemini APIキーをlocalStorageに保存")]
+
+    subgraph GitHub["GitHub"]
+        Repo["Public Repository<br/>公開ソースコードを管理"]
+        CI["GitHub Actions<br/>lint / test / build / E2E / auditを実行"]
+    end
+
+    subgraph Vercel["Vercel — Next.js 16 App Router"]
+        Pages["App Pages<br/>ワークスペース・ログイン・デモ・共有・全画面表示"]
+        Actions["Server Actions<br/>文書・フォルダ・共有設定を処理"]
+        Auth["Auth.js v5<br/>Google OAuthとJWTセッションを管理"]
+        AiApi["AI API<br/>Geminiへ要約・整形リクエストを送信"]
+        Health["Health API<br/>外部公開の軽量ヘルスチェック"]
+        CronHealth["Cron Health API<br/>CRON_SECRETで保護した内部ヘルスチェック"]
+        Drizzle["Drizzle ORM<br/>型付きでPostgreSQLへアクセス"]
+        Env[["Vercel Environment Variables<br/>DB接続URL・OAuth Secret・APIキー・CRON_SECRETを保管"]]
+    end
+
+    GoogleOAuth["Google OAuth<br/>ユーザーログインを認証"]
+    Gemini["Gemini API<br/>Markdownの要約・整形・プロンプト化"]
+    Neon[("Neon PostgreSQL<br/>ユーザー・フォルダ・文書・共有トークンを保存")]
+
+    subgraph Observability["Operations / Observability"]
+        Analytics["Vercel Analytics<br/>利用状況を確認"]
+        Speed["Speed Insights<br/>表示速度を確認"]
+        Logs["Runtime Logs<br/>APIエラーやCron結果を確認"]
+        Cron["Vercel Cron<br/>定期ヘルスチェックを実行"]
+        Webhook["Error Webhook<br/>秘密情報を除いたエラー通知"]
+    end
+
+    Repo --> CI
+    CI --> Vercel
+
+    Browser --> Pages
+    Browser <--> SW
+    Browser --> LocalStorage
+
+    Pages --> Actions
+    Pages --> Auth
+    Pages --> AiApi
+
+    Actions --> Drizzle
+    Auth --> Drizzle
+    Drizzle --> Neon
+
+    Auth <--> GoogleOAuth
+    AiApi --> Gemini
+
+    Env -.-> Auth
+    Env -.-> AiApi
+    Env -.-> Drizzle
+    Env -.-> CronHealth
+
+    Browser -.-> Analytics
+    Browser -.-> Speed
+    AiApi -.-> Logs
+    CronHealth -.-> Logs
+    AiApi -.-> Webhook
+
+    Cron --> CronHealth
+```
+
+## データ保護方針
 
 このアプリはローカル専用ではありません。ログイン後に作成したデータは、設定された Neon PostgreSQL に保存されます。
 
-| データ                         | 保存場所                                      |
-| ------------------------------ | --------------------------------------------- |
-| ユーザー情報・認証情報         | Neon PostgreSQL / Auth.js Cookie              |
-| フォルダ                       | Neon PostgreSQL                               |
-| Markdown 本文                  | Neon PostgreSQL                               |
-| 共有リンクの公開状態とトークン | Neon PostgreSQL                               |
-| BYOK の Gemini API キー        | ブラウザの `localStorage`                     |
-| サーバー側 Gemini API キー     | Vercel の Environment Variables               |
-| デモ画面の編集内容             | DB には保存しない。ページ再読み込みで初期化。 |
+| 対象                           | 扱い                                         |
+| ------------------------------ | -------------------------------------------- |
+| ユーザー情報・認証情報         | Neon PostgreSQL / Auth.js Cookie に保存      |
+| フォルダ                       | Neon PostgreSQL に保存                       |
+| Markdown本文                   | Neon PostgreSQL に保存                       |
+| 共有リンクの公開状態とトークン | Neon PostgreSQL に保存                       |
+| BYOKのGemini APIキー           | ブラウザの `localStorage` に保存             |
+| サーバー側Gemini APIキー       | Vercel Environment Variables に保存          |
+| DB接続URL・OAuth Secret        | Vercel Environment Variables に保存          |
+| 非公開Markdown                 | Service Workerでキャッシュしない             |
+| デモ画面の編集内容             | DBには保存しない。ページ再読み込みで初期化。 |
 
 共有リンクを発行した Markdown は、URL を知っている人が閲覧できます。公開したくない内容では共有リンクを作成しないでください。
 
@@ -217,9 +294,18 @@ Pull Request の説明やコメントは日本語で記載します。
 - バックアップ/復元手順: [`docs/BACKUP_RESTORE.md`](docs/BACKUP_RESTORE.md)
 - モバイル/PWA準備メモ: [`docs/MOBILE_PWA_PREP.md`](docs/MOBILE_PWA_PREP.md)
 
+## Roadmap
+
+| Phase | 状態   | 内容                                                   |
+| ----- | ------ | ------------------------------------------------------ |
+| 4     | 完了   | 公開MVP。ログイン、保存、共有、AI連携まで確認済み      |
+| 5     | 完了   | CI/CD、E2E、監視、バックアップ手順、フィードバック導線 |
+| 5.5   | 完了   | Cron監視、PWA下地、スマホ前段導線、README整備          |
+| 6     | 次候補 | スマホ最適化、利用者フィードバック反映、外部エラー追跡 |
+
 ## 本番確認済み
 
-2026-06-12 時点で、Production 環境で以下を確認済みです。
+2026-06-13 時点で、Production 環境で以下を確認済みです。
 
 - Google ログイン
 - Markdown ファイル作成
@@ -230,6 +316,9 @@ Pull Request の説明やコメントは日本語で記載します。
 - フォルダ作成とファイル移動
 - ペイン幅調整
 - 全画面表示
+- `/api/health`
+- `/api/cron/health` の `CRON_SECRET` 保護
+- PWA manifest / offline page
 
 ## リポジトリに置かないもの
 
@@ -238,6 +327,7 @@ Pull Request の説明やコメントは日本語で記載します。
 - `.env.local`
 - `.vercel`
 - 実値入りの API キー、OAuth Secret、DB 接続 URL
+- DB バックアップファイル
 - `.agents`
 - `.antigravity`
 - `.claude`
