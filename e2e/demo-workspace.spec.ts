@@ -1,5 +1,45 @@
 import { expect, test, type Page } from "playwright/test";
 
+test.describe("PWA下地", () => {
+  test("manifestがワークスペース起動と安全なショートカットを定義している", async ({
+    request,
+  }) => {
+    const response = await request.get("/manifest.webmanifest");
+
+    expect(response.ok()).toBeTruthy();
+    const manifest = await response.json();
+    expect(manifest.name).toBe("Markdown Memory");
+    expect(manifest.start_url).toBe("/");
+    expect(manifest.display).toBe("standalone");
+    expect(manifest.scope).toBe("/");
+    expect(manifest.shortcuts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: "ワークスペースを開く", url: "/" }),
+        expect.objectContaining({ name: "デモを開く", url: "/demo" }),
+      ]),
+    );
+  });
+
+  test("オフライン画面で復帰先とキャッシュ方針を確認できる", async ({
+    page,
+  }) => {
+    await page.goto("/offline");
+
+    await expect(
+      page.getByRole("heading", {
+        name: "Markdown Memory に接続できません",
+      }),
+    ).toBeVisible();
+    await expect(page.getByText("非公開のMarkdown本文")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "ワークスペースを開く" }),
+    ).toHaveAttribute("href", "/");
+    await expect(
+      page.getByRole("link", { name: "デモを開く" }),
+    ).toHaveAttribute("href", "/demo");
+  });
+});
+
 test.describe("デモワークスペース", () => {
   test("未ログインでもMarkdownの作成・編集・プレビューができる", async ({
     page,
@@ -376,5 +416,60 @@ test.describe("デモワークスペース: モバイル前段確認", () => {
     await expect(
       page.getByRole("button", { name: "公開リンクを作成" }),
     ).toBeVisible();
+  });
+
+  test("スマホ幅でも表とコードが本文全体を横に押し出さない", async ({
+    page,
+  }) => {
+    await page.goto("/demo");
+
+    await page.getByRole("button", { name: "新規作成" }).click();
+    await page.getByRole("button", { name: "編集" }).click();
+    await page
+      .getByPlaceholder("# Markdown を入力...")
+      .fill(
+        [
+          "# 横スクロール確認",
+          "",
+          "スマホでも本文全体ではなく、表とコードブロックだけが横スクロールします。",
+          "",
+          "| 種類 | 長い内容 |",
+          "| --- | --- |",
+          "| URL | https://example.com/really/long/path/for/mobile/reading/check/without/page-overflow |",
+          "",
+          "```ts",
+          'const veryLongLine = "https://example.com/really/long/path/for/mobile/reading/check/inside/code/block";',
+          "```",
+        ].join("\n"),
+      );
+
+    await page.getByRole("button", { name: "プレビュー" }).click();
+    await expect(
+      page.getByRole("heading", { name: "横スクロール確認" }),
+    ).toBeVisible();
+
+    await expect
+      .poll(async () =>
+        page
+          .getByTestId("document-scroll-area")
+          .evaluate(
+            (element) => element.scrollWidth <= element.clientWidth + 1,
+          ),
+      )
+      .toBeTruthy();
+    await expect
+      .poll(async () =>
+        page
+          .locator(".markdown-table-wrapper")
+          .evaluate((element) => element.scrollWidth > element.clientWidth),
+      )
+      .toBeTruthy();
+    await expect
+      .poll(async () =>
+        page
+          .locator(".markdown-code-block pre")
+          .evaluate((element) => getComputedStyle(element).overflowX),
+      )
+      .toBe("auto");
   });
 });

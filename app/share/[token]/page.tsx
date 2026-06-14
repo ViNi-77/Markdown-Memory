@@ -28,7 +28,7 @@ export default async function SharePage({
         </div>
       </header>
 
-      <article className="mx-auto max-w-3xl px-6 py-8">
+      <article className="markdown-reading-surface">
         {doc.content.trim() ? (
           <MarkdownView content={doc.content} />
         ) : (

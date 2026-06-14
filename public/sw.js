@@ -1,4 +1,4 @@
-const CACHE_NAME = "markdown-memory-shell-v1";
+const CACHE_NAME = "markdown-memory-shell-v2";
 const APP_SHELL = [
   "/demo",
   "/offline",
