@@ -25,6 +25,7 @@
 | 共有           | 選択したファイルだけ公開リンクを発行                              |
 | AI連携         | Claude / ChatGPT / Gemini に本文をコピーして開く                  |
 | アプリ内AI     | Gemini API による要約・整形。BYOK またはサーバー側キーを使用      |
+| Markdown表示   | CommonMark + GFM を安全に表示。表、脚注、タスクリストにも対応     |
 | 全画面表示     | ログイン後、自分の Markdown を別ウィンドウで閲覧                  |
 | ペイン調整     | デスクトップでフォルダ、ファイル一覧、詳細ペインの幅を調整        |
 | デモ           | `/demo` で未ログインのまま操作感を確認                            |
@@ -32,6 +33,12 @@
 | PWA下地        | manifest、アイコン、オフラインページ、限定的 Service Worker       |
 | 運用監視       | Vercel Analytics / Speed Insights / Runtime Logs / Cron / Webhook |
 | フィードバック | GitHub Issues への導線。スマホ下部にも送信リンクを表示            |
+
+## Markdown 表示仕様
+
+Markdown Memory の表示は、CommonMark を基本に GitHub Flavored Markdown（GFM）を加えた構成です。GitHubでよく使う表、チェックリスト、取り消し線、脚注、自動リンク、GitHub風アラートを読みやすく表示します。
+
+安全性のため、Markdown本文に書かれた raw HTML は実行可能なHTMLとして扱いません。共有ページでも同じ表示方針です。
 
 ## システム構成
 
