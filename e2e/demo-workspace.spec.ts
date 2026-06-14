@@ -44,6 +44,7 @@ test.describe("デモワークスペース", () => {
           '**"重要"** と ~~古い表現~~ を確認します。',
           "",
           "- [x] チェック済み",
+          "  - ネストした補足",
           "",
           "> [!NOTE]",
           "> 読みやすい補足です。",
@@ -66,6 +67,16 @@ test.describe("デモワークスペース", () => {
     await expect(
       page.locator('.task-list-item input[type="checkbox"]'),
     ).toBeChecked();
+    await expect(page.locator(".task-list-item ul")).toContainText(
+      "ネストした補足",
+    );
+    await expect
+      .poll(() =>
+        page
+          .locator(".task-list-item")
+          .evaluate((element) => getComputedStyle(element).display),
+      )
+      .not.toBe("flex");
     await expect(page.locator(".markdown-alert-note")).toContainText("Note");
     await expect(page.locator(".markdown-alert-note")).toContainText(
       "読みやすい補足です。",

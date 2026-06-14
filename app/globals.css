@@ -343,19 +343,17 @@
 }
 .markdown-body .contains-task-list {
   list-style: none;
-  padding-left: 0;
+  padding-left: 1.5em;
 }
 .markdown-body .task-list-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.55em;
+  list-style: none;
 }
 .markdown-body .task-list-item input[type="checkbox"] {
-  margin-top: 0.45em;
+  margin: 0 0.45em 0.2em -1.4em;
   height: 1em;
   width: 1em;
-  flex: 0 0 auto;
   accent-color: var(--primary);
+  vertical-align: middle;
 }
 .markdown-body sup {
   font-size: 0.75em;

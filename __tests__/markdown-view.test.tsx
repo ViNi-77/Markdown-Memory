@@ -16,6 +16,16 @@ describe("MarkdownView", () => {
     expect(screen.getByText("1")).toBeInTheDocument();
   });
 
+  it("ネストしたタスクリストの子要素を保持する", () => {
+    const { container } = render(
+      <MarkdownView content={`- [ ] 親タスク\n  - 子タスク`} />,
+    );
+
+    const taskItem = container.querySelector(".task-list-item");
+    expect(taskItem).toHaveTextContent("親タスク");
+    expect(taskItem?.querySelector("ul")).toHaveTextContent("子タスク");
+  });
+
   it("引用符を含む太字・取り消し線・脚注をレンダリングする", () => {
     const { container } = render(
       <MarkdownView
