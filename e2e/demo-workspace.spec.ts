@@ -218,6 +218,9 @@ test.describe("デモワークスペース: モバイル前段確認", () => {
       "href",
       "https://github.com/ViNi-77/Markdown-Memory/issues/new/choose",
     );
+    await expect(
+      page.getByRole("button", { name: "ファイル一覧ペインを表示" }),
+    ).toHaveAttribute("aria-current", "page");
 
     await page
       .getByRole("button", { name: /Markdown Memory の使い方/ })
@@ -225,12 +228,18 @@ test.describe("デモワークスペース: モバイル前段確認", () => {
 
     await expectWorkspaceScrolledPast(page, 300);
     await expect(
+      page.getByRole("button", { name: "本文ペインを表示" }),
+    ).toHaveAttribute("aria-current", "page");
+    await expect(
       page.getByRole("heading", { name: "Markdown Memory", exact: true }),
     ).toBeVisible();
     await expect(page.getByText("できること")).toBeVisible();
 
     await page.getByRole("button", { name: "詳細ペインを表示" }).click();
     await expectWorkspaceScrolledPast(page, 700);
+    await expect(
+      page.getByRole("button", { name: "詳細ペインを表示" }),
+    ).toHaveAttribute("aria-current", "page");
     await expect(page.getByTestId("details-pane")).toBeVisible();
   });
 
@@ -278,6 +287,20 @@ test.describe("デモワークスペース: モバイル前段確認", () => {
     await page
       .getByRole("button", { name: "ファイル一覧ペインを表示" })
       .click();
+    await expect
+      .poll(async () =>
+        page
+          .getByTestId("markdown-workspace")
+          .evaluate((element) => Math.round(element.scrollLeft)),
+      )
+      .toBeLessThanOrEqual(50);
+
+    await expect(page.getByTestId("mobile-current-document")).toContainText(
+      "無題.md",
+    );
+    await page.getByRole("button", { name: "選択中の本文を開く" }).click();
+    await expectWorkspaceScrolledPast(page, 300);
+    await page.getByRole("button", { name: "一覧に戻る" }).click();
     await expect
       .poll(async () =>
         page
@@ -416,6 +439,8 @@ test.describe("デモワークスペース: モバイル前段確認", () => {
     await expect(
       page.getByRole("button", { name: "公開リンクを作成" }),
     ).toBeVisible();
+    await page.getByRole("button", { name: "本文に戻る" }).click();
+    await expectWorkspaceScrolledPast(page, 300);
   });
 
   test("スマホ幅でも表とコードが本文全体を横に押し出さない", async ({
