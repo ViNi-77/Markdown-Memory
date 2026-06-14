@@ -28,6 +28,60 @@ test.describe("デモワークスペース", () => {
     await expect(page.getByText("本文テスト")).toBeVisible();
   });
 
+  test("複合Markdown表現をプレビューで読みやすく表示できる", async ({
+    page,
+  }) => {
+    await page.goto("/demo");
+
+    await page.getByRole("button", { name: "新規作成" }).click();
+    await page.getByRole("button", { name: "編集" }).click();
+    await page
+      .getByPlaceholder("# Markdown を入力...")
+      .fill(
+        [
+          "# 表示確認",
+          "",
+          '**"重要"** と ~~古い表現~~ を確認します。',
+          "",
+          "- [x] チェック済み",
+          "",
+          "> [!NOTE]",
+          "> 読みやすい補足です。",
+          "",
+          "| 長いリンク | 状態 |",
+          "| --- | --- |",
+          "| https://example.com/some/really/long/path | OK |",
+          "",
+          "脚注つきの本文です[^1]",
+          "",
+          "[^1]: 補足説明です。",
+        ].join("\n"),
+      );
+
+    await page.getByRole("button", { name: "プレビュー" }).click();
+
+    await expect(page.getByRole("heading", { name: "表示確認" })).toBeVisible();
+    await expect(page.locator(".markdown-body strong")).toHaveText('"重要"');
+    await expect(page.locator(".markdown-body del")).toHaveText("古い表現");
+    await expect(
+      page.locator('.task-list-item input[type="checkbox"]'),
+    ).toBeChecked();
+    await expect(page.locator(".markdown-alert-note")).toContainText("Note");
+    await expect(page.locator(".markdown-alert-note")).toContainText(
+      "読みやすい補足です。",
+    );
+    await expect(page.locator(".markdown-table-wrapper table")).toBeVisible();
+    await expect(
+      page.getByRole("link", {
+        name: "https://example.com/some/really/long/path",
+      }),
+    ).toHaveAttribute("target", "_blank");
+    await expect(page.getByRole("heading", { name: "脚注" })).toBeVisible();
+    await expect(page.locator("section[data-footnotes]")).toContainText(
+      "補足説明です。",
+    );
+  });
+
   test("ペイン調整ハンドルとデモ制限の案内が表示される", async ({ page }) => {
     await page.goto("/demo");
 
