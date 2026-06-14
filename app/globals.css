@@ -270,6 +270,9 @@
   margin-top: 0.85em;
   margin-bottom: 0.85em;
 }
+.markdown-body p {
+  white-space: pre-line;
+}
 .markdown-body ul {
   @apply list-disc;
   padding-left: 1.5em;

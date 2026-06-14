@@ -41,6 +41,12 @@ test.describe("デモワークスペース", () => {
         [
           "# 表示確認",
           "",
+          "【ライティング推奨ワークフロー】",
+          "（全体構成・アイデア抽出）",
+          "|",
+          "▼",
+          "[Claude]（詳細な本文執筆・肉付け）",
+          "",
           '**"重要"** と ~~古い表現~~ を確認します。',
           "",
           "- [x] チェック済み",
@@ -66,6 +72,19 @@ test.describe("デモワークスペース", () => {
     await page.getByRole("button", { name: "プレビュー" }).click();
 
     await expect(page.getByRole("heading", { name: "表示確認" })).toBeVisible();
+    const workflowParagraph = page.locator(".markdown-body p").filter({
+      hasText: "ライティング推奨ワークフロー",
+    });
+    await expect
+      .poll(() =>
+        workflowParagraph.evaluate(
+          (element) => getComputedStyle(element).whiteSpace,
+        ),
+      )
+      .toBe("pre-line");
+    await expect
+      .poll(() => workflowParagraph.evaluate((element) => element.textContent))
+      .toContain("|\n▼");
     await expect(page.locator(".markdown-body strong")).toHaveText('"重要"');
     await expect(page.locator(".markdown-body del")).toHaveText("古い表現");
     await expect(
