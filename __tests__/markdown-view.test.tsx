@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { MarkdownView } from "@/components/markdown/MarkdownView";
 
 describe("MarkdownView", () => {
@@ -68,5 +68,25 @@ describe("MarkdownView", () => {
     ).toHaveAttribute("target", "_blank");
     expect(container.querySelector("script")).not.toBeInTheDocument();
     expect(screen.getByText(/alert\("xss"\)/)).toBeInTheDocument();
+  });
+
+  it("コードブロックに言語ラベルとコピー操作を表示する", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+
+    render(<MarkdownView content={"```ts\nconst answer: number = 42;\n```"} />);
+
+    expect(screen.getByText("ts")).toBeInTheDocument();
+    expect(screen.getByText("const answer: number = 42;")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "ts コードをコピー" }));
+
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith("const answer: number = 42;"),
+    );
+    expect(screen.getByText("コピー済み")).toBeInTheDocument();
   });
 });

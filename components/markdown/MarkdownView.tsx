@@ -1,5 +1,13 @@
 "use client";
 
+import { Check, Copy } from "lucide-react";
+import {
+  Children,
+  isValidElement,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -23,6 +31,7 @@ type MarkdownNode = {
 };
 
 const alertPattern = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][\t ]*\n?/;
+const languageClassPattern = /language-([\w-]+)/;
 
 function remarkGithubAlerts() {
   return (tree: MarkdownNode) => {
@@ -124,6 +133,18 @@ const markdownComponents: Components = {
     // eslint-disable-next-line @next/next/no-img-element
     return <img {...props} alt={alt ?? ""} decoding="async" loading="lazy" />;
   },
+  pre({ children }) {
+    const codeElement = getCodeElement(children);
+    const className = codeElement?.props.className;
+    const language = className?.match(languageClassPattern)?.[1] ?? "text";
+    const code = getCodeText(codeElement?.props.children ?? children);
+
+    return (
+      <CodeBlock code={code} language={language}>
+        {codeElement ?? children}
+      </CodeBlock>
+    );
+  },
   table({ children, ...props }) {
     return (
       <div className="markdown-table-wrapper">
@@ -132,6 +153,72 @@ const markdownComponents: Components = {
     );
   },
 };
+
+function getCodeElement(children: ReactNode) {
+  const child = Children.toArray(children)[0];
+
+  if (!isValidElement(child)) {
+    return null;
+  }
+
+  return child as ReactElement<{
+    className?: string;
+    children?: ReactNode;
+  }>;
+}
+
+function getCodeText(children: ReactNode) {
+  return Children.toArray(children).join("").replace(/\n$/, "");
+}
+
+function CodeBlock({
+  children,
+  code,
+  language,
+}: {
+  children: React.ReactNode;
+  code: string;
+  language: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  async function copyCode() {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  return (
+    <figure className="markdown-code-block">
+      <figcaption className="markdown-code-header">
+        <span className="markdown-code-language">{language}</span>
+        <button
+          type="button"
+          className="markdown-code-copy"
+          onClick={copyCode}
+          aria-label={`${language} コードをコピー`}
+        >
+          {copied ? (
+            <>
+              <Check aria-hidden="true" />
+              コピー済み
+            </>
+          ) : (
+            <>
+              <Copy aria-hidden="true" />
+              コピー
+            </>
+          )}
+        </button>
+      </figcaption>
+      <pre>{children}</pre>
+    </figure>
+  );
+}
 
 /** Markdown 本文を描画する。CommonMark + GFM を安全なHTMLとして表示する。 */
 export function MarkdownView({ content }: { content: string }) {

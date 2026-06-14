@@ -265,7 +265,7 @@
 .markdown-body ul,
 .markdown-body ol,
 .markdown-body blockquote,
-.markdown-body pre,
+.markdown-body .markdown-code-block,
 .markdown-body .markdown-table-wrapper {
   margin-top: 0.85em;
   margin-bottom: 0.85em;
@@ -313,6 +313,27 @@
   @apply bg-transparent p-0 text-[0.85em];
   overflow-wrap: normal;
   white-space: pre;
+}
+.markdown-body .markdown-code-block {
+  @apply overflow-hidden rounded-lg border border-border bg-muted;
+}
+.markdown-body .markdown-code-header {
+  @apply flex min-h-9 items-center justify-between gap-2 border-b border-border bg-card px-3 py-1.5;
+}
+.markdown-body .markdown-code-language {
+  @apply font-mono text-xs font-medium text-muted-foreground;
+}
+.markdown-body .markdown-code-copy {
+  @apply inline-flex h-7 items-center gap-1 rounded-md border border-border bg-background px-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none;
+}
+.markdown-body .markdown-code-copy svg {
+  height: 0.9rem;
+  width: 0.9rem;
+}
+.markdown-body .markdown-code-block pre {
+  margin: 0;
+  border-radius: 0;
+  border: 0;
 }
 .markdown-body .markdown-table-wrapper {
   @apply overflow-x-auto rounded-lg border border-border;
