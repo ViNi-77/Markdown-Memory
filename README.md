@@ -17,22 +17,22 @@
 
 ## できること
 
-| 機能           | 内容                                                                      |
-| -------------- | ------------------------------------------------------------------------- |
-| Markdown管理   | 作成、編集、プレビュー、アップロード、ダウンロード                        |
-| フォルダ整理   | Markdown ファイルをフォルダで整理                                         |
-| 自動保存       | 編集内容をデバウンス保存                                                  |
-| 共有           | 選択したファイルだけ公開リンクを発行                                      |
-| AI連携         | Claude / ChatGPT / Gemini に本文をコピーして開く                          |
-| アプリ内AI     | Gemini API による要約・整形。BYOK またはサーバー側キーを使用              |
-| Markdown表示   | CommonMark + GFM を安全に表示。表、脚注、コードブロック、通常改行にも対応 |
-| 全画面表示     | ログイン後、自分の Markdown を別ウィンドウで閲覧                          |
-| ペイン調整     | デスクトップでフォルダ、ファイル一覧、詳細ペインの幅を調整                |
-| デモ           | `/demo` で未ログインのまま操作感を確認                                    |
-| スマホ操作     | 本文閲覧へ誘導し、下部ナビの現在地表示、選択中ファイルへの復帰も提供      |
-| PWA品質        | manifest、アイコン、オフラインページ、限定的 Service Worker、スマホ読書面 |
-| 運用監視       | Vercel Analytics / Speed Insights / Runtime Logs / Cron / Webhook         |
-| フィードバック | GitHub Issues への導線。スマホ下部にも送信リンクを表示                    |
+| 機能           | 内容                                                                         |
+| -------------- | ---------------------------------------------------------------------------- |
+| Markdown管理   | 作成、編集、プレビュー、アップロード、ダウンロード                           |
+| フォルダ整理   | Markdown ファイルをフォルダで整理                                            |
+| 自動保存       | 編集内容をデバウンス保存                                                     |
+| 共有           | 選択したファイルだけ公開リンクを発行                                         |
+| AI連携         | Claude / ChatGPT / Gemini に本文をコピーして開く                             |
+| アプリ内AI     | Gemini API による要約・整形。BYOK またはサーバー側キーを使用                 |
+| Markdown表示   | CommonMark + GFM を安全に表示。表、脚注、コードブロック、通常改行にも対応    |
+| 全画面表示     | ログイン後、自分の Markdown を別ウィンドウで閲覧                             |
+| ペイン調整     | デスクトップでフォルダ、ファイル一覧、詳細ペインの幅を調整                   |
+| デモ           | `/demo` で未ログインのまま操作感を確認                                       |
+| スマホ操作     | 本文閲覧へ誘導し、下部ナビの現在地表示、選択中ファイルへの復帰も提供         |
+| PWA品質        | manifest、PNGアイコン、オフラインページ、限定的 Service Worker、スマホ読書面 |
+| 運用監視       | Vercel Analytics / Speed Insights / Runtime Logs / Cron / Webhook            |
+| フィードバック | GitHub Issues への導線。スマホ下部にも送信リンクを表示                       |
 
 ## Markdown 表示仕様
 
@@ -109,18 +109,18 @@ flowchart TB
 
 ### 主要コンポーネント
 
-| Component                    | 役割                                                                 |
-| ---------------------------- | -------------------------------------------------------------------- |
-| Browser / PWA                | Markdownの閲覧・編集・共有。BYOKのGemini APIキーはlocalStorageに保存 |
-| Service Worker               | `/demo`、`/offline`、静的資産のみキャッシュ。非公開Markdownは対象外  |
-| Next.js App on Vercel        | 画面、Server Actions、API Routes、共有ページ、全画面表示を提供       |
-| Auth.js                      | Google OAuth と JWT セッションを管理                                 |
-| Drizzle ORM                  | Neon PostgreSQL への型付きアクセス                                   |
-| Neon PostgreSQL              | ユーザー、フォルダ、文書、共有トークンを保存                         |
-| Gemini API                   | Markdownの要約・整形・プロンプト化                                   |
-| Vercel Environment Variables | DB接続URL、OAuth Secret、APIキー、CRON_SECRETを保管                  |
-| GitHub Actions               | lint / test / build / E2E / audit を実行                             |
-| Vercel Observability         | Analytics、Speed Insights、Runtime Logs、Cron、Webhookで運用確認     |
+| Component                    | 役割                                                                             |
+| ---------------------------- | -------------------------------------------------------------------------------- |
+| Browser / PWA                | Markdownの閲覧・編集・共有。BYOKのGemini APIキーはlocalStorageに保存             |
+| Service Worker               | `/demo`、`/offline`、PWAアイコン、静的資産のみキャッシュ。非公開Markdownは対象外 |
+| Next.js App on Vercel        | 画面、Server Actions、API Routes、共有ページ、全画面表示を提供                   |
+| Auth.js                      | Google OAuth と JWT セッションを管理                                             |
+| Drizzle ORM                  | Neon PostgreSQL への型付きアクセス                                               |
+| Neon PostgreSQL              | ユーザー、フォルダ、文書、共有トークンを保存                                     |
+| Gemini API                   | Markdownの要約・整形・プロンプト化                                               |
+| Vercel Environment Variables | DB接続URL、OAuth Secret、APIキー、CRON_SECRETを保管                              |
+| GitHub Actions               | lint / test / build / E2E / audit を実行                                         |
+| Vercel Observability         | Analytics、Speed Insights、Runtime Logs、Cron、Webhookで運用確認                 |
 
 ### 主要フロー
 
@@ -318,7 +318,7 @@ Pull Request の説明やコメントは日本語で記載します。
 - `/api/health`
 - `/api/cron/health`
 - AI API の構造化ログ
-- PWA manifest / icon / offline page / Service Worker / スマホ読書面
+- PWA manifest / PNG icon / offline page / Service Worker / スマホ読書面
 - Security Policy
 - 運用手順: [`docs/OPERATIONS.md`](docs/OPERATIONS.md)
 - main保護手順: [`docs/BRANCH_PROTECTION.md`](docs/BRANCH_PROTECTION.md)
@@ -336,7 +336,7 @@ Pull Request の説明やコメントは日本語で記載します。
 | 6     | 完了   | スマホ閲覧最適化、PWA安全仕様、フィードバック運用整備  |
 | 7     | 進行中 | PWA品質強化、スマホ読書体験の磨き込み、アプリ化準備    |
 
-Phase 6 の作業記録は [#23](https://github.com/ViNi-77/Markdown-Memory/issues/23) に残しています。Phase 7 では、既存の本番環境を壊さないように専用ブランチで進め、PWAとしてホーム画面に置いても違和感のない体験と、スマホでのMarkdown読書品質を優先して磨きます。
+Phase 6 の作業記録は [#23](https://github.com/ViNi-77/Markdown-Memory/issues/23) に残しています。Phase 7 では、既存の本番環境を壊さないように専用ブランチで進め、PWAとしてホーム画面に置いても違和感のない体験と、スマホでのMarkdown読書品質を優先して磨きます。Phase 7D では、ホーム画面追加向けの PNG アイコンとオフライン時の安全なアプリシェル更新を固定しています。
 
 ## 本番確認済み
 
@@ -353,7 +353,7 @@ Phase 6 の作業記録は [#23](https://github.com/ViNi-77/Markdown-Memory/issu
 - 全画面表示
 - `/api/health`
 - `/api/cron/health` の `CRON_SECRET` 保護
-- PWA manifest / offline page
+- PWA manifest / PNG icon / offline page
 
 ## リポジトリに置かないもの
 
