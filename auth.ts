@@ -11,6 +11,7 @@ import Google from "next-auth/providers/google";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "@/lib/db";
 import { users, accounts, sessions, verificationTokens } from "@/lib/db/schema";
+import { getAuthSecret } from "@/lib/auth-runtime";
 
 const adapter = process.env.DATABASE_URL
   ? DrizzleAdapter(db, {
@@ -21,17 +22,10 @@ const adapter = process.env.DATABASE_URL
     })
   : undefined;
 
-const authSecret =
-  process.env.AUTH_SECRET ??
-  process.env.NEXTAUTH_SECRET ??
-  (process.env.NODE_ENV === "production"
-    ? undefined
-    : "markdown-memory-local-development-secret");
-
 export const { handlers, signIn, signOut, auth } = NextAuth({
   // Vercel 本番ではホスト検証を信頼する（AUTH_URL 未設定でも動作）
   trustHost: true,
-  secret: authSecret,
+  secret: getAuthSecret(),
   ...(adapter ? { adapter } : {}),
   providers: [
     Google({

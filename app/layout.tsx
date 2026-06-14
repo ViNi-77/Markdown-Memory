@@ -20,6 +20,9 @@ export const metadata: Metadata = {
     title: "Markdown Memory",
     statusBarStyle: "default",
   },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
   formatDetection: {
     telephone: false,
   },

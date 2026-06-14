@@ -874,7 +874,7 @@ export function MarkdownWorkspace({
                   className="h-full min-h-full resize-none rounded-none border-0 bg-background px-5 py-4 font-mono text-sm leading-relaxed focus-visible:ring-0"
                 />
               ) : (
-                <div className="mx-auto max-w-3xl px-6 py-6">
+                <div className="markdown-reading-surface">
                   {selectedDoc.content.trim() ? (
                     <MarkdownView content={selectedDoc.content} />
                   ) : (

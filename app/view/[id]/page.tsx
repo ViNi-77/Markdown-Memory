@@ -42,7 +42,7 @@ export default async function DocumentViewPage({
         </div>
       </header>
 
-      <article className="mx-auto max-w-5xl px-6 py-8">
+      <article className="markdown-reading-surface markdown-reading-surface-wide">
         {doc.content.trim() ? (
           <MarkdownView content={doc.content} />
         ) : (

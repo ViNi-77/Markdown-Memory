@@ -1,35 +1,58 @@
 import Link from "next/link";
-import { FileText, WifiOff } from "lucide-react";
+import { FileText, ShieldCheck, WifiOff } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export default function OfflinePage() {
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center bg-background px-6 py-10 text-center">
-      <div className="flex max-w-md flex-col items-center gap-5">
-        <div className="flex size-16 items-center justify-center rounded-full bg-muted">
-          <WifiOff className="size-7 text-muted-foreground" />
+    <main className="min-h-dvh bg-background px-4 py-6 text-foreground sm:px-6">
+      <section className="mx-auto flex min-h-[calc(100dvh-3rem)] max-w-2xl flex-col justify-center">
+        <div className="rounded-lg border border-border bg-card px-5 py-7 shadow-sm sm:px-8 sm:py-9">
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center gap-3">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-md bg-muted">
+                <WifiOff className="size-6 text-muted-foreground" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">
+                  オフラインです
+                </p>
+                <h1 className="font-heading text-xl font-semibold sm:text-2xl">
+                  Markdown Memory に接続できません
+                </h1>
+              </div>
+            </div>
+
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              ネットワークが戻ったら、ワークスペースを開き直してください。
+              非公開のMarkdown本文、API応答、共有ページは端末にキャッシュしない設計です。
+            </p>
+
+            <div className="rounded-md border border-border bg-background px-3 py-3">
+              <div className="flex items-start gap-2 text-sm">
+                <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+                <p className="leading-relaxed text-muted-foreground">
+                  オフライン時に見えるのは、この案内画面とデモ用の安全な静的資産だけです。
+                  ログイン後のMarkdown本文は、明示的な仕様が決まるまで端末保存しません。
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Link href="/" className={cn(buttonVariants())}>
+                <FileText />
+                ワークスペースを開く
+              </Link>
+              <Link
+                href="/demo"
+                className={cn(buttonVariants({ variant: "outline" }))}
+              >
+                デモを開く
+              </Link>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-medium text-muted-foreground">
-            オフラインです
-          </p>
-          <h1 className="font-heading text-2xl font-semibold">
-            Markdown Memory に接続できません
-          </h1>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            ネットワークが戻ったら、再読み込みしてワークスペースを開いてください。
-            非公開のMarkdown本文やAPI応答は端末にキャッシュしない設計です。
-          </p>
-        </div>
-        <Link
-          href="/demo"
-          className={cn(buttonVariants({ variant: "outline" }))}
-        >
-          <FileText />
-          デモを開く
-        </Link>
-      </div>
+      </section>
     </main>
   );
 }
