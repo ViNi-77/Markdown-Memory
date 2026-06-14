@@ -36,6 +36,7 @@ import {
   MessageSquare,
   ChevronDown,
   UserCircle,
+  ArrowLeft,
 } from "lucide-react";
 import { AI_HANDOFF_SERVICES } from "@/lib/ai-handoff";
 import type { Folder, Document } from "@/lib/db/schema";
@@ -57,6 +58,7 @@ type Props = {
 type SaveState = "idle" | "saving" | "saved";
 type PaneKey = "folders" | "files" | "details";
 type MobilePanel = "folders" | "account" | null;
+type MobileView = "files" | "document" | "details";
 
 const DEFAULT_PANE_WIDTHS: Record<PaneKey, number> = {
   folders: 224,
@@ -136,6 +138,7 @@ export function MarkdownWorkspace({
   const [error, setError] = useState<string | null>(null);
   const [paneWidths, setPaneWidths] = useState(DEFAULT_PANE_WIDTHS);
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null);
+  const [mobileView, setMobileView] = useState<MobileView>("files");
   const [, startTransition] = useTransition();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -268,15 +271,77 @@ export function MarkdownWorkspace({
     }));
   }
 
-  function scrollToMobilePane(ref: RefObject<HTMLElement | null>) {
+  function scrollToMobilePane(
+    ref: RefObject<HTMLElement | null>,
+    nextView?: MobileView,
+  ) {
     const workspace = workspaceRef.current;
     const pane = ref.current;
     if (!workspace || !pane) return;
+    if (nextView) setMobileView(nextView);
     workspace.scrollTo({
       left: pane.offsetLeft,
       behavior: "smooth",
     });
   }
+
+  useEffect(() => {
+    const workspace = workspaceRef.current;
+    if (!workspace) return;
+    const workspaceElement = workspace;
+
+    let frame = 0;
+    function updateMobileView() {
+      frame = 0;
+      if (!shouldUseMobilePaneNavigation()) return;
+      const candidates: Array<{
+        view: MobileView;
+        left: number;
+        available: boolean;
+      }> = [
+        {
+          view: "files",
+          left: fileListPaneRef.current?.offsetLeft ?? 0,
+          available: true,
+        },
+        {
+          view: "document",
+          left: documentPaneRef.current?.offsetLeft ?? 0,
+          available: Boolean(selectedDocId),
+        },
+        {
+          view: "details",
+          left: detailsPaneRef.current?.offsetLeft ?? 0,
+          available: Boolean(selectedDocId && detailsPaneRef.current),
+        },
+      ];
+      const closest = candidates
+        .filter((candidate) => candidate.available)
+        .reduce((best, candidate) =>
+          Math.abs(workspaceElement.scrollLeft - candidate.left) <
+          Math.abs(workspaceElement.scrollLeft - best.left)
+            ? candidate
+            : best,
+        );
+      setMobileView((current) =>
+        current === closest.view ? current : closest.view,
+      );
+    }
+
+    function onScroll() {
+      if (frame) return;
+      frame = window.requestAnimationFrame(updateMobileView);
+    }
+
+    updateMobileView();
+    workspaceElement.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      workspaceElement.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [selectedDocId]);
 
   // ===== フォルダ操作 =====
 
@@ -353,6 +418,7 @@ export function MarkdownWorkspace({
     setCopied(false);
     setContentCopied(false);
     if (shouldUseMobilePaneNavigation()) {
+      setMobileView("document");
       requestAnimationFrame(() => scrollToMobilePane(documentPaneRef));
     }
   }
@@ -365,6 +431,10 @@ export function MarkdownWorkspace({
     setMode("preview");
     setCopied(false);
     setContentCopied(false);
+    if (shouldUseMobilePaneNavigation()) {
+      setMobileView("files");
+      requestAnimationFrame(() => scrollToMobilePane(fileListPaneRef));
+    }
   }
 
   // ===== ドキュメント操作 =====
@@ -589,6 +659,14 @@ export function MarkdownWorkspace({
     window.open(`/view/${doc.id}`, "_blank", "noopener,noreferrer");
   }
 
+  function mobileNavClass(view: MobileView) {
+    return cn(
+      "h-11 px-2",
+      mobileView === view &&
+        "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary",
+    );
+  }
+
   return (
     <div
       ref={workspaceRef}
@@ -744,9 +822,36 @@ export function MarkdownWorkspace({
               className="pl-8"
             />
           </div>
+          {selectedDoc && (
+            <div
+              data-testid="mobile-current-document"
+              className="flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-2 sm:hidden"
+            >
+              <FileText className="size-4 shrink-0 text-primary" />
+              <div className="min-w-0 flex-1">
+                <span className="block text-[0.68rem] leading-none font-medium text-muted-foreground">
+                  選択中
+                </span>
+                <span className="block truncate text-sm font-medium">
+                  {selectedDoc.name}
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="shrink-0"
+                aria-label="選択中の本文を開く"
+                onClick={() => scrollToMobilePane(documentPaneRef, "document")}
+              >
+                <Eye />
+                読む
+              </Button>
+            </div>
+          )}
         </div>
 
-        <ul className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2">
+        <ul className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:pb-2">
           {visibleDocs.length === 0 ? (
             <li className="px-2 py-8 text-center text-sm text-muted-foreground">
               ファイルがありません。
@@ -799,6 +904,16 @@ export function MarkdownWorkspace({
               className="flex items-center justify-between gap-2 border-b border-border px-3 py-2 sm:gap-3 sm:px-5 sm:py-3"
             >
               <div className="flex min-w-0 items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="-ml-1 sm:hidden"
+                  aria-label="一覧に戻る"
+                  onClick={() => scrollToMobilePane(fileListPaneRef, "files")}
+                >
+                  <ArrowLeft />
+                </Button>
                 <h1 className="truncate font-heading text-sm font-semibold sm:text-base">
                   {selectedDoc.name}
                 </h1>
@@ -864,7 +979,7 @@ export function MarkdownWorkspace({
 
             <div
               data-testid="document-scroll-area"
-              className="min-h-0 flex-1 overflow-y-auto"
+              className="min-h-0 flex-1 overflow-y-auto max-sm:pb-[calc(env(safe-area-inset-bottom)+5rem)]"
             >
               {mode === "edit" ? (
                 <Textarea
@@ -911,9 +1026,29 @@ export function MarkdownWorkspace({
           <aside
             ref={detailsPaneRef}
             data-testid="details-pane"
-            className="flex min-h-0 min-w-[100dvw] shrink-0 snap-start flex-col gap-3 overflow-y-auto border-l border-border bg-card p-3 pb-24 sm:min-w-0 sm:gap-5 sm:p-4 sm:pb-8"
+            className="flex min-h-0 min-w-[100dvw] shrink-0 snap-start flex-col gap-3 overflow-y-auto border-l border-border bg-card p-3 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:min-w-0 sm:gap-5 sm:p-4 sm:pb-8"
             style={{ width: paneWidths.details }}
           >
+            <div className="sticky top-0 z-10 -mx-3 -mt-3 flex items-center gap-2 border-b border-border bg-card/95 px-3 py-2 backdrop-blur sm:hidden">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="-ml-1"
+                aria-label="本文に戻る"
+                onClick={() => scrollToMobilePane(documentPaneRef, "document")}
+              >
+                <ArrowLeft />
+              </Button>
+              <div className="min-w-0 flex-1">
+                <span className="block text-[0.68rem] leading-none font-medium text-muted-foreground">
+                  詳細
+                </span>
+                <span className="block truncate text-sm font-medium">
+                  {selectedDoc.name}
+                </span>
+              </div>
+            </div>
             <div className="flex flex-col gap-1">
               <span className="text-xs font-medium text-muted-foreground">
                 ファイル名
@@ -1077,14 +1212,18 @@ export function MarkdownWorkspace({
         </>
       )}
 
-      <nav className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-4 gap-1 rounded-md border border-border bg-background/95 p-1 shadow-lg backdrop-blur sm:hidden">
+      <nav
+        data-testid="mobile-bottom-nav"
+        className="fixed inset-x-2 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-40 grid grid-cols-4 gap-1 rounded-lg border border-border bg-background/95 p-1.5 shadow-lg backdrop-blur sm:hidden"
+      >
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          className="h-10 px-2"
+          className={mobileNavClass("files")}
           aria-label="ファイル一覧ペインを表示"
-          onClick={() => scrollToMobilePane(fileListPaneRef)}
+          aria-current={mobileView === "files" ? "page" : undefined}
+          onClick={() => scrollToMobilePane(fileListPaneRef, "files")}
         >
           <FileText />
           一覧
@@ -1093,10 +1232,11 @@ export function MarkdownWorkspace({
           type="button"
           variant="ghost"
           size="sm"
-          className="h-10 px-2"
+          className={mobileNavClass("document")}
           aria-label="本文ペインを表示"
+          aria-current={mobileView === "document" ? "page" : undefined}
           disabled={!selectedDoc}
-          onClick={() => scrollToMobilePane(documentPaneRef)}
+          onClick={() => scrollToMobilePane(documentPaneRef, "document")}
         >
           <Eye />
           本文
@@ -1105,10 +1245,11 @@ export function MarkdownWorkspace({
           type="button"
           variant="ghost"
           size="sm"
-          className="h-10 px-2"
+          className={mobileNavClass("details")}
           aria-label="詳細ペインを表示"
+          aria-current={mobileView === "details" ? "page" : undefined}
           disabled={!selectedDoc}
-          onClick={() => scrollToMobilePane(detailsPaneRef)}
+          onClick={() => scrollToMobilePane(detailsPaneRef, "details")}
         >
           <Share2 />
           詳細
@@ -1120,7 +1261,7 @@ export function MarkdownWorkspace({
           aria-label="フィードバックを送る"
           className={cn(
             buttonVariants({ variant: "ghost", size: "sm" }),
-            "h-10 px-2",
+            "h-11 px-2",
           )}
         >
           <MessageSquare />
@@ -1198,7 +1339,7 @@ export function MarkdownWorkspace({
       </MobileActionSheet>
 
       {error && (
-        <div className="fixed bottom-20 left-1/2 z-50 flex max-w-md -translate-x-1/2 items-center gap-3 rounded-lg bg-destructive/10 px-4 py-2.5 text-sm text-destructive shadow-lg ring-1 ring-destructive/20 sm:bottom-4">
+        <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] left-1/2 z-50 flex max-w-md -translate-x-1/2 items-center gap-3 rounded-lg bg-destructive/10 px-4 py-2.5 text-sm text-destructive shadow-lg ring-1 ring-destructive/20 sm:bottom-4">
           <span className="flex-1">{error}</span>
           <Button
             variant="ghost"
@@ -1226,6 +1367,22 @@ function MobileActionSheet({
   onClose: () => void;
   children: React.ReactNode;
 }) {
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open, onClose]);
+
   if (!open) return null;
 
   return (
@@ -1254,7 +1411,7 @@ function MobileActionSheet({
             <X />
           </Button>
         </div>
-        <div className="min-h-0">{children}</div>
+        <div className="min-h-0 overflow-y-auto">{children}</div>
       </section>
     </div>
   );
