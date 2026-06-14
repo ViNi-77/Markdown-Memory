@@ -53,6 +53,10 @@ test.describe("デモワークスペース", () => {
           "| --- | --- |",
           "| https://example.com/some/really/long/path | OK |",
           "",
+          "```ts",
+          "const answer: number = 42;",
+          "```",
+          "",
           "脚注つきの本文です[^1]",
           "",
           "[^1]: 補足説明です。",
@@ -87,6 +91,13 @@ test.describe("デモワークスペース", () => {
         name: "https://example.com/some/really/long/path",
       }),
     ).toHaveAttribute("target", "_blank");
+    await expect(page.locator(".markdown-code-language")).toHaveText("ts");
+    await expect(
+      page.getByRole("button", { name: "ts コードをコピー" }),
+    ).toBeVisible();
+    await expect(page.locator(".markdown-code-block code")).toContainText(
+      "const answer: number = 42;",
+    );
     await expect(page.getByRole("heading", { name: "脚注" })).toBeVisible();
     await expect(page.locator("section[data-footnotes]")).toContainText(
       "補足説明です。",
