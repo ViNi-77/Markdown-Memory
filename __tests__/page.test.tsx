@@ -1,9 +1,15 @@
 import React from "react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-const { authMock, getWorkspaceDataMock, redirectMock } = vi.hoisted(() => ({
+const {
+  authMock,
+  getWorkspaceDataMock,
+  isWorkspaceRuntimeConfiguredMock,
+  redirectMock,
+} = vi.hoisted(() => ({
   authMock: vi.fn(),
   getWorkspaceDataMock: vi.fn(),
+  isWorkspaceRuntimeConfiguredMock: vi.fn(),
   redirectMock: vi.fn((path: string) => {
     throw new Error(`redirect:${path}`);
   }),
@@ -21,6 +27,10 @@ vi.mock("@/lib/data", () => ({
   getWorkspaceData: getWorkspaceDataMock,
 }));
 
+vi.mock("@/lib/auth-runtime", () => ({
+  isWorkspaceRuntimeConfigured: isWorkspaceRuntimeConfiguredMock,
+}));
+
 vi.mock("@/components/auth/UserButton", () => ({
   UserButton: () =>
     React.createElement("div", { "data-testid": "user-button" }),
@@ -34,6 +44,17 @@ vi.mock("@/components/markdown/MarkdownWorkspace", () => ({
 describe("app/page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    isWorkspaceRuntimeConfiguredMock.mockReturnValue(true);
+  });
+
+  it("認証/DB設定が不足している環境では /demo にリダイレクトする", async () => {
+    isWorkspaceRuntimeConfiguredMock.mockReturnValue(false);
+    const { default: Page } = await import("../app/page");
+
+    await expect(Page()).rejects.toThrow("redirect:/demo");
+    expect(redirectMock).toHaveBeenCalledWith("/demo");
+    expect(authMock).not.toHaveBeenCalled();
+    expect(getWorkspaceDataMock).not.toHaveBeenCalled();
   });
 
   it("未ログインなら /login にリダイレクトする", async () => {
