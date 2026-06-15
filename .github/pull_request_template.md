@@ -14,6 +14,7 @@
 
 - [ ] Vercel Preview で主要画面を確認した
 - [ ] 共有リンクや認証まわりに意図しない公開範囲の変更がない
+- [ ] モバイル/PWAに触れる変更の場合、`docs/PWA_REAL_DEVICE_CHECK.md` の対象項目を確認した
 - [ ] `.env.local` / `.vercel` / APIキー / DB接続URLを含めていない
 
 ## 補足

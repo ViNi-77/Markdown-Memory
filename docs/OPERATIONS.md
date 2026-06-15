@@ -23,8 +23,12 @@
 - ログイン後のMarkdown本文、API応答、共有ページはキャッシュしない
 - Service Worker のオフライン fallback とキャッシュ対象外パスをE2Eで確認する
 - 長いURL、表、コードブロックがスマホ幅の本文ペイン全体を横に押し出さないことをE2Eで確認する
+- ホーム画面追加、起動先、オフライン導線は実機チェックリストで記録する
 
-詳細: [`docs/MOBILE_PWA_PREP.md`](MOBILE_PWA_PREP.md)
+詳細:
+
+- [`docs/MOBILE_PWA_PREP.md`](MOBILE_PWA_PREP.md)
+- [`docs/PWA_REAL_DEVICE_CHECK.md`](PWA_REAL_DEVICE_CHECK.md)
 
 ## 開発フロー
 
@@ -94,6 +98,8 @@ Production 反映後は以下を確認します。
 - `https://markdown-memory.vercel.app`
 - `https://markdown-memory.vercel.app/demo`
 - `https://markdown-memory.vercel.app/api/health`
+
+モバイル/PWAに触れる変更では、必要に応じて [`docs/PWA_REAL_DEVICE_CHECK.md`](PWA_REAL_DEVICE_CHECK.md) に沿って iPhone Safari / Android Chrome の実機確認を記録します。
 
 ## 監視・ログ
 
