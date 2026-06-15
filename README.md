@@ -136,17 +136,18 @@ flowchart TB
 
 このアプリはローカル専用ではありません。ログイン後に作成したデータは、設定された Neon PostgreSQL に保存されます。
 
-| 対象                           | 扱い                                         |
-| ------------------------------ | -------------------------------------------- |
-| ユーザー情報・認証情報         | Neon PostgreSQL / Auth.js Cookie に保存      |
-| フォルダ                       | Neon PostgreSQL に保存                       |
-| Markdown本文                   | Neon PostgreSQL に保存                       |
-| 共有リンクの公開状態とトークン | Neon PostgreSQL に保存                       |
-| BYOKのGemini APIキー           | ブラウザの `localStorage` に保存             |
-| サーバー側Gemini APIキー       | Vercel Environment Variables に保存          |
-| DB接続URL・OAuth Secret        | Vercel Environment Variables に保存          |
-| 非公開Markdown                 | Service Workerでキャッシュしない             |
-| デモ画面の編集内容             | DBには保存しない。ページ再読み込みで初期化。 |
+| 対象                           | 扱い                                                              |
+| ------------------------------ | ----------------------------------------------------------------- |
+| ユーザー情報・認証情報         | Neon PostgreSQL / Auth.js Cookie に保存                           |
+| フォルダ                       | Neon PostgreSQL に保存                                            |
+| Markdown本文                   | Neon PostgreSQL に保存                                            |
+| 共有リンクの公開状態とトークン | Neon PostgreSQL に保存                                            |
+| BYOKのGemini APIキー           | ブラウザの `localStorage` に保存                                  |
+| サーバー側Gemini APIキー       | Vercel Environment Variables に保存                               |
+| DB接続URL・OAuth Secret        | Vercel Environment Variables に保存                               |
+| 非公開Markdown                 | Service Workerでキャッシュしない。初期PWAでは端末に永続保存しない |
+| 共有ページ                     | Service Workerでキャッシュしない。受信側端末への自動保存もしない  |
+| デモ画面の編集内容             | DBには保存しない。ページ再読み込みで初期化。                      |
 
 共有リンクを発行した Markdown は、URL を知っている人が閲覧できます。公開したくない内容では共有リンクを作成しないでください。
 
@@ -326,6 +327,7 @@ Pull Request の説明やコメントは日本語で記載します。
 - モバイル/PWA準備メモ: [`docs/MOBILE_PWA_PREP.md`](docs/MOBILE_PWA_PREP.md)
 - スマホ実機確認チェックリスト: [`docs/MOBILE_PWA_PREP.md`](docs/MOBILE_PWA_PREP.md#スマホ実機確認チェックリスト)
 - PWA実機確認チェックリスト: [`docs/PWA_REAL_DEVICE_CHECK.md`](docs/PWA_REAL_DEVICE_CHECK.md)
+- PWAオフラインデータ方針: [`docs/PWA_OFFLINE_DATA_POLICY.md`](docs/PWA_OFFLINE_DATA_POLICY.md)
 
 ## Roadmap
 
@@ -337,7 +339,7 @@ Pull Request の説明やコメントは日本語で記載します。
 | 6     | 完了   | スマホ閲覧最適化、PWA安全仕様、フィードバック運用整備  |
 | 7     | 進行中 | PWA品質強化、スマホ読書体験の磨き込み、アプリ化準備    |
 
-Phase 6 の作業記録は [#23](https://github.com/ViNi-77/Markdown-Memory/issues/23) に残しています。Phase 7 では、既存の本番環境を壊さないように専用ブランチで進め、PWAとしてホーム画面に置いても違和感のない体験と、スマホでのMarkdown読書品質を優先して磨きます。Phase 7D では、ホーム画面追加向けの PNG アイコンとオフライン時の安全なアプリシェル更新を固定しています。Phase 7E では、Service Worker の offline fallback と private/dynamic path 非キャッシュを E2E で固定しています。Phase 7F では、長いURL、表、コードブロックがスマホ幅の本文ペイン全体を横に押し出さないことを固定しています。Phase 7G では、PWA実機確認の手順と記録用Issue Templateを固定しています。
+Phase 6 の作業記録は [#23](https://github.com/ViNi-77/Markdown-Memory/issues/23) に残しています。Phase 7 では、既存の本番環境を壊さないように専用ブランチで進め、PWAとしてホーム画面に置いても違和感のない体験と、スマホでのMarkdown読書品質を優先して磨きます。Phase 7D では、ホーム画面追加向けの PNG アイコンとオフライン時の安全なアプリシェル更新を固定しています。Phase 7E では、Service Worker の offline fallback と private/dynamic path 非キャッシュを E2E で固定しています。Phase 7F では、長いURL、表、コードブロックがスマホ幅の本文ペイン全体を横に押し出さないことを固定しています。Phase 7G では、PWA実機確認の手順と記録用Issue Templateを固定しています。Phase 7H では、ログイン後データと共有ページを端末に残さないオフラインデータ方針を固定しています。
 
 ## 本番確認済み
 
