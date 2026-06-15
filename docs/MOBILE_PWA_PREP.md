@@ -60,6 +60,7 @@ Phase 7 は、既存の本番Vercelを壊さないように専用ブランチで
 | 7C   | スマホ操作の磨き込み   | 下部ナビの現在地表示、選択中ファイルへの復帰、戻る導線を整える                 |
 | 7D   | PWAインストール品質    | PNGアイコン、Apple touch icon、Service Worker の安全な shell 更新を固定する    |
 | 7E   | オフライン安全性確認   | Service Worker の fallback と private/dynamic path 非キャッシュをE2Eで固定する |
+| 7F   | Markdown横はみ出し固定 | 長いURL、表、コードブロックが本文ペイン全体を横に押し出さないことを固定する    |
 
 ## PWA本採用前の安全判断
 
@@ -102,6 +103,7 @@ Phase 6 の前準備として、以下の観点をE2Eで固定します。
 - manifest に 192/512 PNG、maskable PNG、Apple touch icon を含める
 - Service Worker 制御下のオフラインナビゲーションで `/offline` を表示する
 - `/`、`/login`、`/api/*`、`/share/*`、`/view/*` を Service Worker cache に入れない
+- 長いURL、表、コードブロックがスマホ幅の本文ペイン全体を横に押し出さない
 
 ## Phase 6 で採用する情報設計
 
@@ -127,6 +129,7 @@ Phase 6 の前準備として、以下の観点をE2Eで固定します。
 - ホーム画面追加向けの PNG アイコンを manifest と metadata で配信する（実装済み）
 - Service Worker の shell cache に PNG アイコンを含める（実装済み）
 - Service Worker の runtime cache が安全なアプリシェルに限定されていることをE2Eで確認する（実装済み）
+- 長いURL、表、コードブロックが本文ペイン全体を横に押し出さないことをE2Eで確認する（実装済み）
 - 削除などの危険操作は、誤タップしやすい下部ナビに置かない
 - デスクトップの4ペイン幅調整は維持する
 
@@ -147,6 +150,7 @@ https://markdown-memory.vercel.app/demo
 | iPhone / Android 共通 | ログイン導線またはサインアウト導線にアクセスできる                         |
 | iPhone / Android 共通 | 詳細ペインで共有、ファイル操作、AI連携、アプリ内AIを開閉できる             |
 | iPhone / Android 共通 | 長文Markdownを本文ペイン内で縦スクロールして最後まで読める                 |
+| iPhone / Android 共通 | 長いURL、表、コードブロックが本文ペイン全体を横に押し出さない              |
 | iPhone / Android 共通 | 削除操作は確認ダイアログ付きで、下部ナビから誤って押せない                 |
 
 実機確認は、未ログインで使える `/demo` を先に見ます。ログイン後の本番ワークスペース確認は、DB保存・OAuth・共有URLを含むため、別タスクとして扱います。
@@ -185,11 +189,11 @@ Phase 6 では以下を確認済みです。
 - [x] PWA本採用前の安全仕様を文書化している
 - [x] ホーム画面追加向け PNG アイコンを manifest / metadata / Service Worker に反映している
 - [x] Service Worker の offline fallback と private/dynamic path 非キャッシュをE2Eで固定している
+- [x] 長いURL、表、コードブロックがスマホ幅の本文ペイン全体を横に押し出さない
 
 ## 次に確認すること
 
 - 実機でホーム画面追加時の PNG アイコン、アプリ名、起動先 `/` が自然か
 - 実機でオフライン時に `/offline` が表示され、ワークスペース/デモへの導線が分かるか
-- スマホ幅で長い表、長いURL、長いコードブロックが本文全体を横に押し出さないか
 - ログイン後のワークスペースや共有ページが端末に残らない方針で問題ないか
 - 本格PWA化に進む場合、オフライン閲覧を採用するかどうか

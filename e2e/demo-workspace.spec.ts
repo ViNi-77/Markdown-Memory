@@ -620,6 +620,9 @@ test.describe("デモワークスペース: モバイル前段確認", () => {
           "",
           "スマホでも本文全体ではなく、表とコードブロックだけが横スクロールします。",
           "",
+          "単独の長いURLも本文ペインを横に押し出しません。",
+          "https://example.com/really/long/path/for/mobile/reading/check/as/a/standalone/link/that/should/wrap/inside/the/paragraph/without/page-overflow",
+          "",
           "| 種類 | 長い内容 |",
           "| --- | --- |",
           "| URL | https://example.com/really/long/path/for/mobile/reading/check/without/page-overflow |",
@@ -646,8 +649,39 @@ test.describe("デモワークスペース: モバイル前段確認", () => {
       .toBeTruthy();
     await expect
       .poll(async () =>
+        page.evaluate(() => document.documentElement.scrollWidth),
+      )
+      .toBeLessThanOrEqual(390);
+    await expect
+      .poll(async () =>
+        page
+          .getByRole("link", {
+            name: /standalone\/link\/that\/should\/wrap/,
+          })
+          .evaluate((element) => {
+            const elementRect = element.getBoundingClientRect();
+            const paneRect = element
+              .closest("[data-testid='document-pane']")
+              ?.getBoundingClientRect();
+            return Boolean(
+              paneRect &&
+              elementRect.left >= paneRect.left - 1 &&
+              elementRect.right <= paneRect.right + 1,
+            );
+          }),
+      )
+      .toBeTruthy();
+    await expect
+      .poll(async () =>
         page
           .locator(".markdown-table-wrapper")
+          .evaluate((element) => element.scrollWidth > element.clientWidth),
+      )
+      .toBeTruthy();
+    await expect
+      .poll(async () =>
+        page
+          .locator(".markdown-code-block pre")
           .evaluate((element) => element.scrollWidth > element.clientWidth),
       )
       .toBeTruthy();
