@@ -325,6 +325,7 @@ Pull Request の説明やコメントは日本語で記載します。
 - バックアップ/復元手順: [`docs/BACKUP_RESTORE.md`](docs/BACKUP_RESTORE.md)
 - モバイル/PWA準備メモ: [`docs/MOBILE_PWA_PREP.md`](docs/MOBILE_PWA_PREP.md)
 - スマホ実機確認チェックリスト: [`docs/MOBILE_PWA_PREP.md`](docs/MOBILE_PWA_PREP.md#スマホ実機確認チェックリスト)
+- PWA実機確認チェックリスト: [`docs/PWA_REAL_DEVICE_CHECK.md`](docs/PWA_REAL_DEVICE_CHECK.md)
 
 ## Roadmap
 
@@ -336,7 +337,7 @@ Pull Request の説明やコメントは日本語で記載します。
 | 6     | 完了   | スマホ閲覧最適化、PWA安全仕様、フィードバック運用整備  |
 | 7     | 進行中 | PWA品質強化、スマホ読書体験の磨き込み、アプリ化準備    |
 
-Phase 6 の作業記録は [#23](https://github.com/ViNi-77/Markdown-Memory/issues/23) に残しています。Phase 7 では、既存の本番環境を壊さないように専用ブランチで進め、PWAとしてホーム画面に置いても違和感のない体験と、スマホでのMarkdown読書品質を優先して磨きます。Phase 7D では、ホーム画面追加向けの PNG アイコンとオフライン時の安全なアプリシェル更新を固定しています。Phase 7E では、Service Worker の offline fallback と private/dynamic path 非キャッシュを E2E で固定しています。Phase 7F では、長いURL、表、コードブロックがスマホ幅の本文ペイン全体を横に押し出さないことを固定しています。
+Phase 6 の作業記録は [#23](https://github.com/ViNi-77/Markdown-Memory/issues/23) に残しています。Phase 7 では、既存の本番環境を壊さないように専用ブランチで進め、PWAとしてホーム画面に置いても違和感のない体験と、スマホでのMarkdown読書品質を優先して磨きます。Phase 7D では、ホーム画面追加向けの PNG アイコンとオフライン時の安全なアプリシェル更新を固定しています。Phase 7E では、Service Worker の offline fallback と private/dynamic path 非キャッシュを E2E で固定しています。Phase 7F では、長いURL、表、コードブロックがスマホ幅の本文ペイン全体を横に押し出さないことを固定しています。Phase 7G では、PWA実機確認の手順と記録用Issue Templateを固定しています。
 
 ## 本番確認済み
 
