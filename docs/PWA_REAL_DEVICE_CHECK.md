@@ -4,6 +4,8 @@ Markdown Memory をスマホのホーム画面に追加して使う前に、Prev
 
 この確認は、非公開Markdown本文を端末へ残さない現在方針を守りながら、PWAとしての見え方とオフライン時の案内が自然かを見るためのものです。
 
+Phase 7の実装済み範囲と実機確認待ちの扱いは [`docs/PWA_PHASE7_HANDOFF.md`](PWA_PHASE7_HANDOFF.md) にまとめています。
+
 ## 確認対象
 
 | 項目       | 対象                                                                |
