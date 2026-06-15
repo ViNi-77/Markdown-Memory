@@ -8,6 +8,34 @@ test.describe("PWA下地", () => {
     };
   }
 
+  async function registerServiceWorkerForTest(page: Page) {
+    await page.goto("/demo");
+    await page.evaluate(async () => {
+      await navigator.serviceWorker.register("/sw.js");
+      await navigator.serviceWorker.ready;
+      if (navigator.serviceWorker.controller) return;
+      await new Promise<void>((resolve) => {
+        navigator.serviceWorker.addEventListener(
+          "controllerchange",
+          () => resolve(),
+          { once: true },
+        );
+      });
+    });
+  }
+
+  async function cachedPathnames(page: Page) {
+    return page.evaluate(async () => {
+      const cacheName = (await caches.keys()).find((name) =>
+        name.startsWith("markdown-memory-shell-"),
+      );
+      if (!cacheName) return [];
+      const cache = await caches.open(cacheName);
+      const requests = await cache.keys();
+      return requests.map((request) => new URL(request.url).pathname).sort();
+    });
+  }
+
   test("manifestがワークスペース起動と安全なショートカットを定義している", async ({
     request,
   }) => {
@@ -79,6 +107,78 @@ test.describe("PWA下地", () => {
         width: icon.width,
         height: icon.height,
       });
+    }
+  });
+
+  test("Service Workerが安全なアプリシェルだけをキャッシュする", async ({
+    page,
+  }) => {
+    await registerServiceWorkerForTest(page);
+    await page.route("**/share/not-a-real-token", async (route) => {
+      await route.fulfill({
+        status: 404,
+        contentType: "text/html; charset=utf-8",
+        body: "share route is intentionally not cached",
+      });
+    });
+    await page.route("**/view/not-a-real-id", async (route) => {
+      await route.fulfill({
+        status: 404,
+        contentType: "text/html; charset=utf-8",
+        body: "view route is intentionally not cached",
+      });
+    });
+
+    await page.goto("/");
+    await page.goto("/login");
+    await page.goto("/api/health");
+    await page.goto("/share/not-a-real-token");
+    await page.goto("/view/not-a-real-id");
+
+    await expect
+      .poll(() => cachedPathnames(page))
+      .toEqual(
+        expect.arrayContaining([
+          "/demo",
+          "/offline",
+          "/icons/icon.svg",
+          "/icons/icon-192.png",
+          "/icons/icon-512.png",
+          "/icons/maskable-icon.svg",
+          "/icons/maskable-icon-512.png",
+          "/icons/apple-touch-icon.png",
+        ]),
+      );
+    await expect
+      .poll(() => cachedPathnames(page))
+      .not.toEqual(
+        expect.arrayContaining([
+          "/",
+          "/login",
+          "/api/health",
+          "/share/not-a-real-token",
+          "/view/not-a-real-id",
+        ]),
+      );
+  });
+
+  test("Service Worker制御下のナビゲーション失敗時はオフライン画面を表示する", async ({
+    context,
+    page,
+  }) => {
+    await registerServiceWorkerForTest(page);
+
+    await context.setOffline(true);
+    try {
+      await page.goto("/demo");
+      await expect(
+        page.getByRole("heading", {
+          name: "Markdown Memory に接続できません",
+        }),
+      ).toBeVisible();
+      await expect(page.getByText("非公開のMarkdown本文")).toBeVisible();
+    } finally {
+      await context.setOffline(false);
     }
   });
 
