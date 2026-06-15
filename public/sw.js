@@ -1,9 +1,13 @@
-const CACHE_NAME = "markdown-memory-shell-v2";
+const CACHE_NAME = "markdown-memory-shell-v3";
 const APP_SHELL = [
   "/demo",
   "/offline",
   "/icons/icon.svg",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
   "/icons/maskable-icon.svg",
+  "/icons/maskable-icon-512.png",
+  "/icons/apple-touch-icon.png",
 ];
 
 self.addEventListener("install", (event) => {

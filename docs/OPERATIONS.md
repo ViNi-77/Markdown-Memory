@@ -19,7 +19,7 @@
 - `/demo` をスマホ幅で開ける
 - ファイル一覧から本文・詳細ペインへ移動できる
 - Markdown本文を読める
-- manifest、アイコン、オフラインページ、Service Worker を用意する
+- manifest、PNG/SVGアイコン、オフラインページ、Service Worker を用意する
 - ログイン後のMarkdown本文、API応答、共有ページはキャッシュしない
 
 詳細: [`docs/MOBILE_PWA_PREP.md`](MOBILE_PWA_PREP.md)

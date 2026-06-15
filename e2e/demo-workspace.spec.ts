@@ -1,6 +1,13 @@
 import { expect, test, type Page } from "playwright/test";
 
 test.describe("PWA下地", () => {
+  function readPngSize(buffer: Buffer) {
+    return {
+      width: buffer.readUInt32BE(16),
+      height: buffer.readUInt32BE(20),
+    };
+  }
+
   test("manifestがワークスペース起動と安全なショートカットを定義している", async ({
     request,
   }) => {
@@ -12,12 +19,67 @@ test.describe("PWA下地", () => {
     expect(manifest.start_url).toBe("/");
     expect(manifest.display).toBe("standalone");
     expect(manifest.scope).toBe("/");
-    expect(manifest.shortcuts).toEqual(
+    expect(manifest.theme_color).toBe("#2d3b56");
+    expect(manifest.background_color).toBe("#f8f7f4");
+    expect(manifest.icons).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ name: "ワークスペースを開く", url: "/" }),
-        expect.objectContaining({ name: "デモを開く", url: "/demo" }),
+        expect.objectContaining({
+          src: "/icons/icon-192.png",
+          sizes: "192x192",
+          type: "image/png",
+          purpose: "any",
+        }),
+        expect.objectContaining({
+          src: "/icons/icon-512.png",
+          sizes: "512x512",
+          type: "image/png",
+          purpose: "any",
+        }),
+        expect.objectContaining({
+          src: "/icons/maskable-icon-512.png",
+          sizes: "512x512",
+          type: "image/png",
+          purpose: "maskable",
+        }),
       ]),
     );
+    expect(manifest.shortcuts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "ワークスペースを開く",
+          url: "/",
+          icons: expect.arrayContaining([
+            expect.objectContaining({ src: "/icons/icon-192.png" }),
+          ]),
+        }),
+        expect.objectContaining({
+          name: "デモを開く",
+          url: "/demo",
+          icons: expect.arrayContaining([
+            expect.objectContaining({ src: "/icons/icon-192.png" }),
+          ]),
+        }),
+      ]),
+    );
+  });
+
+  test("ホーム画面追加向けPNGアイコンを配信している", async ({ request }) => {
+    const iconCases = [
+      { path: "/icons/icon-192.png", width: 192, height: 192 },
+      { path: "/icons/icon-512.png", width: 512, height: 512 },
+      { path: "/icons/maskable-icon-512.png", width: 512, height: 512 },
+      { path: "/icons/apple-touch-icon.png", width: 180, height: 180 },
+    ];
+
+    for (const icon of iconCases) {
+      const response = await request.get(icon.path);
+      expect(response.ok()).toBeTruthy();
+      expect(response.headers()["content-type"]).toContain("image/png");
+      expect(readPngSize(await response.body())).toEqual({
+        width: icon.width,
+        height: icon.height,
+      });
+    }
   });
 
   test("オフライン画面で復帰先とキャッシュ方針を確認できる", async ({

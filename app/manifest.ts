@@ -23,10 +23,28 @@ export default function manifest(): MetadataRoute.Manifest {
     },
     icons: [
       {
+        src: "/icons/icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icons/icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
         src: "/icons/icon.svg",
         sizes: "any",
         type: "image/svg+xml",
         purpose: "any",
+      },
+      {
+        src: "/icons/maskable-icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
       },
       {
         src: "/icons/maskable-icon.svg",
@@ -43,9 +61,9 @@ export default function manifest(): MetadataRoute.Manifest {
         url: "/",
         icons: [
           {
-            src: "/icons/icon.svg",
-            sizes: "any",
-            type: "image/svg+xml",
+            src: "/icons/icon-192.png",
+            sizes: "192x192",
+            type: "image/png",
           },
         ],
       },
@@ -56,9 +74,9 @@ export default function manifest(): MetadataRoute.Manifest {
         url: "/demo",
         icons: [
           {
-            src: "/icons/icon.svg",
-            sizes: "any",
-            type: "image/svg+xml",
+            src: "/icons/icon-192.png",
+            sizes: "192x192",
+            type: "image/png",
           },
         ],
       },
