@@ -979,7 +979,7 @@ export function MarkdownWorkspace({
 
             <div
               data-testid="document-scroll-area"
-              className="min-h-0 flex-1 overflow-y-auto max-sm:pb-[calc(env(safe-area-inset-bottom)+5rem)]"
+              className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto max-sm:pb-[calc(env(safe-area-inset-bottom)+5rem)]"
             >
               {mode === "edit" ? (
                 <Textarea

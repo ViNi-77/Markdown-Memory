@@ -22,6 +22,7 @@
 - manifest、PNG/SVGアイコン、オフラインページ、Service Worker を用意する
 - ログイン後のMarkdown本文、API応答、共有ページはキャッシュしない
 - Service Worker のオフライン fallback とキャッシュ対象外パスをE2Eで確認する
+- 長いURL、表、コードブロックがスマホ幅の本文ペイン全体を横に押し出さないことをE2Eで確認する
 
 詳細: [`docs/MOBILE_PWA_PREP.md`](MOBILE_PWA_PREP.md)
 
