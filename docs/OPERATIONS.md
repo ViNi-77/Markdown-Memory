@@ -33,6 +33,7 @@
 - [`docs/PWA_REAL_DEVICE_CHECK.md`](PWA_REAL_DEVICE_CHECK.md)
 - [`docs/PWA_OFFLINE_DATA_POLICY.md`](PWA_OFFLINE_DATA_POLICY.md)
 - [`docs/PWA_PHASE7_HANDOFF.md`](PWA_PHASE7_HANDOFF.md)
+- [`docs/PRODUCTION_SMOKE_CHECK.md`](PRODUCTION_SMOKE_CHECK.md)
 
 ## 開発フロー
 
@@ -102,6 +103,8 @@ Production 反映後は以下を確認します。
 - `https://markdown-memory.vercel.app`
 - `https://markdown-memory.vercel.app/demo`
 - `https://markdown-memory.vercel.app/api/health`
+
+ログイン後ワークスペース、DB保存、共有URL、AI連携、本番ログを見る場合は [`docs/PRODUCTION_SMOKE_CHECK.md`](PRODUCTION_SMOKE_CHECK.md) に沿って確認します。
 
 モバイル/PWAに触れる変更では、必要に応じて [`docs/PWA_REAL_DEVICE_CHECK.md`](PWA_REAL_DEVICE_CHECK.md) に沿って iPhone Safari / Android Chrome の実機確認を記録します。
 
