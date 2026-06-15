@@ -9,6 +9,7 @@ body:
     attributes:
       value: |
         `docs/PWA_REAL_DEVICE_CHECK.md` に沿って、Preview または Production の実機確認結果を記録してください。
+        Phase 7の実装済み範囲と実機確認待ちの扱いは `docs/PWA_PHASE7_HANDOFF.md` を確認してください。
         APIキー、個人情報、非公開Markdown本文を含むスクリーンショットやログは貼らないでください。
   - type: dropdown
     id: target
