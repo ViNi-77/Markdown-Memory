@@ -149,19 +149,19 @@ https://markdown-memory.vercel.app/demo
 
 手順と記録フォーマットは [`docs/PWA_REAL_DEVICE_CHECK.md`](PWA_REAL_DEVICE_CHECK.md) にまとめています。
 
-| 端末/ブラウザ         | 確認すること                                                               |
-| --------------------- | -------------------------------------------------------------------------- |
-| iPhone Safari         | ファイル選択後に本文ペインへ移動し、下部ナビで一覧・本文・詳細を往復できる |
-| iPhone Safari         | 下部ナビで現在地が分かり、一覧から選択中ファイルへ戻れる                   |
-| Android Chrome        | 長いファイル名のMarkdownでも本文ヘッダーの操作ボタンが見切れない           |
-| iPhone / Android 共通 | フォルダ作成、選択、名前変更、削除がタップ操作で使える                     |
-| iPhone / Android 共通 | ログイン導線またはサインアウト導線にアクセスできる                         |
-| iPhone / Android 共通 | 詳細ペインで共有、ファイル操作、AI連携、アプリ内AIを開閉できる             |
-| iPhone / Android 共通 | 長文Markdownを本文ペイン内で縦スクロールして最後まで読める                 |
-| iPhone / Android 共通 | 長いURL、表、コードブロックが本文ペイン全体を横に押し出さない              |
-| iPhone / Android 共通 | ホーム画面追加時のアプリ名、アイコン、起動先が自然に見える                 |
-| iPhone / Android 共通 | オフライン時に `/offline` が表示され、復帰導線と非公開本文非表示を確認する |
-| iPhone / Android 共通 | 削除操作は確認ダイアログ付きで、下部ナビから誤って押せない                 |
+| 端末/ブラウザ | 確認すること                                                               |
+| ------------- | -------------------------------------------------------------------------- |
+| Apple Safari  | ファイル選択後に本文ペインへ移動し、下部ナビで一覧・本文・詳細を往復できる |
+| Apple Safari  | 下部ナビで現在地が分かり、一覧から選択中ファイルへ戻れる                   |
+| Apple Safari  | 長いファイル名のMarkdownでも本文ヘッダーの操作ボタンが見切れない           |
+| Apple Safari  | フォルダ作成、選択、名前変更、削除がタップ操作で使える                     |
+| Apple Safari  | ログイン導線またはサインアウト導線にアクセスできる                         |
+| Apple Safari  | 詳細ペインで共有、ファイル操作、AI連携、アプリ内AIを開閉できる             |
+| Apple Safari  | 長文Markdownを本文ペイン内で縦スクロールして最後まで読める                 |
+| Apple Safari  | 長いURL、表、コードブロックが本文ペイン全体を横に押し出さない              |
+| Apple Safari  | ホーム画面追加時のアプリ名、アイコン、起動先が自然に見える                 |
+| Apple Safari  | オフライン時に `/offline` が表示され、復帰導線と非公開本文非表示を確認する |
+| Apple Safari  | 削除操作は確認ダイアログ付きで、下部ナビから誤って押せない                 |
 
 実機確認は、未ログインで使える `/demo` を先に見ます。ログイン後の本番ワークスペース確認は、DB保存・OAuth・共有URLを含むため、別タスクとして扱います。
 
@@ -195,7 +195,7 @@ Phase 6 と Phase 7 の自動確認・文書化範囲では以下を確認済み
 - [x] 危険操作は確認ダイアログ付きで、下部ナビには置かない
 - [x] スマホ幅でフォルダ操作とアカウント導線を確認できる
 - [x] 長いファイル名でヘッダーや一覧の文字がはみ出さない
-- [x] iPhone Safari と Android Chrome で実機確認する項目が決まっている
+- [x] Apple Safari で実機確認する項目が決まっている
 - [x] PWA本採用前の安全仕様を文書化している
 - [x] ホーム画面追加向け PNG アイコンを manifest / metadata / Service Worker に反映している
 - [x] Service Worker の offline fallback と private/dynamic path 非キャッシュをE2Eで固定している
@@ -206,6 +206,6 @@ Phase 6 と Phase 7 の自動確認・文書化範囲では以下を確認済み
 
 ## 次に確認すること
 
-- [`docs/PWA_REAL_DEVICE_CHECK.md`](PWA_REAL_DEVICE_CHECK.md) に沿って、iPhone Safari と Android Chrome の実機結果を記録する
+- [`docs/PWA_REAL_DEVICE_CHECK.md`](PWA_REAL_DEVICE_CHECK.md) に沿って、Apple Safari の実機結果を記録する
 - 実装済み範囲と実機確認待ちの扱いは [`docs/PWA_PHASE7_HANDOFF.md`](PWA_PHASE7_HANDOFF.md) で確認する
 - オフライン閲覧/編集を将来採用する場合、[`docs/PWA_OFFLINE_DATA_POLICY.md`](PWA_OFFLINE_DATA_POLICY.md) の条件を満たす仕様にする

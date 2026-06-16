@@ -106,11 +106,11 @@ Production 反映後は以下を確認します。
 
 ログイン後ワークスペース、DB保存、共有URL、AI連携、本番ログを見る場合は [`docs/PRODUCTION_SMOKE_CHECK.md`](PRODUCTION_SMOKE_CHECK.md) に沿って確認します。
 
-モバイル/PWAに触れる変更では、必要に応じて [`docs/PWA_REAL_DEVICE_CHECK.md`](PWA_REAL_DEVICE_CHECK.md) に沿って iPhone Safari / Android Chrome の実機確認を記録します。
+モバイル/PWAに触れる変更では、必要に応じて [`docs/PWA_REAL_DEVICE_CHECK.md`](PWA_REAL_DEVICE_CHECK.md) に沿って Apple Safari の実機確認を記録します。
 
 端末保存やオフライン閲覧に触れる変更では、[`docs/PWA_OFFLINE_DATA_POLICY.md`](PWA_OFFLINE_DATA_POLICY.md) の許可/禁止/将来条件を確認します。
 
-Phase 7のPWA実装範囲を確認するときは、[`docs/PWA_PHASE7_HANDOFF.md`](PWA_PHASE7_HANDOFF.md) を見ます。iPhone Safari と Android Chrome の両方で結果が記録されるまでは、PWAは「実装完了・実機確認待ち」として扱います。
+Phase 7のPWA実装範囲を確認するときは、[`docs/PWA_PHASE7_HANDOFF.md`](PWA_PHASE7_HANDOFF.md) を見ます。Apple Safari の結果が記録されていれば、PWAは「実装完了・Apple実機確認済み」として扱います。
 
 ## 監視・ログ
 
