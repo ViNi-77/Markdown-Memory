@@ -50,9 +50,13 @@ import { AiAssistPanel } from "@/components/markdown/AiAssistPanel";
 
 type Props = {
   initialFolders: Folder[];
-  initialDocuments: Document[];
+  initialDocuments: WorkspaceDocument[];
   userSlot: React.ReactNode;
   demoMode?: boolean;
+};
+
+type WorkspaceDocument = Omit<Document, "content"> & {
+  content?: string;
 };
 
 type SaveState = "idle" | "saving" | "saved";
@@ -82,6 +86,10 @@ function clamp(value: number, min: number, max: number): number {
 
 function shouldUseMobilePaneNavigation(): boolean {
   return window.matchMedia("(max-width: 639px)").matches;
+}
+
+function hasLoadedContent(doc: WorkspaceDocument | null): doc is Document {
+  return typeof doc?.content === "string";
 }
 
 function createLocalId(prefix: string): string {
@@ -123,11 +131,13 @@ export function MarkdownWorkspace({
   demoMode = false,
 }: Props) {
   const [folders, setFolders] = useState<Folder[]>(initialFolders);
-  const [documents, setDocuments] = useState<Document[]>(initialDocuments);
+  const [documents, setDocuments] =
+    useState<WorkspaceDocument[]>(initialDocuments);
   const [selectedFolderId, setSelectedFolderId] = useState<string | "all">(
     "all",
   );
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
+  const [loadingDocId, setLoadingDocId] = useState<string | null>(null);
   const [mode, setMode] = useState<"preview" | "edit">("preview");
   const [editContent, setEditContent] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -149,6 +159,7 @@ export function MarkdownWorkspace({
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // 保存待ちの編集内容（id と本文）。デバウンス保存・フラッシュの単一の真実。
   const pendingSave = useRef<{ id: string; content: string } | null>(null);
+  const selectedDocIdRef = useRef<string | null>(null);
 
   // Server Action を実行し、失敗時はエラーを表面化する共通ラッパー。
   const run = useCallback((fn: () => Promise<void>) => {
@@ -165,6 +176,10 @@ export function MarkdownWorkspace({
       }
     });
   }, []);
+
+  useEffect(() => {
+    selectedDocIdRef.current = selectedDocId;
+  }, [selectedDocId]);
 
   // 保留中の編集を即座に保存する（デバウンス待ちを飛ばす）。
   // ファイル切替・プレビュー切替・離脱時に呼び、編集の取りこぼしを防ぐ。
@@ -211,6 +226,11 @@ export function MarkdownWorkspace({
     () => documents.find((d) => d.id === selectedDocId) ?? null,
     [documents, selectedDocId],
   );
+  const loadedSelectedDoc = hasLoadedContent(selectedDoc) ? selectedDoc : null;
+  const selectedDocLoading =
+    Boolean(selectedDoc) &&
+    loadingDocId === selectedDoc?.id &&
+    !loadedSelectedDoc;
 
   const visibleDocs = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -220,10 +240,7 @@ export function MarkdownWorkspace({
           selectedFolderId === "all" ? true : d.folderId === selectedFolderId;
         if (!inFolder) return false;
         if (!q) return true;
-        return (
-          d.name.toLowerCase().includes(q) ||
-          d.content.toLowerCase().includes(q)
-        );
+        return d.name.toLowerCase().includes(q);
       })
       .sort(
         (a, b) =>
@@ -246,9 +263,9 @@ export function MarkdownWorkspace({
   // テキストエリアの変更：保留保存に積み、デバウンスして自動保存する。
   function handleEditChange(value: string) {
     setEditContent(value);
-    if (!selectedDoc) return;
-    if (value === selectedDoc.content) return;
-    pendingSave.current = { id: selectedDoc.id, content: value };
+    if (!loadedSelectedDoc) return;
+    if (value === loadedSelectedDoc.content) return;
+    pendingSave.current = { id: loadedSelectedDoc.id, content: value };
     setSaveState("saving");
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(flushSave, 800);
@@ -407,25 +424,56 @@ export function MarkdownWorkspace({
   }
 
   function selectDocument(
-    doc: Document,
+    doc: WorkspaceDocument,
     nextMode: "preview" | "edit" = "preview",
   ) {
     flushSave();
+    selectedDocIdRef.current = doc.id;
     setSelectedDocId(doc.id);
-    setEditContent(doc.content);
+    setEditContent(doc.content ?? "");
     setSaveState("idle");
     setMode(nextMode);
     setCopied(false);
     setContentCopied(false);
+    setError(null);
     if (shouldUseMobilePaneNavigation()) {
       setMobileView("document");
       requestAnimationFrame(() => scrollToMobilePane(documentPaneRef));
     }
+    if (hasLoadedContent(doc) || demoMode) {
+      setLoadingDocId((current) => (current === doc.id ? null : current));
+      return;
+    }
+
+    setLoadingDocId(doc.id);
+    startTransition(async () => {
+      try {
+        const loadedDoc = await actions.getDocument(doc.id);
+        setDocuments((prev) =>
+          prev.map((d) => (d.id === loadedDoc.id ? loadedDoc : d)),
+        );
+        if (selectedDocIdRef.current === loadedDoc.id) {
+          setEditContent(loadedDoc.content);
+        }
+      } catch (e) {
+        if (selectedDocIdRef.current === doc.id) {
+          setError(
+            e instanceof Error
+              ? e.message
+              : "本文の読み込みに失敗しました。時間をおいて再試行してください。",
+          );
+        }
+      } finally {
+        setLoadingDocId((current) => (current === doc.id ? null : current));
+      }
+    });
   }
 
   function clearSelectedDocument() {
     flushSave();
+    selectedDocIdRef.current = null;
     setSelectedDocId(null);
+    setLoadingDocId(null);
     setEditContent("");
     setSaveState("idle");
     setMode("preview");
@@ -501,7 +549,7 @@ export function MarkdownWorkspace({
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  function handleRenameDoc(doc: Document) {
+  function handleRenameDoc(doc: WorkspaceDocument) {
     const name = window.prompt("新しいファイル名", doc.name);
     const trimmed = name?.trim();
     if (!trimmed || trimmed === doc.name) return;
@@ -519,7 +567,7 @@ export function MarkdownWorkspace({
     });
   }
 
-  function handleMoveDoc(doc: Document, value: string) {
+  function handleMoveDoc(doc: WorkspaceDocument, value: string) {
     const folderId = value === "root" ? null : value;
     if (demoMode) {
       setDocuments((prev) =>
@@ -535,7 +583,7 @@ export function MarkdownWorkspace({
     });
   }
 
-  function handleDeleteDoc(doc: Document) {
+  function handleDeleteDoc(doc: WorkspaceDocument) {
     if (!window.confirm(`「${doc.name}」を削除します。よろしいですか？`))
       return;
     if (demoMode) {
@@ -566,7 +614,7 @@ export function MarkdownWorkspace({
     return `${window.location.origin}/share/${token}`;
   }
 
-  function handleEnableShare(doc: Document) {
+  function handleEnableShare(doc: WorkspaceDocument) {
     if (demoMode) {
       setError(
         "デモでは公開リンクを作成できません。保存と共有はサインイン後に利用できます。",
@@ -583,7 +631,7 @@ export function MarkdownWorkspace({
     });
   }
 
-  function handleDisableShare(doc: Document) {
+  function handleDisableShare(doc: WorkspaceDocument) {
     if (
       !window.confirm(
         "公開を停止します。共有URLは無効になります。よろしいですか？",
@@ -650,7 +698,7 @@ export function MarkdownWorkspace({
     }
   }
 
-  function handleOpenFullView(doc: Document) {
+  function handleOpenFullView(doc: WorkspaceDocument) {
     if (demoMode) {
       setError("デモでは全画面表示を開けません。ログイン後に利用できます。");
       return;
@@ -818,7 +866,7 @@ export function MarkdownWorkspace({
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="ファイル名・内容で検索"
+              placeholder="ファイル名で検索"
               className="pl-8"
             />
           </div>
@@ -917,6 +965,12 @@ export function MarkdownWorkspace({
                 <h1 className="truncate font-heading text-sm font-semibold sm:text-base">
                   {selectedDoc.name}
                 </h1>
+                {selectedDocLoading && (
+                  <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+                    <Loader2 className="size-3 animate-spin" />
+                    読み込み中
+                  </span>
+                )}
                 {saveState === "saving" && (
                   <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
                     <Loader2 className="size-3 animate-spin" />
@@ -959,6 +1013,7 @@ export function MarkdownWorkspace({
                   size="sm"
                   className="max-sm:size-9 max-sm:px-0"
                   aria-label="編集"
+                  disabled={!loadedSelectedDoc}
                   onClick={() => setMode("edit")}
                 >
                   <PencilLine />
@@ -982,16 +1037,22 @@ export function MarkdownWorkspace({
               className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto max-sm:pb-[calc(env(safe-area-inset-bottom)+5rem)]"
             >
               {mode === "edit" ? (
-                <Textarea
-                  value={editContent}
-                  onChange={(e) => handleEditChange(e.target.value)}
-                  placeholder="# Markdown を入力..."
-                  className="h-full min-h-full resize-none rounded-none border-0 bg-background px-5 py-4 font-mono text-sm leading-relaxed focus-visible:ring-0"
-                />
+                loadedSelectedDoc ? (
+                  <Textarea
+                    value={editContent}
+                    onChange={(e) => handleEditChange(e.target.value)}
+                    placeholder="# Markdown を入力..."
+                    className="h-full min-h-full resize-none rounded-none border-0 bg-background px-5 py-4 font-mono text-sm leading-relaxed focus-visible:ring-0"
+                  />
+                ) : (
+                  <DocumentLoadingState />
+                )
               ) : (
                 <div className="markdown-reading-surface">
-                  {selectedDoc.content.trim() ? (
-                    <MarkdownView content={selectedDoc.content} />
+                  {!loadedSelectedDoc ? (
+                    <DocumentLoadingState compact />
+                  ) : loadedSelectedDoc.content.trim() ? (
+                    <MarkdownView content={loadedSelectedDoc.content} />
                   ) : (
                     <p className="text-sm text-muted-foreground">
                       本文が空です。「編集」から入力してください。
@@ -1118,7 +1179,10 @@ export function MarkdownWorkspace({
                 variant="outline"
                 size="sm"
                 className="justify-start"
-                onClick={() => handleDownload(selectedDoc)}
+                disabled={!loadedSelectedDoc}
+                onClick={() => {
+                  if (loadedSelectedDoc) handleDownload(loadedSelectedDoc);
+                }}
               >
                 <Download />
                 ダウンロード
@@ -1188,7 +1252,12 @@ export function MarkdownWorkspace({
                     variant="outline"
                     size="sm"
                     className="justify-between"
-                    onClick={() => handleAiHandoff(selectedDoc, service.url)}
+                    disabled={!loadedSelectedDoc}
+                    onClick={() => {
+                      if (loadedSelectedDoc) {
+                        handleAiHandoff(loadedSelectedDoc, service.url);
+                      }
+                    }}
                   >
                     <span>{service.label} を開く</span>
                     <ExternalLink className="size-3.5 text-muted-foreground" />
@@ -1201,13 +1270,20 @@ export function MarkdownWorkspace({
               </p>
             </DetailsActionGroup>
 
-            <AiAssistPanel
-              key={selectedDoc.id}
-              document={selectedDoc}
-              demoMode={demoMode}
-              onContentChange={handleAiContentChange}
-              onError={setError}
-            />
+            {loadedSelectedDoc ? (
+              <AiAssistPanel
+                key={loadedSelectedDoc.id}
+                document={loadedSelectedDoc}
+                demoMode={demoMode}
+                onContentChange={handleAiContentChange}
+                onError={setError}
+              />
+            ) : (
+              <div className="flex items-center gap-1.5 border-t border-border pt-3 text-xs text-muted-foreground sm:pt-4">
+                <Loader2 className="size-3.5 animate-spin" />
+                本文読み込み後にアプリ内AIを使えます。
+              </div>
+            )}
           </aside>
         </>
       )}
@@ -1352,6 +1428,20 @@ export function MarkdownWorkspace({
           </Button>
         </div>
       )}
+    </div>
+  );
+}
+
+function DocumentLoadingState({ compact = false }: { compact?: boolean }) {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2 text-sm text-muted-foreground",
+        compact ? "py-2" : "h-full justify-center",
+      )}
+    >
+      <Loader2 className="size-4 animate-spin" />
+      本文を読み込んでいます。
     </div>
   );
 }

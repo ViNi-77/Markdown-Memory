@@ -5,13 +5,20 @@ import { db } from "@/lib/db";
 import { folders, documents } from "@/lib/db/schema";
 import type { Folder, Document } from "@/lib/db/schema";
 
+export type WorkspaceDocument = Omit<Document, "content"> & {
+  content?: string;
+};
+
 /**
  * ログイン中ユーザーのフォルダとドキュメントをまとめて取得する。
  * Server Component（app/page.tsx）から呼び、初期表示データとして渡す。
+ *
+ * content は Markdown 本文なので、一覧初期表示では送らない。
+ * 本文は選択時に Server Action で1件だけ取得し、ログイン直後の hydration を軽く保つ。
  */
 export async function getWorkspaceData(): Promise<{
   folders: Folder[];
-  documents: Document[];
+  documents: WorkspaceDocument[];
 }> {
   const session = await auth();
   const userId = session?.user?.id;
@@ -24,7 +31,16 @@ export async function getWorkspaceData(): Promise<{
       .where(eq(folders.userId, userId))
       .orderBy(asc(folders.createdAt)),
     db
-      .select()
+      .select({
+        id: documents.id,
+        userId: documents.userId,
+        folderId: documents.folderId,
+        name: documents.name,
+        isPublic: documents.isPublic,
+        shareToken: documents.shareToken,
+        createdAt: documents.createdAt,
+        updatedAt: documents.updatedAt,
+      })
       .from(documents)
       .where(eq(documents.userId, userId))
       .orderBy(desc(documents.updatedAt)),
