@@ -1,11 +1,12 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, ilike, or } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { folders, documents } from "@/lib/db/schema";
 import type { Folder, Document } from "@/lib/db/schema";
+import type { WorkspaceDocument } from "@/lib/data";
 
 /** ログイン中ユーザーIDを取得。未ログインなら例外。全アクションの入口で所有者を確定する。 */
 async function requireUserId(): Promise<string> {
@@ -102,6 +103,44 @@ export async function getDocument(id: string): Promise<Document> {
 
   if (!row) throw new Error("ファイルが見つかりません。");
   return row;
+}
+
+export async function searchDocuments(input: {
+  query: string;
+  folderId?: string | "all" | null;
+}): Promise<WorkspaceDocument[]> {
+  const userId = await requireUserId();
+  const query = input.query.trim();
+  if (!query) return [];
+
+  const pattern = `%${query}%`;
+  const searchCondition = or(
+    ilike(documents.name, pattern),
+    ilike(documents.content, pattern),
+  );
+  const folderCondition =
+    input.folderId && input.folderId !== "all"
+      ? eq(documents.folderId, input.folderId)
+      : undefined;
+  const whereCondition = folderCondition
+    ? and(eq(documents.userId, userId), folderCondition, searchCondition)
+    : and(eq(documents.userId, userId), searchCondition);
+
+  return db
+    .select({
+      id: documents.id,
+      userId: documents.userId,
+      folderId: documents.folderId,
+      name: documents.name,
+      isPublic: documents.isPublic,
+      shareToken: documents.shareToken,
+      createdAt: documents.createdAt,
+      updatedAt: documents.updatedAt,
+    })
+    .from(documents)
+    .where(whereCondition)
+    .orderBy(desc(documents.updatedAt))
+    .limit(50);
 }
 
 export async function updateDocumentContent(

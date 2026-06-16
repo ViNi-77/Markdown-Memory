@@ -92,6 +92,26 @@ function hasLoadedContent(doc: WorkspaceDocument | null): doc is Document {
   return typeof doc?.content === "string";
 }
 
+function mergeDocumentMetadata(
+  current: WorkspaceDocument[],
+  incoming: WorkspaceDocument[],
+): WorkspaceDocument[] {
+  if (incoming.length === 0) return current;
+
+  const incomingById = new Map(incoming.map((doc) => [doc.id, doc]));
+  const seen = new Set<string>();
+  const merged = current.map((doc) => {
+    const metadata = incomingById.get(doc.id);
+    if (!metadata) return doc;
+    seen.add(doc.id);
+    return hasLoadedContent(doc)
+      ? { ...metadata, content: doc.content }
+      : metadata;
+  });
+  const missing = incoming.filter((doc) => !seen.has(doc.id));
+  return [...merged, ...missing];
+}
+
 function createLocalId(prefix: string): string {
   return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? Date.now().toString(36)}`;
 }
@@ -142,6 +162,10 @@ export function MarkdownWorkspace({
   const [editContent, setEditContent] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<
+    WorkspaceDocument[] | null
+  >(null);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [copied, setCopied] = useState(false);
   const [contentCopied, setContentCopied] = useState(false);
@@ -160,6 +184,7 @@ export function MarkdownWorkspace({
   // 保存待ちの編集内容（id と本文）。デバウンス保存・フラッシュの単一の真実。
   const pendingSave = useRef<{ id: string; content: string } | null>(null);
   const selectedDocIdRef = useRef<string | null>(null);
+  const searchRequestIdRef = useRef(0);
 
   // Server Action を実行し、失敗時はエラーを表面化する共通ラッパー。
   const run = useCallback((fn: () => Promise<void>) => {
@@ -232,7 +257,52 @@ export function MarkdownWorkspace({
     loadingDocId === selectedDoc?.id &&
     !loadedSelectedDoc;
 
-  const visibleDocs = useMemo(() => {
+  function handleSearchChange(value: string) {
+    setSearch(value);
+    searchRequestIdRef.current += 1;
+    if (demoMode || !value.trim()) {
+      setSearchResults(null);
+      setSearchLoading(false);
+      return;
+    }
+    setSearchLoading(true);
+  }
+
+  useEffect(() => {
+    const query = search.trim();
+    if (demoMode || !query) return;
+
+    const requestId = searchRequestIdRef.current + 1;
+    searchRequestIdRef.current = requestId;
+
+    const timer = window.setTimeout(() => {
+      actions
+        .searchDocuments({ query, folderId: selectedFolderId })
+        .then((results) => {
+          if (searchRequestIdRef.current !== requestId) return;
+          setSearchResults(results);
+          setDocuments((prev) => mergeDocumentMetadata(prev, results));
+        })
+        .catch((e) => {
+          if (searchRequestIdRef.current !== requestId) return;
+          setSearchResults([]);
+          setError(
+            e instanceof Error
+              ? e.message
+              : "検索に失敗しました。時間をおいて再試行してください。",
+          );
+        })
+        .finally(() => {
+          if (searchRequestIdRef.current === requestId) {
+            setSearchLoading(false);
+          }
+        });
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [demoMode, search, selectedFolderId]);
+
+  const localVisibleDocs = useMemo(() => {
     const q = search.trim().toLowerCase();
     return documents
       .filter((d) => {
@@ -240,13 +310,20 @@ export function MarkdownWorkspace({
           selectedFolderId === "all" ? true : d.folderId === selectedFolderId;
         if (!inFolder) return false;
         if (!q) return true;
-        return d.name.toLowerCase().includes(q);
+        return (
+          d.name.toLowerCase().includes(q) ||
+          (typeof d.content === "string" && d.content.toLowerCase().includes(q))
+        );
       })
       .sort(
         (a, b) =>
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
       );
   }, [documents, selectedFolderId, search]);
+  const serverSearchActive = !demoMode && search.trim().length > 0;
+  const visibleDocs = serverSearchActive
+    ? (searchResults ?? [])
+    : localVisibleDocs;
 
   // 編集中に保留保存があるままタブを閉じようとしたら警告する（取りこぼし防止）。
   useEffect(() => {
@@ -557,12 +634,22 @@ export function MarkdownWorkspace({
       setDocuments((prev) =>
         prev.map((d) => (d.id === doc.id ? { ...d, name: trimmed } : d)),
       );
+      setSearchResults(
+        (prev) =>
+          prev?.map((d) => (d.id === doc.id ? { ...d, name: trimmed } : d)) ??
+          null,
+      );
       return;
     }
     run(async () => {
       await actions.renameDocument(doc.id, trimmed);
       setDocuments((prev) =>
         prev.map((d) => (d.id === doc.id ? { ...d, name: trimmed } : d)),
+      );
+      setSearchResults(
+        (prev) =>
+          prev?.map((d) => (d.id === doc.id ? { ...d, name: trimmed } : d)) ??
+          null,
       );
     });
   }
@@ -573,12 +660,20 @@ export function MarkdownWorkspace({
       setDocuments((prev) =>
         prev.map((d) => (d.id === doc.id ? { ...d, folderId } : d)),
       );
+      setSearchResults(
+        (prev) =>
+          prev?.map((d) => (d.id === doc.id ? { ...d, folderId } : d)) ?? null,
+      );
       return;
     }
     run(async () => {
       await actions.moveDocument(doc.id, folderId);
       setDocuments((prev) =>
         prev.map((d) => (d.id === doc.id ? { ...d, folderId } : d)),
+      );
+      setSearchResults(
+        (prev) =>
+          prev?.map((d) => (d.id === doc.id ? { ...d, folderId } : d)) ?? null,
       );
     });
   }
@@ -588,12 +683,14 @@ export function MarkdownWorkspace({
       return;
     if (demoMode) {
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
+      setSearchResults((prev) => prev?.filter((d) => d.id !== doc.id) ?? null);
       if (selectedDocId === doc.id) clearSelectedDocument();
       return;
     }
     run(async () => {
       await actions.deleteDocument(doc.id);
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
+      setSearchResults((prev) => prev?.filter((d) => d.id !== doc.id) ?? null);
       if (selectedDocId === doc.id) clearSelectedDocument();
     });
   }
@@ -863,11 +960,15 @@ export function MarkdownWorkspace({
           </div>
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            {searchLoading && (
+              <Loader2 className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+            )}
             <Input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="ファイル名で検索"
-              className="pl-8"
+              onChange={(e) => handleSearchChange(e.target.value)}
+              aria-label="ファイル名・内容で検索"
+              placeholder="ファイル名・内容で検索"
+              className={cn("pl-8", searchLoading && "pr-8")}
             />
           </div>
           {selectedDoc && (
@@ -899,12 +1000,23 @@ export function MarkdownWorkspace({
           )}
         </div>
 
-        <ul className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:pb-2">
+        <ul
+          aria-live="polite"
+          className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:pb-2"
+        >
           {visibleDocs.length === 0 ? (
             <li className="px-2 py-8 text-center text-sm text-muted-foreground">
-              ファイルがありません。
-              <br />
-              アップロードまたは新規作成してください。
+              {searchLoading ? (
+                "検索しています。"
+              ) : search.trim() ? (
+                "一致するファイルがありません。"
+              ) : (
+                <>
+                  ファイルがありません。
+                  <br />
+                  アップロードまたは新規作成してください。
+                </>
+              )}
             </li>
           ) : (
             visibleDocs.map((doc) => (
@@ -1415,7 +1527,10 @@ export function MarkdownWorkspace({
       </MobileActionSheet>
 
       {error && (
-        <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] left-1/2 z-50 flex max-w-md -translate-x-1/2 items-center gap-3 rounded-lg bg-destructive/10 px-4 py-2.5 text-sm text-destructive shadow-lg ring-1 ring-destructive/20 sm:bottom-4">
+        <div
+          role="alert"
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] left-1/2 z-50 flex max-w-md -translate-x-1/2 items-center gap-3 rounded-lg bg-destructive/10 px-4 py-2.5 text-sm text-destructive shadow-lg ring-1 ring-destructive/20 sm:bottom-4"
+        >
           <span className="flex-1">{error}</span>
           <Button
             variant="ghost"
