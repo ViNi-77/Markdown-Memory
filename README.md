@@ -333,18 +333,18 @@ Pull Request の説明やコメントは日本語で記載します。
 
 ## Roadmap
 
-| Phase | 状態                    | 内容                                                   |
-| ----- | ----------------------- | ------------------------------------------------------ |
-| 4     | 完了                    | 公開MVP。ログイン、保存、共有、AI連携まで確認済み      |
-| 5     | 完了                    | CI/CD、E2E、監視、バックアップ手順、フィードバック導線 |
-| 5.5   | 完了                    | Cron監視、PWA下地、スマホ前段導線、README整備          |
-| 6     | 完了                    | スマホ閲覧最適化、PWA安全仕様、フィードバック運用整備  |
-| 7     | 実装完了 / 実機確認待ち | PWA品質強化、スマホ読書体験の磨き込み、アプリ化準備    |
-| 8     | 準備中                  | ログイン後Productionの保存、共有、AI連携、運用確認     |
+| Phase | 状態              | 内容                                                   |
+| ----- | ----------------- | ------------------------------------------------------ |
+| 4     | 完了              | 公開MVP。ログイン、保存、共有、AI連携まで確認済み      |
+| 5     | 完了              | CI/CD、E2E、監視、バックアップ手順、フィードバック導線 |
+| 5.5   | 完了              | Cron監視、PWA下地、スマホ前段導線、README整備          |
+| 6     | 完了              | スマホ閲覧最適化、PWA安全仕様、フィードバック運用整備  |
+| 7     | 完了（Apple対象） | PWA品質強化、スマホ読書体験の磨き込み、アプリ化準備    |
+| 8     | 準備中            | ログイン後Productionの保存、共有、AI連携、運用確認     |
 
 Phase 6 の作業記録は [#23](https://github.com/ViNi-77/Markdown-Memory/issues/23) に残しています。Phase 7 では、既存の本番環境を壊さないように専用ブランチで進め、PWAとしてホーム画面に置いても違和感のない体験と、スマホでのMarkdown読書品質を優先して磨きました。Phase 7D では、ホーム画面追加向けの PNG アイコンとオフライン時の安全なアプリシェル更新を固定しています。Phase 7E では、Service Worker の offline fallback と private/dynamic path 非キャッシュを E2E で固定しています。Phase 7F では、長いURL、表、コードブロックがスマホ幅の本文ペイン全体を横に押し出さないことを固定しています。Phase 7G では、PWA実機確認の手順と記録用Issue Templateを固定しています。Phase 7H では、ログイン後データと共有ページを端末に残さないオフラインデータ方針を固定しています。Phase 7I では、PWA実装済み範囲と実機確認待ちの境界を [`docs/PWA_PHASE7_HANDOFF.md`](docs/PWA_PHASE7_HANDOFF.md) に整理しています。
 
-Phase 8A では、PWAの実機確認と分けて、ログイン後のProductionワークスペース、DB保存、共有URL、AI連携、運用ヘルスチェックを [`docs/PRODUCTION_SMOKE_CHECK.md`](docs/PRODUCTION_SMOKE_CHECK.md) に沿って確認します。Android Chrome のPWA実機確認が保留の場合でも、PWAは「実装完了・実機確認待ち」として扱い、ログイン後の本番確認は先へ進めます。
+Phase 8A では、PWAの実機確認と分けて、ログイン後のProductionワークスペース、DB保存、共有URL、AI連携、運用ヘルスチェックを [`docs/PRODUCTION_SMOKE_CHECK.md`](docs/PRODUCTION_SMOKE_CHECK.md) に沿って確認します。PWA の実機確認は Apple 端末を対象にし、Android Chrome は現時点の確認対象に含めません。
 
 ## 本番確認済み
 

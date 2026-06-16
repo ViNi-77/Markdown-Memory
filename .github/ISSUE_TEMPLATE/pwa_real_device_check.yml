@@ -33,8 +33,8 @@ body:
       label: 端末/ブラウザ
       options:
         - iPhone Safari
-        - Android Chrome
-        - その他
+        - iPad Safari
+        - その他のApple Safari
     validations:
       required: true
   - type: input
@@ -70,7 +70,6 @@ body:
       options:
         - OK
         - 修正が必要
-        - 片方の端末だけ確認済み
     validations:
       required: true
   - type: textarea

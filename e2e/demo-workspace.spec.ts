@@ -170,7 +170,7 @@ test.describe("PWA下地", () => {
 
     await context.setOffline(true);
     try {
-      await page.goto("/demo");
+      await page.goto("/demo?offline-check=1");
       await expect(
         page.getByRole("heading", {
           name: "Markdown Memory に接続できません",
