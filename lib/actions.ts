@@ -92,6 +92,18 @@ export async function createDocument(input: {
   return row;
 }
 
+export async function getDocument(id: string): Promise<Document> {
+  const userId = await requireUserId();
+  const [row] = await db
+    .select()
+    .from(documents)
+    .where(and(eq(documents.id, id), eq(documents.userId, userId)))
+    .limit(1);
+
+  if (!row) throw new Error("ファイルが見つかりません。");
+  return row;
+}
+
 export async function updateDocumentContent(
   id: string,
   content: string,
