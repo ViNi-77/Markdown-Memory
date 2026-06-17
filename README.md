@@ -207,67 +207,9 @@ CRON_SECRET
 
 `GEMINI_API_KEY` は任意です。未設定でも、ユーザーが画面から自分の Gemini API キーを保存すれば AI 機能を利用できます。
 `ERROR_REPORT_WEBHOOK_URL` も任意です。設定すると、本文やAPIキーを含まないサーバーエラー通知をHTTPS Webhookへ送ります。
-`CRON_SECRET` は Vercel Cron の内部ヘルスチェック保護用です。32文字以上のランダム値を設定してください。
+`CRON_SECRET` は Vercel Cron の内部ヘルスチェック保護用です。
 
-## Google OAuth 設定
-
-ローカル:
-
-```text
-Authorized JavaScript origins:
-http://localhost:3000
-
-Authorized redirect URIs:
-http://localhost:3000/api/auth/callback/google
-```
-
-本番:
-
-```text
-Authorized JavaScript origins:
-https://markdown-memory.vercel.app
-
-Authorized redirect URIs:
-https://markdown-memory.vercel.app/api/auth/callback/google
-```
-
-### `401: deleted_client` が出る場合
-
-Google ログイン画面で `The OAuth client was deleted.` または `401: deleted_client` が出る場合、Vercel の `AUTH_GOOGLE_ID` が、Google Cloud 側で削除済みの OAuth クライアント ID を指しています。
-
-復旧手順:
-
-1. Google Cloud Console で新しい OAuth 2.0 Client ID を作成する
-2. Application type は `Web application` を選ぶ
-3. 本番の Authorized JavaScript origins に `https://markdown-memory.vercel.app` を追加する
-4. 本番の Authorized redirect URIs に `https://markdown-memory.vercel.app/api/auth/callback/google` を追加する
-5. 発行された Client ID を Vercel の `AUTH_GOOGLE_ID` に設定する
-6. 発行された Client Secret を Vercel の `AUTH_GOOGLE_SECRET` に設定する
-7. Vercel で Production を Redeploy する
-
-古い Client ID / Client Secret は使い回さず、新しく発行された値に置き換えてください。
-
-## Vercel 設定
-
-Vercel には以下を Production 環境変数として設定します。
-
-```text
-DATABASE_URL
-AUTH_SECRET
-AUTH_GOOGLE_ID
-AUTH_GOOGLE_SECRET
-AUTH_URL=https://markdown-memory.vercel.app
-NEXTAUTH_URL=https://markdown-memory.vercel.app
-GEMINI_API_KEY
-ERROR_REPORT_WEBHOOK_URL
-CRON_SECRET
-```
-
-`DATABASE_URL` は Neon PostgreSQL の接続文字列です。設定後、ローカルまたは CI で次を実行して DB スキーマを反映します。
-
-```bash
-npm run db:push
-```
+OAuth、Vercel、Production 確認、バックアップなどの運用手順は [`docs/MAINTAINERS.md`](docs/MAINTAINERS.md) に集約しています。
 
 ## チェックコマンド
 
@@ -303,33 +245,11 @@ npx playwright install chromium
 
 Pull Request の説明やコメントは日本語で記載します。
 
-## 運用
+## メンテナンス
 
-フェーズ5では、公開MVPを小さく運用しながら安定性を上げていきます。
+このリポジトリは public です。運用・リリース・本番確認の詳細は、初見ユーザー向け README からは分けて [`docs/MAINTAINERS.md`](docs/MAINTAINERS.md) に置いています。
 
-現在リポジトリに入っている運用基盤:
-
-- GitHub Actions CI
-- Dependabot
-- Pull Request Template
-- Issue Template
-- Playwright E2E
-- Vercel Analytics
-- Vercel Speed Insights
-- `/api/health`
-- `/api/cron/health`
-- AI API の構造化ログ
-- PWA manifest / PNG icon / offline page / Service Worker / スマホ読書面
-- Security Policy
-- 運用手順: [`docs/OPERATIONS.md`](docs/OPERATIONS.md)
-- main保護手順: [`docs/BRANCH_PROTECTION.md`](docs/BRANCH_PROTECTION.md)
-- バックアップ/復元手順: [`docs/BACKUP_RESTORE.md`](docs/BACKUP_RESTORE.md)
-- モバイル/PWA準備メモ: [`docs/MOBILE_PWA_PREP.md`](docs/MOBILE_PWA_PREP.md)
-- スマホ実機確認チェックリスト: [`docs/MOBILE_PWA_PREP.md`](docs/MOBILE_PWA_PREP.md#スマホ実機確認チェックリスト)
-- PWA実機確認チェックリスト: [`docs/PWA_REAL_DEVICE_CHECK.md`](docs/PWA_REAL_DEVICE_CHECK.md)
-- PWAオフラインデータ方針: [`docs/PWA_OFFLINE_DATA_POLICY.md`](docs/PWA_OFFLINE_DATA_POLICY.md)
-- Phase 7 PWAリリース判定メモ: [`docs/PWA_PHASE7_HANDOFF.md`](docs/PWA_PHASE7_HANDOFF.md)
-- Production スモークチェックリスト: [`docs/PRODUCTION_SMOKE_CHECK.md`](docs/PRODUCTION_SMOKE_CHECK.md)
+公開 Issue、PR、スクリーンショットには、APIキー、DB接続URL、OAuth Secret、個人情報、非公開Markdown本文を含めません。Production スモークで作ったテスト用ファイルや共有リンクは、確認後に削除または非公開へ戻します。
 
 ## Roadmap
 
@@ -340,28 +260,9 @@ Pull Request の説明やコメントは日本語で記載します。
 | 5.5   | 完了              | Cron監視、PWA下地、スマホ前段導線、README整備          |
 | 6     | 完了              | スマホ閲覧最適化、PWA安全仕様、フィードバック運用整備  |
 | 7     | 完了（Apple対象） | PWA品質強化、スマホ読書体験の磨き込み、アプリ化準備    |
-| 8     | 準備中            | ログイン後Productionの保存、共有、AI連携、運用確認     |
+| 8     | 進行中            | ログイン後Productionの保存、共有、AI連携、運用確認     |
 
-Phase 6 の作業記録は [#23](https://github.com/ViNi-77/Markdown-Memory/issues/23) に残しています。Phase 7 では、既存の本番環境を壊さないように専用ブランチで進め、PWAとしてホーム画面に置いても違和感のない体験と、スマホでのMarkdown読書品質を優先して磨きました。Phase 7D では、ホーム画面追加向けの PNG アイコンとオフライン時の安全なアプリシェル更新を固定しています。Phase 7E では、Service Worker の offline fallback と private/dynamic path 非キャッシュを E2E で固定しています。Phase 7F では、長いURL、表、コードブロックがスマホ幅の本文ペイン全体を横に押し出さないことを固定しています。Phase 7G では、PWA実機確認の手順と記録用Issue Templateを固定しています。Phase 7H では、ログイン後データと共有ページを端末に残さないオフラインデータ方針を固定しています。Phase 7I では、PWA実装済み範囲と実機確認待ちの境界を [`docs/PWA_PHASE7_HANDOFF.md`](docs/PWA_PHASE7_HANDOFF.md) に整理しています。
-
-Phase 8A では、PWAの実機確認と分けて、ログイン後のProductionワークスペース、DB保存、共有URL、AI連携、運用ヘルスチェックを [`docs/PRODUCTION_SMOKE_CHECK.md`](docs/PRODUCTION_SMOKE_CHECK.md) に沿って確認します。PWA の実機確認は Apple 端末を対象にし、Android Chrome は現時点の確認対象に含めません。
-
-## 本番確認済み
-
-2026-06-13 時点で、Production 環境で以下を確認済みです。
-
-- Google ログイン
-- Markdown ファイル作成
-- Markdown 本文の編集と保存
-- ページ再読み込み後の保存内容復元
-- 公開リンク作成
-- 共有 URL の未ログイン閲覧
-- フォルダ作成とファイル移動
-- ペイン幅調整
-- 全画面表示
-- `/api/health`
-- `/api/cron/health` の `CRON_SECRET` 保護
-- PWA manifest / PNG icon / offline page
+Phase ごとの確認記録と本番スモークの進め方は [`docs/MAINTAINERS.md`](docs/MAINTAINERS.md) から参照します。
 
 ## リポジトリに置かないもの
 

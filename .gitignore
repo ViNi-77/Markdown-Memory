@@ -15,6 +15,12 @@
 /playwright-report
 /test-results
 /backups
+*.backup
+*.bak
+*.db
+*.dump
+*.sqlite
+*.sqlite3
 
 # next.js
 /.next/
