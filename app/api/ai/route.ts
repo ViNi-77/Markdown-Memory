@@ -7,6 +7,7 @@ import {
   buildAiPrompt,
   parseAiRequestBody,
   resolveAiInstruction,
+  resolveGeminiModel,
 } from "@/lib/ai";
 import {
   getRequestId,
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
 
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: resolveGeminiModel(),
       contents: prompt,
     });
 

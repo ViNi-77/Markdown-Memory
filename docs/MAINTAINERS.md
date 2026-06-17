@@ -27,11 +27,13 @@ AUTH_GOOGLE_SECRET
 AUTH_URL=https://markdown-memory.vercel.app
 NEXTAUTH_URL=https://markdown-memory.vercel.app
 GEMINI_API_KEY
+GEMINI_MODEL
 ERROR_REPORT_WEBHOOK_URL
 CRON_SECRET
 ```
 
 `DATABASE_URL` は Neon PostgreSQL の接続文字列です。スキーマ変更後は、対象環境を確認してから `npm run db:push` を実行します。
+`GEMINI_MODEL` は任意です。未設定時は `gemini-3.5-flash` を使います。Google側のモデル廃止や切り替えがあった場合は、まず Vercel Environment Variables で差し替えて挙動を確認します。
 
 ## Google OAuth
 

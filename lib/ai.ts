@@ -20,12 +20,19 @@ export const AI_PRESET_PROMPTS = {
 
 export type AiTask = keyof typeof AI_PRESET_PROMPTS | "custom";
 
+export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash";
+
 export type AiRequestPayload = {
   documentContent: string;
   task: AiTask;
   customPrompt?: string;
   apiKey?: string;
 };
+
+export function resolveGeminiModel(model = process.env.GEMINI_MODEL): string {
+  const trimmed = model?.trim();
+  return trimmed || DEFAULT_GEMINI_MODEL;
+}
 
 export function resolveAiInstruction(
   task: unknown,
