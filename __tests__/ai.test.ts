@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   AI_PRESET_PROMPTS,
+  DEFAULT_GEMINI_MODEL,
   buildAiPrompt,
   parseAiRequestBody,
   resolveAiInstruction,
+  resolveGeminiModel,
 } from "@/lib/ai";
 
 describe("AI request helpers", () => {
@@ -60,5 +62,11 @@ describe("AI request helpers", () => {
     expect(prompt).toContain("Markdown本文のみを出力してください");
     expect(prompt).toContain("【指示】\n要約してください");
     expect(prompt).toContain("【対象Markdown】\n# Original");
+  });
+
+  it("Gemini モデルは現行の安定モデルを既定値にする", () => {
+    expect(DEFAULT_GEMINI_MODEL).toBe("gemini-3.5-flash");
+    expect(resolveGeminiModel()).toBe(DEFAULT_GEMINI_MODEL);
+    expect(resolveGeminiModel(" gemini-2.5-flash ")).toBe("gemini-2.5-flash");
   });
 });
