@@ -1,0 +1,8 @@
+# Keep source archives focused on the app runtime and public-facing docs.
+# Maintainer docs stay in archives because README links to them.
+.github/ export-ignore
+__tests__/ export-ignore
+e2e/ export-ignore
+test-results/ export-ignore
+playwright.config.ts export-ignore
+vitest.config.ts export-ignore

@@ -269,3 +269,12 @@ Issue には APIキー、DB接続URL、個人情報、非公開Markdown本文を
 - DB 接続URL
 - ローカルログ
 - DB バックアップファイル
+- 非公開 Markdown 本文
+- ユーザーのメールアドレスや個人情報
+- `.agents`
+- `.antigravity`
+- `.claude`
+
+README は初見ユーザー向けの入口として保ち、運用・Phase記録・Production スモークなどの詳細は [`docs/MAINTAINERS.md`](MAINTAINERS.md) から参照します。
+
+Production スモークやスクリーンショット確認では、公開されても困らないテスト用 Markdown だけを使います。確認後はテスト用ファイルを削除し、共有リンクを作った場合は共有を解除します。
