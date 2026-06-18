@@ -22,14 +22,14 @@ export default async function DocumentViewPage({
   if (!doc) notFound();
 
   return (
-    <main className="min-h-dvh bg-background">
-      <header className="border-b border-border bg-card">
+    <main className="min-h-dvh bg-canvas">
+      <header className="border-b border-border bg-card/95 shadow-2xs">
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-6 py-4">
           <FileText className="size-5 shrink-0 text-primary" />
           <h1 className="min-w-0 flex-1 truncate font-heading text-base font-semibold">
             {doc.name}
           </h1>
-          <span className="hidden shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground sm:inline-flex">
+          <span className="hidden shrink-0 rounded-full bg-secondary px-2.5 py-0.5 text-xs text-secondary-foreground sm:inline-flex">
             全画面表示
           </span>
           <Link

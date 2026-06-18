@@ -22,10 +22,10 @@ export default async function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-muted/30 p-6">
-      <Card className="w-full max-w-sm">
+    <main className="flex min-h-dvh items-center justify-center bg-canvas p-6">
+      <Card className="w-full max-w-sm shadow-lg">
         <CardHeader className="flex flex-col items-center gap-3 text-center">
-          <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <div className="flex size-12 items-center justify-center rounded-xl bg-secondary text-primary shadow-xs ring-1 ring-border/80">
             <FileText className="size-6" />
           </div>
           <CardTitle emphasis="prominent" className="text-lg">
@@ -50,7 +50,7 @@ export default async function LoginPage() {
                 </Button>
               </form>
             ) : (
-              <div className="rounded-md border border-border bg-muted/50 px-3 py-3 text-sm text-muted-foreground">
+              <div className="rounded-md border border-border bg-canvas/70 px-3 py-3 text-sm text-muted-foreground">
                 <div className="flex items-start gap-2">
                   <Info className="mt-0.5 size-4 shrink-0" />
                   <p className="leading-relaxed">

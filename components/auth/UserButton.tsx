@@ -15,7 +15,7 @@ export async function UserButton() {
   const initial = (user.name ?? user.email ?? "?").charAt(0).toUpperCase();
 
   return (
-    <div className="flex items-center gap-2 rounded-lg bg-card px-2 py-1.5 ring-1 ring-foreground/10">
+    <div className="flex items-center gap-2 rounded-lg bg-card px-2 py-1.5 shadow-xs ring-1 ring-border/80">
       <Avatar className="size-6">
         {user.image ? <AvatarImage src={user.image} alt="" /> : null}
         <AvatarFallback className="text-xs">{initial}</AvatarFallback>

@@ -177,7 +177,7 @@ export function AiAssistPanel({
       {panelOpen && (
         <>
           {showSettings && (
-            <div className="flex flex-col gap-2 rounded-lg bg-muted/50 p-3">
+            <div className="flex flex-col gap-2 rounded-lg border border-border bg-canvas/70 p-3">
               <label className="text-xs text-muted-foreground">
                 Gemini APIキー
               </label>
@@ -246,7 +246,7 @@ export function AiAssistPanel({
           )}
 
           {result && (
-            <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/30 p-3">
+            <div className="flex flex-col gap-2 rounded-lg border border-border bg-canvas/70 p-3 shadow-xs">
               <span className="text-xs font-medium text-muted-foreground">
                 提案（適用するまで原文は変わりません）
               </span>
