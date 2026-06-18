@@ -7,6 +7,7 @@ import {
   buildAiPrompt,
   parseAiRequestBody,
   resolveAiInstruction,
+  resolveAiProviderErrorResponse,
   resolveGeminiModel,
 } from "@/lib/ai";
 import {
@@ -19,16 +20,19 @@ import {
 export async function POST(request: Request) {
   const start = Date.now();
   const requestId = getRequestId(request);
+  let usesUserApiKey = false;
+  let providerRequestStarted = false;
   try {
     const payload = parseAiRequestBody(await request.json());
     const userApiKey = payload.apiKey?.trim();
+    usesUserApiKey = Boolean(userApiKey);
     const session = await auth();
     logInfo("ai.request.start", {
       route: "/api/ai",
       requestId,
       task: payload.task,
       hasSession: Boolean(session?.user),
-      usesUserApiKey: Boolean(userApiKey),
+      usesUserApiKey,
     });
 
     if (!session?.user && !userApiKey) {
@@ -73,6 +77,7 @@ export async function POST(request: Request) {
     });
 
     const ai = new GoogleGenAI({ apiKey });
+    providerRequestStarted = true;
     const response = await ai.models.generateContent({
       model: resolveGeminiModel(),
       contents: prompt,
@@ -110,15 +115,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
+    const providerError = providerRequestStarted
+      ? resolveAiProviderErrorResponse(error, usesUserApiKey)
+      : {
+          kind: "unknown" as const,
+          providerStatus: null,
+          responseStatus: 500,
+          publicMessage:
+            "AI処理に失敗しました。時間をおいて再試行してください。",
+        };
     await reportOperationalError("ai.request.failed", error, {
       route: "/api/ai",
       requestId,
-      status: 500,
+      status: providerError.responseStatus,
+      providerStatus: providerError.providerStatus,
+      providerErrorKind: providerError.kind,
+      providerRequestStarted,
+      usesUserApiKey,
       ms: Date.now() - start,
     });
     return NextResponse.json(
-      { error: "AI処理に失敗しました。時間をおいて再試行してください。" },
-      { status: 500 },
+      { error: providerError.publicMessage },
+      { status: providerError.responseStatus },
     );
   }
 }

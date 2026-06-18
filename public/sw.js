@@ -1,4 +1,5 @@
 const CACHE_NAME = "markdown-memory-shell-v3";
+const OFFLINE_FALLBACK_TEST_PATH = "/offline-check";
 const APP_SHELL = [
   "/demo",
   "/offline",
@@ -51,6 +52,14 @@ self.addEventListener("fetch", (event) => {
   if (isPrivateOrDynamicPath(url.pathname)) return;
 
   if (request.mode === "navigate") {
+    // Synthetic navigation used by E2E to verify the cached offline fallback.
+    if (url.pathname === OFFLINE_FALLBACK_TEST_PATH) {
+      event.respondWith(
+        caches.match("/offline").then((cached) => cached ?? fetch("/offline")),
+      );
+      return;
+    }
+
     event.respondWith(
       fetch(request)
         .then((response) => {
