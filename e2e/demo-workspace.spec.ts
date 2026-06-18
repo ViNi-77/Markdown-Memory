@@ -22,6 +22,9 @@ test.describe("PWA下地", () => {
         );
       });
     });
+    await expect
+      .poll(() => cachedPathnames(page))
+      .toEqual(expect.arrayContaining(["/offline"]));
   }
 
   async function cachedPathnames(page: Page) {
@@ -170,7 +173,7 @@ test.describe("PWA下地", () => {
 
     await context.setOffline(true);
     try {
-      await page.goto("/demo?offline-check=1");
+      await page.goto("/offline-check");
       await expect(
         page.getByRole("heading", {
           name: "Markdown Memory に接続できません",
@@ -476,24 +479,27 @@ test.describe("デモワークスペース: モバイル前段確認", () => {
     page,
   }) => {
     await page.goto("/demo");
+    let nativeDialogCount = 0;
+    page.on("dialog", async (dialog) => {
+      nativeDialogCount += 1;
+      await dialog.dismiss();
+    });
 
     await page.getByRole("button", { name: "フォルダ管理を開く" }).click();
     await expect(page.getByRole("dialog", { name: "フォルダ" })).toBeVisible();
 
-    page.once("dialog", async (dialog) => {
-      expect(dialog.message()).toContain("フォルダ名");
-      await dialog.accept("スマホ確認");
-    });
     await page.getByRole("button", { name: "フォルダを追加" }).click();
+    await page.locator('input[placeholder="例: 仕事メモ"]').fill("スマホ確認");
+    await page.getByRole("button", { name: "追加" }).click();
+    await page.getByRole("button", { name: "フォルダ管理を開く" }).click();
     await expect(
       page.getByRole("button", { name: "スマホ確認 0" }),
     ).toBeVisible();
 
-    page.once("dialog", async (dialog) => {
-      expect(dialog.message()).toContain("新しいフォルダ名");
-      await dialog.accept("スマホ整理");
-    });
     await page.getByRole("button", { name: "スマホ確認 の名前を変更" }).click();
+    await page.locator('input[placeholder="例: 仕事メモ"]').fill("スマホ整理");
+    await page.getByRole("button", { name: "変更" }).click();
+    await page.getByRole("button", { name: "フォルダ管理を開く" }).click();
     await expect(
       page.getByRole("button", { name: "スマホ整理 0" }),
     ).toBeVisible();
@@ -528,16 +534,14 @@ test.describe("デモワークスペース: モバイル前段確認", () => {
       .toBeLessThanOrEqual(50);
 
     await page.getByRole("button", { name: "フォルダ管理を開く" }).click();
-    page.once("dialog", async (dialog) => {
-      expect(dialog.message()).toContain("フォルダ「スマホ整理」を削除");
-      await dialog.accept();
-    });
     await page.getByRole("button", { name: "スマホ整理 を削除" }).click();
+    await expect(page.getByText("フォルダを削除")).toBeVisible();
+    await page.getByRole("button", { name: "削除" }).click();
     await expect(page.getByRole("button", { name: /スマホ整理/ })).toHaveCount(
       0,
     );
 
-    await page.getByRole("button", { name: "閉じる" }).last().click();
+    await expect(page.getByRole("dialog", { name: "フォルダ" })).toBeHidden();
     await page
       .getByRole("button", { name: "アカウントメニューを開く" })
       .click();
@@ -547,6 +551,7 @@ test.describe("デモワークスペース: モバイル前段確認", () => {
     await expect(
       accountDialog.getByRole("link", { name: "ログイン" }),
     ).toHaveAttribute("href", "/login");
+    expect(nativeDialogCount).toBe(0);
   });
 
   test("長いファイル名と長文Markdownでもスマホ幅で本文を読める", async ({
