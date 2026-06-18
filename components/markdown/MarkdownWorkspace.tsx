@@ -9,7 +9,6 @@ import {
   useState,
   useTransition,
 } from "react";
-import { format } from "date-fns";
 import {
   FileText,
   Folder as FolderIcon,
@@ -39,6 +38,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { AI_HANDOFF_SERVICES } from "@/lib/ai-handoff";
+import { formatWorkspaceDateTime } from "@/lib/workspace-date";
 import type { Folder, Document } from "@/lib/db/schema";
 import * as actions from "@/lib/actions";
 import { cn } from "@/lib/utils";
@@ -1168,7 +1168,7 @@ export function MarkdownWorkspace({
                     <span className="truncate">{doc.name}</span>
                   </span>
                   <span className="truncate pl-6 text-xs text-muted-foreground">
-                    {format(new Date(doc.updatedAt), "yyyy/MM/dd HH:mm")}
+                    {formatWorkspaceDateTime(doc.updatedAt)}
                   </span>
                 </button>
               </li>
@@ -1396,15 +1396,11 @@ export function MarkdownWorkspace({
             <dl className="flex flex-col gap-2 text-xs">
               <div className="flex justify-between gap-2">
                 <dt className="text-muted-foreground">作成</dt>
-                <dd>
-                  {format(new Date(selectedDoc.createdAt), "yyyy/MM/dd HH:mm")}
-                </dd>
+                <dd>{formatWorkspaceDateTime(selectedDoc.createdAt)}</dd>
               </div>
               <div className="flex justify-between gap-2">
                 <dt className="text-muted-foreground">更新</dt>
-                <dd>
-                  {format(new Date(selectedDoc.updatedAt), "yyyy/MM/dd HH:mm")}
-                </dd>
+                <dd>{formatWorkspaceDateTime(selectedDoc.updatedAt)}</dd>
               </div>
             </dl>
 
