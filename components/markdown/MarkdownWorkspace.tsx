@@ -42,7 +42,25 @@ import { AI_HANDOFF_SERVICES } from "@/lib/ai-handoff";
 import type { Folder, Document } from "@/lib/db/schema";
 import * as actions from "@/lib/actions";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MarkdownView } from "@/components/markdown/MarkdownView";
@@ -63,6 +81,14 @@ type SaveState = "idle" | "saving" | "saved";
 type PaneKey = "folders" | "files" | "details";
 type MobilePanel = "folders" | "account" | null;
 type MobileView = "files" | "document" | "details";
+type TextActionDialog =
+  | { type: "create-folder" }
+  | { type: "rename-folder"; folder: Folder }
+  | { type: "rename-document"; doc: WorkspaceDocument };
+type ConfirmActionDialog =
+  | { type: "delete-folder"; folder: Folder }
+  | { type: "delete-document"; doc: WorkspaceDocument }
+  | { type: "disable-share"; doc: WorkspaceDocument };
 
 const DEFAULT_PANE_WIDTHS: Record<PaneKey, number> = {
   folders: 224,
@@ -173,7 +199,12 @@ export function MarkdownWorkspace({
   const [paneWidths, setPaneWidths] = useState(DEFAULT_PANE_WIDTHS);
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null);
   const [mobileView, setMobileView] = useState<MobileView>("files");
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
+  const [textActionDialog, setTextActionDialog] =
+    useState<TextActionDialog | null>(null);
+  const [textActionValue, setTextActionValue] = useState("");
+  const [confirmActionDialog, setConfirmActionDialog] =
+    useState<ConfirmActionDialog | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
@@ -440,8 +471,13 @@ export function MarkdownWorkspace({
   // ===== フォルダ操作 =====
 
   function handleCreateFolder() {
-    const name = window.prompt("フォルダ名を入力してください");
-    const trimmed = name?.trim();
+    setMobilePanel(null);
+    setTextActionDialog({ type: "create-folder" });
+    setTextActionValue("");
+  }
+
+  function createFolderFromDialog(name: string) {
+    const trimmed = name.trim();
     if (!trimmed) return;
     if (demoMode) {
       setFolders((prev) => [...prev, createLocalFolder(trimmed)]);
@@ -454,8 +490,13 @@ export function MarkdownWorkspace({
   }
 
   function handleRenameFolder(folder: Folder) {
-    const name = window.prompt("新しいフォルダ名", folder.name);
-    const trimmed = name?.trim();
+    setMobilePanel(null);
+    setTextActionDialog({ type: "rename-folder", folder });
+    setTextActionValue(folder.name);
+  }
+
+  function renameFolderFromDialog(folder: Folder, name: string) {
+    const trimmed = name.trim();
     if (!trimmed || trimmed === folder.name) return;
     if (demoMode) {
       setFolders((prev) =>
@@ -472,12 +513,11 @@ export function MarkdownWorkspace({
   }
 
   function handleDeleteFolder(folder: Folder) {
-    if (
-      !window.confirm(
-        `フォルダ「${folder.name}」を削除します。中のファイルはルートに戻ります。よろしいですか？`,
-      )
-    )
-      return;
+    setMobilePanel(null);
+    setConfirmActionDialog({ type: "delete-folder", folder });
+  }
+
+  function deleteFolderFromDialog(folder: Folder) {
     if (demoMode) {
       setFolders((prev) => prev.filter((f) => f.id !== folder.id));
       setDocuments((prev) =>
@@ -588,7 +628,7 @@ export function MarkdownWorkspace({
         for (const file of Array.from(fileList)) {
           const lower = file.name.toLowerCase();
           if (!lower.endsWith(".md") && !lower.endsWith(".markdown")) {
-            window.alert(`${file.name} は Markdown ファイルではありません。`);
+            setError(`${file.name} は Markdown ファイルではありません。`);
             continue;
           }
           const doc = createLocalDocument({
@@ -609,7 +649,7 @@ export function MarkdownWorkspace({
       for (const file of Array.from(fileList)) {
         const lower = file.name.toLowerCase();
         if (!lower.endsWith(".md") && !lower.endsWith(".markdown")) {
-          window.alert(`${file.name} は Markdown ファイルではありません。`);
+          setError(`${file.name} は Markdown ファイルではありません。`);
           continue;
         }
         const content = await file.text();
@@ -627,8 +667,12 @@ export function MarkdownWorkspace({
   }
 
   function handleRenameDoc(doc: WorkspaceDocument) {
-    const name = window.prompt("新しいファイル名", doc.name);
-    const trimmed = name?.trim();
+    setTextActionDialog({ type: "rename-document", doc });
+    setTextActionValue(doc.name);
+  }
+
+  function renameDocFromDialog(doc: WorkspaceDocument, name: string) {
+    const trimmed = name.trim();
     if (!trimmed || trimmed === doc.name) return;
     if (demoMode) {
       setDocuments((prev) =>
@@ -679,8 +723,10 @@ export function MarkdownWorkspace({
   }
 
   function handleDeleteDoc(doc: WorkspaceDocument) {
-    if (!window.confirm(`「${doc.name}」を削除します。よろしいですか？`))
-      return;
+    setConfirmActionDialog({ type: "delete-document", doc });
+  }
+
+  function deleteDocFromDialog(doc: WorkspaceDocument) {
     if (demoMode) {
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
       setSearchResults((prev) => prev?.filter((d) => d.id !== doc.id) ?? null);
@@ -729,12 +775,10 @@ export function MarkdownWorkspace({
   }
 
   function handleDisableShare(doc: WorkspaceDocument) {
-    if (
-      !window.confirm(
-        "公開を停止します。共有URLは無効になります。よろしいですか？",
-      )
-    )
-      return;
+    setConfirmActionDialog({ type: "disable-share", doc });
+  }
+
+  function disableShareFromDialog(doc: WorkspaceDocument) {
     if (demoMode) {
       setDocuments((prev) =>
         prev.map((d) =>
@@ -759,7 +803,9 @@ export function MarkdownWorkspace({
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      window.prompt("以下のURLをコピーしてください", shareUrl(token));
+      setError(
+        "共有URLのコピーに失敗しました。ブラウザのクリップボード権限を確認してください。",
+      );
     }
   }
 
@@ -795,6 +841,53 @@ export function MarkdownWorkspace({
     }
   }
 
+  function closeTextActionDialog(open: boolean) {
+    if (open) return;
+    setTextActionDialog(null);
+    setTextActionValue("");
+  }
+
+  function submitTextActionDialog() {
+    const dialog = textActionDialog;
+    const value = textActionValue.trim();
+    if (!dialog || !value) return;
+
+    setTextActionDialog(null);
+    setTextActionValue("");
+
+    if (dialog.type === "create-folder") {
+      createFolderFromDialog(value);
+      return;
+    }
+    if (dialog.type === "rename-folder") {
+      renameFolderFromDialog(dialog.folder, value);
+      return;
+    }
+    renameDocFromDialog(dialog.doc, value);
+  }
+
+  function closeConfirmActionDialog(open: boolean) {
+    if (open) return;
+    setConfirmActionDialog(null);
+  }
+
+  function submitConfirmActionDialog() {
+    const dialog = confirmActionDialog;
+    if (!dialog) return;
+
+    setConfirmActionDialog(null);
+
+    if (dialog.type === "delete-folder") {
+      deleteFolderFromDialog(dialog.folder);
+      return;
+    }
+    if (dialog.type === "delete-document") {
+      deleteDocFromDialog(dialog.doc);
+      return;
+    }
+    disableShareFromDialog(dialog.doc);
+  }
+
   function handleOpenFullView(doc: WorkspaceDocument) {
     if (demoMode) {
       setError("デモでは全画面表示を開けません。ログイン後に利用できます。");
@@ -811,6 +904,45 @@ export function MarkdownWorkspace({
         "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary",
     );
   }
+
+  const trimmedTextActionValue = textActionValue.trim();
+  const textActionTitle =
+    textActionDialog?.type === "create-folder"
+      ? "フォルダを追加"
+      : textActionDialog?.type === "rename-folder"
+        ? "フォルダ名を変更"
+        : "ファイル名を変更";
+  const textActionDescription =
+    textActionDialog?.type === "create-folder"
+      ? "新しいフォルダ名を入力してください。"
+      : textActionDialog?.type === "rename-folder"
+        ? "フォルダ名を入力してください。中のファイルはそのまま残ります。"
+        : "Markdownファイルの表示名を入力してください。";
+  const textActionInputLabel =
+    textActionDialog?.type === "rename-document" ? "ファイル名" : "フォルダ名";
+  const textActionSubmitLabel =
+    textActionDialog?.type === "create-folder" ? "追加" : "変更";
+  const textActionDisabled =
+    !trimmedTextActionValue ||
+    (textActionDialog?.type === "rename-folder" &&
+      trimmedTextActionValue === textActionDialog.folder.name) ||
+    (textActionDialog?.type === "rename-document" &&
+      trimmedTextActionValue === textActionDialog.doc.name) ||
+    isPending;
+  const confirmActionTitle =
+    confirmActionDialog?.type === "delete-folder"
+      ? "フォルダを削除"
+      : confirmActionDialog?.type === "delete-document"
+        ? "ファイルを削除"
+        : "公開を停止";
+  const confirmActionDescription =
+    confirmActionDialog?.type === "delete-folder"
+      ? `「${confirmActionDialog.folder.name}」を削除します。中のファイルはルートへ戻ります。`
+      : confirmActionDialog?.type === "delete-document"
+        ? `「${confirmActionDialog.doc.name}」を削除します。`
+        : "共有URLは無効になり、リンクを知っている人も本文を読めなくなります。";
+  const confirmActionLabel =
+    confirmActionDialog?.type === "disable-share" ? "公開を停止" : "削除";
 
   return (
     <div
@@ -1231,9 +1363,11 @@ export function MarkdownWorkspace({
                   {selectedDoc.name}
                 </span>
                 <Button
+                  type="button"
                   variant="ghost"
                   size="icon-sm"
                   title="名前を変更"
+                  aria-label="ファイル名を変更"
                   onClick={() => handleRenameDoc(selectedDoc)}
                 >
                   <Pencil />
@@ -1525,6 +1659,81 @@ export function MarkdownWorkspace({
           </a>
         </div>
       </MobileActionSheet>
+
+      <Dialog
+        open={Boolean(textActionDialog)}
+        onOpenChange={closeTextActionDialog}
+      >
+        <DialogContent className="gap-4 sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{textActionTitle}</DialogTitle>
+            <DialogDescription>{textActionDescription}</DialogDescription>
+          </DialogHeader>
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              submitTextActionDialog();
+            }}
+          >
+            <label className="flex flex-col gap-1.5 text-sm">
+              <span className="font-medium">{textActionInputLabel}</span>
+              <Input
+                autoFocus
+                value={textActionValue}
+                onChange={(event) => setTextActionValue(event.target.value)}
+                placeholder={
+                  textActionDialog?.type === "rename-document"
+                    ? "例: meeting-notes.md"
+                    : "例: 仕事メモ"
+                }
+              />
+            </label>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => closeTextActionDialog(false)}
+              >
+                キャンセル
+              </Button>
+              <Button type="submit" disabled={textActionDisabled}>
+                {textActionSubmitLabel}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={Boolean(confirmActionDialog)}
+        onOpenChange={closeConfirmActionDialog}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmActionTitle}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmActionDescription}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPending}>
+              キャンセル
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant={
+                confirmActionDialog?.type === "disable-share"
+                  ? "default"
+                  : "destructive"
+              }
+              disabled={isPending}
+              onClick={submitConfirmActionDialog}
+            >
+              {confirmActionLabel}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {error && (
         <div
@@ -1827,9 +2036,11 @@ function FolderRow({
         <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover/folder:opacity-100">
           {onRename && (
             <Button
+              type="button"
               variant="ghost"
               size="icon-xs"
               title="名前を変更"
+              aria-label={`${label} の名前を変更`}
               onClick={onRename}
             >
               <Pencil />
@@ -1837,9 +2048,11 @@ function FolderRow({
           )}
           {onDelete && (
             <Button
+              type="button"
               variant="ghost"
               size="icon-xs"
               title="削除"
+              aria-label={`${label} を削除`}
               onClick={onDelete}
             >
               <Trash2 />
