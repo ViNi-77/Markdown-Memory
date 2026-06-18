@@ -29,6 +29,19 @@ export type AiRequestPayload = {
   apiKey?: string;
 };
 
+export type AiProviderErrorKind =
+  | "auth_or_config"
+  | "model_config"
+  | "rate_limit"
+  | "unknown";
+
+export type AiProviderErrorResponse = {
+  kind: AiProviderErrorKind;
+  providerStatus: number | null;
+  responseStatus: number;
+  publicMessage: string;
+};
+
 export function resolveGeminiModel(model = process.env.GEMINI_MODEL): string {
   const trimmed = model?.trim();
   return trimmed || DEFAULT_GEMINI_MODEL;
@@ -81,4 +94,106 @@ export function buildAiPrompt(input: {
   instruction: string;
 }): string {
   return `${SYSTEM_PROMPT}\n\n【指示】\n${input.instruction}\n\n【対象Markdown】\n${input.documentContent}`;
+}
+
+function readProviderStatus(error: unknown): number | null {
+  if (!error || typeof error !== "object") return null;
+
+  const source = error as {
+    status?: unknown;
+    code?: unknown;
+    response?: { status?: unknown };
+    error?: { code?: unknown };
+  };
+
+  const candidates = [
+    source.status,
+    source.code,
+    source.response?.status,
+    source.error?.code,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "number" && Number.isFinite(candidate)) {
+      return candidate;
+    }
+    if (typeof candidate === "string") {
+      const parsed = Number(candidate);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+  }
+
+  return null;
+}
+
+function readProviderMessage(error: unknown): string {
+  return error instanceof Error ? error.message.toLowerCase() : "";
+}
+
+export function resolveAiProviderErrorResponse(
+  error: unknown,
+  usesUserApiKey: boolean,
+): AiProviderErrorResponse {
+  const providerStatus = readProviderStatus(error);
+  const message = readProviderMessage(error);
+  const hasAuthOrConfigMessage =
+    message.includes("api key") ||
+    message.includes("permission") ||
+    message.includes("unauthorized") ||
+    message.includes("forbidden");
+  const isModelConfigError =
+    providerStatus === 404 ||
+    (message.includes("model") &&
+      (message.includes("not found") ||
+        message.includes("not_found") ||
+        message.includes("not supported") ||
+        message.includes("unsupported")));
+  const isAuthOrConfigError =
+    providerStatus === 401 ||
+    providerStatus === 403 ||
+    (providerStatus === 400 && hasAuthOrConfigMessage) ||
+    hasAuthOrConfigMessage;
+  const isRateLimitError =
+    providerStatus === 429 ||
+    message.includes("quota") ||
+    message.includes("rate limit") ||
+    message.includes("resource exhausted");
+
+  if (isRateLimitError) {
+    return {
+      kind: "rate_limit",
+      providerStatus,
+      responseStatus: 429,
+      publicMessage:
+        "Gemini APIの利用上限に達している可能性があります。時間をおいて再試行するか、APIキーの利用状況を確認してください。",
+    };
+  }
+
+  if (isModelConfigError) {
+    return {
+      kind: "model_config",
+      providerStatus,
+      responseStatus: 502,
+      publicMessage:
+        "サーバー側のGemini API設定でエラーが発生しています。管理者はGEMINI_API_KEYとモデル設定を確認してください。",
+    };
+  }
+
+  if (isAuthOrConfigError) {
+    return {
+      kind: "auth_or_config",
+      providerStatus,
+      responseStatus: usesUserApiKey ? 400 : 502,
+      publicMessage: usesUserApiKey
+        ? "Gemini APIキーが無効、権限不足、または利用できない状態です。設定からキーを確認して保存し直してください。"
+        : "サーバー側のGemini API設定でエラーが発生しています。管理者はGEMINI_API_KEYとモデル設定を確認してください。",
+    };
+  }
+
+  return {
+    kind: "unknown",
+    providerStatus,
+    responseStatus: 500,
+    publicMessage: "AI処理に失敗しました。時間をおいて再試行してください。",
+  };
 }

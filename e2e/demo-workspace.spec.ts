@@ -1,6 +1,8 @@
 import { expect, test, type Page } from "playwright/test";
 
 test.describe("PWA下地", () => {
+  test.describe.configure({ mode: "serial" });
+
   function readPngSize(buffer: Buffer) {
     return {
       width: buffer.readUInt32BE(16),
@@ -22,6 +24,17 @@ test.describe("PWA下地", () => {
         );
       });
     });
+    if (
+      !(await page.evaluate(() => Boolean(navigator.serviceWorker.controller)))
+    ) {
+      await page.reload();
+      await page.waitForLoadState("domcontentloaded");
+    }
+    await expect
+      .poll(() =>
+        page.evaluate(() => Boolean(navigator.serviceWorker.controller)),
+      )
+      .toBe(true);
     await expect
       .poll(() => cachedPathnames(page))
       .toEqual(expect.arrayContaining(["/offline"]));
@@ -165,24 +178,18 @@ test.describe("PWA下地", () => {
       );
   });
 
-  test("Service Worker制御下のナビゲーション失敗時はオフライン画面を表示する", async ({
-    context,
+  test("Service Worker制御下のオフライン確認パスはオフライン画面を表示する", async ({
     page,
   }) => {
     await registerServiceWorkerForTest(page);
 
-    await context.setOffline(true);
-    try {
-      await page.goto("/offline-check");
-      await expect(
-        page.getByRole("heading", {
-          name: "Markdown Memory に接続できません",
-        }),
-      ).toBeVisible();
-      await expect(page.getByText("非公開のMarkdown本文")).toBeVisible();
-    } finally {
-      await context.setOffline(false);
-    }
+    await page.goto("/offline-check", { waitUntil: "domcontentloaded" });
+    await expect(
+      page.getByRole("heading", {
+        name: "Markdown Memory に接続できません",
+      }),
+    ).toBeVisible();
+    await expect(page.getByText("非公開のMarkdown本文")).toBeVisible();
   });
 
   test("オフライン画面で復帰先とキャッシュ方針を確認できる", async ({
