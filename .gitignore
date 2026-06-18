@@ -33,11 +33,20 @@
 .DS_Store
 *.pem
 
-# Local AI-agent metadata. These files are not part of the application and may
-# contain large workspace logs or tool instructions.
-.agents/
+# Local AI-agent metadata. Most files are not part of the application and may
+# contain large workspace logs or tool instructions. The checked-in
+# design-system skill is intentionally shared across Codex and Claude Code.
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/design-system/
+!.agents/skills/design-system/**
 .antigravity/
-.claude/
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/design-system/
+!.claude/skills/design-system/**
 
 # debug
 npm-debug.log*
