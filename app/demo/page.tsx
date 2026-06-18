@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 function DemoUserSlot() {
   return (
-    <div className="flex flex-col gap-2 rounded-lg bg-card px-2 py-2 ring-1 ring-foreground/10">
+    <div className="flex flex-col gap-2 rounded-lg bg-card px-2 py-2 shadow-xs ring-1 ring-border/80">
       <div className="flex flex-col gap-0.5">
         <span className="text-sm font-medium text-foreground">デモモード</span>
         <span className="text-xs leading-relaxed text-muted-foreground">

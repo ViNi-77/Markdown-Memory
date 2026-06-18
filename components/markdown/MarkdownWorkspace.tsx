@@ -901,7 +901,7 @@ export function MarkdownWorkspace({
     return cn(
       "h-11 px-2",
       mobileView === view &&
-        "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary",
+        "bg-secondary text-secondary-foreground shadow-sm ring-1 ring-border/70 hover:bg-secondary",
     );
   }
 
@@ -948,11 +948,11 @@ export function MarkdownWorkspace({
     <div
       ref={workspaceRef}
       data-testid="markdown-workspace"
-      className="flex h-dvh w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden scroll-smooth bg-background sm:snap-none"
+      className="flex h-dvh w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden scroll-smooth bg-canvas sm:snap-none"
     >
       {/* ===== ペイン1: フォルダ（スマホでは非表示・横スクロールで他ペイン優先） ===== */}
       <aside
-        className="hidden shrink-0 flex-col gap-3 border-r border-border bg-sidebar p-3 sm:flex"
+        className="hidden shrink-0 flex-col gap-3 border-r border-sidebar-border bg-sidebar p-3 shadow-sm sm:flex"
         style={{ width: paneWidths.folders }}
       >
         <div className="flex items-center gap-2 px-1">
@@ -1022,8 +1022,8 @@ export function MarkdownWorkspace({
         ref={fileListPaneRef}
         data-testid="file-list-pane"
         className={cn(
-          "flex min-w-[100dvw] shrink-0 snap-start flex-col border-r border-border sm:min-w-0",
-          isDragging && "bg-primary/5 ring-2 ring-primary/40 ring-inset",
+          "flex min-w-[100dvw] shrink-0 snap-start flex-col border-r border-border bg-background/95 sm:min-w-0",
+          isDragging && "bg-primary/5 ring-2 ring-primary/35 ring-inset",
         )}
         style={{ width: paneWidths.files }}
         onDragOver={(e) => {
@@ -1040,7 +1040,7 @@ export function MarkdownWorkspace({
           handleFiles(e.dataTransfer.files);
         }}
       >
-        <div className="flex flex-col gap-2 border-b border-border p-3">
+        <div className="flex flex-col gap-2 border-b border-border bg-card/75 p-3 shadow-2xs">
           <div className="grid grid-cols-2 gap-2 sm:flex">
             <Button
               type="button"
@@ -1106,7 +1106,7 @@ export function MarkdownWorkspace({
           {selectedDoc && (
             <div
               data-testid="mobile-current-document"
-              className="flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-2 sm:hidden"
+              className="flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-2 shadow-xs sm:hidden"
             >
               <FileText className="size-4 shrink-0 text-primary" />
               <div className="min-w-0 flex-1">
@@ -1157,10 +1157,10 @@ export function MarkdownWorkspace({
                   type="button"
                   onClick={() => selectDocument(doc)}
                   className={cn(
-                    "flex w-full flex-col gap-0.5 rounded-md px-2.5 py-2 text-left transition-colors",
+                    "flex w-full flex-col gap-0.5 rounded-md px-2.5 py-2 text-left transition-all",
                     selectedDocId === doc.id
-                      ? "bg-accent text-accent-foreground"
-                      : "hover:bg-muted",
+                      ? "bg-accent text-accent-foreground shadow-xs ring-1 ring-border/70"
+                      : "hover:bg-muted/80 hover:shadow-2xs",
                   )}
                 >
                   <span className="flex items-center gap-2 truncate text-sm font-medium">
@@ -1187,13 +1187,13 @@ export function MarkdownWorkspace({
       <section
         ref={documentPaneRef}
         data-testid="document-pane"
-        className="flex min-w-[100dvw] flex-1 snap-start flex-col sm:min-w-[280px]"
+        className="flex min-w-[100dvw] flex-1 snap-start flex-col bg-background sm:min-w-[280px]"
       >
         {selectedDoc ? (
           <>
             <header
               data-testid="document-header"
-              className="flex items-center justify-between gap-2 border-b border-border px-3 py-2 sm:gap-3 sm:px-5 sm:py-3"
+              className="flex items-center justify-between gap-2 border-b border-border bg-card/80 px-3 py-2 shadow-2xs sm:gap-3 sm:px-5 sm:py-3"
             >
               <div className="flex min-w-0 items-center gap-2">
                 <Button
@@ -1286,7 +1286,7 @@ export function MarkdownWorkspace({
                     value={editContent}
                     onChange={(e) => handleEditChange(e.target.value)}
                     placeholder="# Markdown を入力..."
-                    className="h-full min-h-full resize-none rounded-none border-0 bg-background px-5 py-4 font-mono text-sm leading-relaxed focus-visible:ring-0"
+                    className="h-full min-h-full resize-none rounded-none border-0 bg-card px-5 py-4 font-mono text-sm leading-relaxed shadow-none focus-visible:ring-0"
                   />
                 ) : (
                   <DocumentLoadingState />
@@ -1308,7 +1308,7 @@ export function MarkdownWorkspace({
           </>
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center text-muted-foreground">
-            <div className="flex size-16 items-center justify-center rounded-full bg-muted">
+            <div className="flex size-16 items-center justify-center rounded-full bg-card shadow-sm ring-1 ring-border/80">
               <FileText className="size-7" />
             </div>
             <p className="text-sm">
@@ -1331,10 +1331,10 @@ export function MarkdownWorkspace({
           <aside
             ref={detailsPaneRef}
             data-testid="details-pane"
-            className="flex min-h-0 min-w-[100dvw] shrink-0 snap-start flex-col gap-3 overflow-y-auto border-l border-border bg-card p-3 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:min-w-0 sm:gap-5 sm:p-4 sm:pb-8"
+            className="flex min-h-0 min-w-[100dvw] shrink-0 snap-start flex-col gap-3 overflow-y-auto border-l border-border bg-card p-3 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] shadow-sm sm:min-w-0 sm:gap-5 sm:p-4 sm:pb-8"
             style={{ width: paneWidths.details }}
           >
-            <div className="sticky top-0 z-10 -mx-3 -mt-3 flex items-center gap-2 border-b border-border bg-card/95 px-3 py-2 backdrop-blur sm:hidden">
+            <div className="sticky top-0 z-10 -mx-3 -mt-3 flex items-center gap-2 border-b border-border bg-card/95 px-3 py-2 shadow-2xs backdrop-blur sm:hidden">
               <Button
                 type="button"
                 variant="ghost"
@@ -1382,7 +1382,7 @@ export function MarkdownWorkspace({
               <select
                 value={selectedDoc.folderId ?? "root"}
                 onChange={(e) => handleMoveDoc(selectedDoc, e.target.value)}
-                className="h-8 rounded-md border border-input bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="h-8 rounded-md border border-input bg-card/80 px-2 text-sm shadow-2xs transition-colors outline-none hover:border-ring/35 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35"
               >
                 <option value="root">ルート（フォルダなし）</option>
                 {folders.map((f) => (
@@ -1532,7 +1532,7 @@ export function MarkdownWorkspace({
 
       <nav
         data-testid="mobile-bottom-nav"
-        className="fixed inset-x-2 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-40 grid grid-cols-4 gap-1 rounded-lg border border-border bg-background/95 p-1.5 shadow-lg backdrop-blur sm:hidden"
+        className="fixed inset-x-2 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-40 grid grid-cols-4 gap-1 rounded-lg border border-border bg-card/95 p-1.5 shadow-xl backdrop-blur sm:hidden"
       >
         <Button
           type="button"
@@ -1734,7 +1734,7 @@ export function MarkdownWorkspace({
       {error && (
         <div
           role="alert"
-          className="fixed bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] left-1/2 z-50 flex max-w-md -translate-x-1/2 items-center gap-3 rounded-lg bg-destructive/10 px-4 py-2.5 text-sm text-destructive shadow-lg ring-1 ring-destructive/20 sm:bottom-4"
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] left-1/2 z-50 flex max-w-md -translate-x-1/2 items-center gap-3 rounded-lg border border-destructive/20 bg-card px-4 py-2.5 text-sm text-destructive shadow-lg sm:bottom-4"
         >
           <span className="flex-1">{error}</span>
           <Button
@@ -1800,14 +1800,14 @@ function MobileActionSheet({
       <button
         type="button"
         aria-label="閉じる"
-        className="absolute inset-0 bg-black/20"
+        className="absolute inset-0 bg-foreground/20"
         onClick={onClose}
       />
       <section
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col gap-3 rounded-t-lg border border-border bg-popover p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] text-popover-foreground shadow-lg"
+        className="absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col gap-3 rounded-t-xl border border-border bg-popover p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] text-popover-foreground shadow-xl"
       >
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-heading text-base font-semibold">{title}</h2>
@@ -1841,7 +1841,7 @@ function DetailsActionGroup({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <section className="flex flex-col border-t border-border pt-3 sm:pt-4">
+    <section className="flex flex-col border-t border-border/80 pt-3 sm:pt-4">
       <Button
         type="button"
         variant="ghost"
@@ -1883,10 +1883,10 @@ function MobileFolderRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+        "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-all",
         active
-          ? "bg-accent text-accent-foreground"
-          : "focus-within:bg-muted hover:bg-muted",
+          ? "bg-accent text-accent-foreground shadow-xs ring-1 ring-border/70"
+          : "focus-within:bg-muted/80 hover:bg-muted/80",
       )}
     >
       <button
@@ -1955,7 +1955,7 @@ function PaneResizeHandle({
       role="separator"
       tabIndex={0}
       title={`${label}（ダブルクリックでリセット）`}
-      className="group hidden w-2 shrink-0 cursor-col-resize items-center justify-center bg-transparent transition-colors outline-none hover:bg-primary/10 focus-visible:bg-primary/10 sm:flex"
+      className="group hidden w-2 shrink-0 cursor-col-resize items-center justify-center bg-transparent transition-colors outline-none hover:bg-accent focus-visible:bg-accent sm:flex"
       onDoubleClick={onReset}
       onKeyDown={(e) => {
         if (e.key === "ArrowLeft") {
@@ -2011,10 +2011,10 @@ function FolderRow({
   return (
     <div
       className={cn(
-        "group/folder flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+        "group/folder flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-all",
         active
-          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-          : "hover:bg-sidebar-accent/50",
+          ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-xs ring-1 ring-sidebar-border/80"
+          : "hover:bg-sidebar-accent/60",
       )}
     >
       <button

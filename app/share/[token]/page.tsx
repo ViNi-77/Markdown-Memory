@@ -15,14 +15,14 @@ export default async function SharePage({
   if (!doc) notFound();
 
   return (
-    <main className="min-h-dvh bg-background">
-      <header className="border-b border-border bg-card">
+    <main className="min-h-dvh bg-canvas">
+      <header className="border-b border-border bg-card/95 shadow-2xs">
         <div className="mx-auto flex max-w-3xl items-center gap-2 px-6 py-4">
           <FileText className="size-5 text-primary" />
           <h1 className="truncate font-heading text-base font-semibold">
             {doc.name}
           </h1>
-          <span className="ml-auto shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
+          <span className="ml-auto shrink-0 rounded-full bg-secondary px-2.5 py-0.5 text-xs text-secondary-foreground">
             共有ドキュメント（閲覧専用）
           </span>
         </div>

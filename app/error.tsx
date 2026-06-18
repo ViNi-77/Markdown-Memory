@@ -20,7 +20,7 @@ export default function Error({
   reset: () => void;
 }) {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-6 py-10 text-foreground">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-canvas px-6 py-10 text-foreground">
       <div className="flex max-w-2xl flex-col gap-3 text-center">
         <h1 className="text-lg font-semibold">読み込みに失敗しました</h1>
         <p className="text-sm text-muted-foreground">
@@ -33,7 +33,7 @@ export default function Error({
           を見直してください。
         </p>
       </div>
-      <pre className="max-h-64 max-w-2xl overflow-auto rounded-lg border border-border bg-card px-4 py-3 text-left text-xs leading-relaxed whitespace-pre-wrap text-foreground">
+      <pre className="max-h-64 max-w-2xl overflow-auto rounded-lg border border-border bg-card px-4 py-3 text-left text-xs leading-relaxed whitespace-pre-wrap text-foreground shadow-sm">
         {error.message}
       </pre>
       <Button onClick={reset}>再読み込み</Button>
