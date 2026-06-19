@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FileText } from "lucide-react";
 import { getPublicDocument } from "@/lib/data";
@@ -36,8 +37,14 @@ export default async function SharePage({
         )}
       </article>
 
-      <footer className="mx-auto max-w-3xl px-6 py-8 text-center text-xs text-muted-foreground">
-        Markdown Memory で共有されています
+      <footer className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-6 py-8 text-center text-xs text-muted-foreground">
+        <span>Markdown Memory で共有されています</span>
+        <Link href="/privacy" className="hover:text-foreground">
+          Privacy
+        </Link>
+        <Link href="/terms" className="hover:text-foreground">
+          Terms
+        </Link>
       </footer>
     </main>
   );

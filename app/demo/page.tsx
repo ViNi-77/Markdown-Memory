@@ -21,6 +21,14 @@ function DemoUserSlot() {
         <LogIn />
         ログイン
       </Link>
+      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+        <Link href="/privacy" className="hover:text-foreground">
+          Privacy
+        </Link>
+        <Link href="/terms" className="hover:text-foreground">
+          Terms
+        </Link>
+      </div>
     </div>
   );
 }

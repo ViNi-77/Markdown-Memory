@@ -28,4 +28,6 @@ Markdown Memory は公開リポジトリとして運用しています。
 - Vercel Runtime Logs に Markdown 本文やAPIキーを出さない
 - 任意の外部エラー通知でも Markdown 本文、APIキー、DB接続URL、stack trace を送らない
 - 共有リンクは、明示的に公開したファイルだけ閲覧可能
+- アカウント削除でAuth.js連携、Markdown本文、フォルダ、共有リンクを削除する
+- Provider APIキーはDBに保存せず、ブラウザ保存分はアカウント設定から削除できる
 - `backups/` は `.gitignore` で除外

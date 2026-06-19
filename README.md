@@ -17,22 +17,24 @@
 
 ## できること
 
-| 機能           | 内容                                                                                 |
-| -------------- | ------------------------------------------------------------------------------------ |
-| Markdown管理   | 作成、編集、プレビュー、アップロード、ダウンロード                                   |
-| フォルダ整理   | Markdown ファイルをフォルダで整理                                                    |
-| 自動保存       | 編集内容をデバウンス保存                                                             |
-| 共有           | 選択したファイルだけ公開リンクを発行                                                 |
-| AI連携         | Claude / ChatGPT / Gemini に本文をコピーして開く                                     |
-| アプリ内AI     | Claude / GPT / Gemini モード、Provider別キー保存、提案の追記・置き換え確認・一時履歴 |
-| Markdown表示   | CommonMark + GFM を安全に表示。表、脚注、コードブロック、通常改行にも対応            |
-| 全画面表示     | ログイン後、自分の Markdown を別ウィンドウで閲覧                                     |
-| ペイン調整     | デスクトップでフォルダ、ファイル一覧、詳細ペインの幅を調整                           |
-| デモ           | `/demo` で未ログインのまま操作感を確認                                               |
-| スマホ操作     | 本文閲覧へ誘導し、下部ナビの現在地表示、選択中ファイルへの復帰も提供                 |
-| PWA品質        | manifest、PNGアイコン、オフラインページ、限定的 Service Worker、スマホ読書面         |
-| 運用監視       | Vercel Analytics / Speed Insights / Runtime Logs / Cron / Webhook                    |
-| フィードバック | GitHub Issues への導線。スマホ下部にも送信リンクを表示                               |
+| 機能            | 内容                                                                                 |
+| --------------- | ------------------------------------------------------------------------------------ |
+| Markdown管理    | 作成、編集、プレビュー、アップロード、ダウンロード                                   |
+| フォルダ整理    | Markdown ファイルをフォルダで整理                                                    |
+| 自動保存        | 編集内容をデバウンス保存                                                             |
+| 共有            | 選択したファイルだけ公開リンクを発行                                                 |
+| AI連携          | Claude / ChatGPT / Gemini に本文をコピーして開く                                     |
+| アプリ内AI      | Claude / GPT / Gemini モード、Provider別キー保存、提案の追記・置き換え確認・一時履歴 |
+| Markdown表示    | CommonMark + GFM を安全に表示。表、脚注、コードブロック、通常改行にも対応            |
+| 全画面表示      | ログイン後、自分の Markdown を別ウィンドウで閲覧                                     |
+| ペイン調整      | デスクトップでフォルダ、ファイル一覧、詳細ペインの幅を調整                           |
+| デモ            | `/demo` で未ログインのまま操作感を確認                                               |
+| スマホ操作      | 本文閲覧へ誘導し、下部ナビの現在地表示、選択中ファイルへの復帰も提供                 |
+| PWA品質         | manifest、PNGアイコン、オフラインページ、限定的 Service Worker、スマホ読書面         |
+| 運用監視        | Vercel Analytics / Speed Insights / Runtime Logs / Cron / Webhook                    |
+| Privacy / Terms | データの保存先、AIキー、共有リンク、利用条件を公開ページで確認                       |
+| データ削除      | アカウント設定からアカウントと保存済みMarkdownデータを削除                           |
+| フィードバック  | GitHub Issues への導線。スマホ下部にも送信リンクを表示                               |
 
 ## Markdown 表示仕様
 
@@ -139,21 +141,24 @@ flowchart TB
 
 このアプリはローカル専用ではありません。ログイン後に作成したデータは、設定された Neon PostgreSQL に保存されます。
 
-| 対象                            | 扱い                                                              |
-| ------------------------------- | ----------------------------------------------------------------- |
-| ユーザー情報・認証情報          | Neon PostgreSQL / Auth.js Cookie に保存                           |
-| フォルダ                        | Neon PostgreSQL に保存                                            |
-| Markdown本文                    | Neon PostgreSQL に保存                                            |
-| 共有リンクの公開状態とトークン  | Neon PostgreSQL に保存                                            |
-| BYOKのProvider APIキー          | ブラウザの `localStorage` にProvider別で保存                      |
-| AI提案の一時履歴                | 画面を開いている間だけ保持。DB / `localStorage` には保存しない    |
-| AI Gateway / legacy Gemini 設定 | Vercel Environment Variables に保存                               |
-| DB接続URL・OAuth Secret         | Vercel Environment Variables に保存                               |
-| 非公開Markdown                  | Service Workerでキャッシュしない。初期PWAでは端末に永続保存しない |
-| 共有ページ                      | Service Workerでキャッシュしない。受信側端末への自動保存もしない  |
-| デモ画面の編集内容              | DBには保存しない。ページ再読み込みで初期化。                      |
+| 対象                            | 扱い                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------ |
+| ユーザー情報・認証情報          | Neon PostgreSQL / Auth.js Cookie に保存                                  |
+| フォルダ                        | Neon PostgreSQL に保存                                                   |
+| Markdown本文                    | Neon PostgreSQL に保存                                                   |
+| 共有リンクの公開状態とトークン  | Neon PostgreSQL に保存                                                   |
+| BYOKのProvider APIキー          | ブラウザの `localStorage` にProvider別で保存                             |
+| AI提案の一時履歴                | 画面を開いている間だけ保持。DB / `localStorage` には保存しない           |
+| AI Gateway / legacy Gemini 設定 | Vercel Environment Variables に保存                                      |
+| DB接続URL・OAuth Secret         | Vercel Environment Variables に保存                                      |
+| 非公開Markdown                  | Service Workerでキャッシュしない。初期PWAでは端末に永続保存しない        |
+| 共有ページ                      | Service Workerでキャッシュしない。受信側端末への自動保存もしない         |
+| デモ画面の編集内容              | DBには保存しない。ページ再読み込みで初期化。                             |
+| アカウント削除                  | `user` 行を削除し、Auth.js連携・フォルダ・Markdown・共有リンクを連鎖削除 |
 
 共有リンクを発行した Markdown は、URL を知っている人が閲覧できます。公開したくない内容では共有リンクを作成しないでください。
+
+Privacy と Terms は `/privacy` と `/terms` で確認できます。ログイン後のアカウント設定では、このブラウザに保存されたProvider APIキーだけを削除する操作と、アカウント全体を削除する操作を分けています。
 
 ## 技術構成
 
@@ -178,6 +183,8 @@ flowchart TB
 | `/share/[token]`          | 公開共有された Markdown の閲覧画面   |
 | `/view/[id]`              | ログイン済みユーザー向けの全画面閲覧 |
 | `/offline`                | オフライン時の案内画面               |
+| `/privacy`                | データの扱いと削除方針               |
+| `/terms`                  | 利用条件と注意点                     |
 | `/api/health`             | 本番監視用の軽量ヘルスチェック       |
 | `/api/cron/health`        | Vercel Cron 用の内部ヘルスチェック   |
 | `/api/auth/[...nextauth]` | Auth.js の認証エンドポイント         |
@@ -269,8 +276,8 @@ Season 1 は、Web/PWAとして完成度を高めたうえで iOS TestFlight の
 | ----- | -------- | -------- | ------------------------------------------------------------ |
 | 1-10A | Season 1 | 完了済み | Web/PWAのMVP、保存、共有、AI、PWA品質、Production確認        |
 | 11    | Season 1 | 完了     | Season 1ゴール再定義、Roadmap/docs更新                       |
-| 12    | Season 1 | 未着手   | Privacy / Terms / アカウント削除 / データ削除導線            |
-| 13    | Season 1 | 未着手   | Web/PWA最終品質、Apple Safari実機、Production smoke          |
+| 12    | Season 1 | 実装中   | Privacy / Terms / アカウント削除 / データ削除導線            |
+| 13    | Season 1 | 実装中   | Web/PWA最終品質、Apple Safari実機、Production smoke          |
 | 14    | Season 1 | 未着手   | README中心のポートフォリオ仕上げ                             |
 | 15    | Season 1 | 未着手   | iOS TestFlight用の最小ネイティブshell検証                    |
 | 16    | Season 1 | 未着手   | TestFlight内部配布、実機確認、Season 1完了記録               |

@@ -69,6 +69,14 @@ export default async function LoginPage() {
             >
               ログインせずにデモを見る
             </Link>
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 pt-2 text-xs text-muted-foreground">
+              <Link href="/privacy" className="hover:text-foreground">
+                Privacy
+              </Link>
+              <Link href="/terms" className="hover:text-foreground">
+                Terms
+              </Link>
+            </div>
           </div>
         </CardContent>
       </Card>

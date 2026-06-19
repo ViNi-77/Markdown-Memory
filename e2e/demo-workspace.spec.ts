@@ -213,6 +213,32 @@ test.describe("PWA下地", () => {
 });
 
 test.describe("デモワークスペース", () => {
+  test("ログイン前でもPrivacyとTermsを確認できる", async ({ page }) => {
+    await page.goto("/login");
+
+    await expect(page.getByText("Markdown Memory").first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Privacy" })).toHaveAttribute(
+      "href",
+      "/privacy",
+    );
+    await expect(page.getByRole("link", { name: "Terms" })).toHaveAttribute(
+      "href",
+      "/terms",
+    );
+
+    await page.getByRole("link", { name: "Privacy" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Privacy Policy" }),
+    ).toBeVisible();
+    await expect(page.getByRole("main")).toContainText("Provider APIキー");
+
+    await page.goto("/terms");
+    await expect(
+      page.getByRole("heading", { name: "Terms of Use" }),
+    ).toBeVisible();
+    await expect(page.getByRole("main")).toContainText("共有リンク");
+  });
+
   test("未ログインでもMarkdownの作成・編集・プレビューができる", async ({
     page,
   }) => {

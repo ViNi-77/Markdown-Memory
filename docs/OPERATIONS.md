@@ -102,6 +102,8 @@ Production 反映後は以下を確認します。
 
 - `https://markdown-memory.vercel.app`
 - `https://markdown-memory.vercel.app/demo`
+- `https://markdown-memory.vercel.app/privacy`
+- `https://markdown-memory.vercel.app/terms`
 - `https://markdown-memory.vercel.app/api/health`
 
 ログイン後ワークスペース、DB保存、共有URL、AI連携、本番ログを見る場合は [`docs/PRODUCTION_SMOKE_CHECK.md`](PRODUCTION_SMOKE_CHECK.md) に沿って確認します。
@@ -111,6 +113,19 @@ Production 反映後は以下を確認します。
 端末保存やオフライン閲覧に触れる変更では、[`docs/PWA_OFFLINE_DATA_POLICY.md`](PWA_OFFLINE_DATA_POLICY.md) の許可/禁止/将来条件を確認します。
 
 Phase 7のPWA実装範囲を確認するときは、[`docs/PWA_PHASE7_HANDOFF.md`](PWA_PHASE7_HANDOFF.md) を見ます。Apple Safari の結果が記録されていれば、PWAは「実装完了・Apple実機確認済み」として扱います。
+
+## Privacy / Terms / アカウント削除
+
+Season 1 Phase 12 以降は、TestFlightへ進む前提として、Web/PWAでもデータの扱いと削除導線を見える状態にします。
+
+- `/privacy` で保存データ、共有リンク、AIキー、削除方針を説明する
+- `/terms` で利用範囲、共有リンク、AI出力、削除前の注意点を説明する
+- ログイン後のアカウント設定から Privacy / Terms へ進める
+- Provider APIキーはブラウザ `localStorage` 保存で、DBには保存しない
+- アカウント削除時は `user` 行を削除し、Auth.jsの連携、フォルダ、Markdown本文、共有リンクをcascadeで削除する
+- 削除操作は確認ダイアログ付きにし、下部ナビなど誤タップしやすい場所には直接置かない
+
+Apple公式の [Offering account deletion in your app](https://developer.apple.com/support/offering-account-deletion-in-your-app/) は、App Store提出アプリがアカウント作成をサポートする場合、アプリ内でアカウント削除を開始できる必要があると説明しています。Season 1ではApp Store本番公開は扱いませんが、TestFlight前の品質として前倒しで用意します。
 
 ## 監視・ログ
 
