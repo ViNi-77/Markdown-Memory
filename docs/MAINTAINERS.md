@@ -12,6 +12,7 @@
 | [`PRODUCTION_SMOKE_CHECK.md`](PRODUCTION_SMOKE_CHECK.md)   | Production のログイン後保存、共有、AI、運用確認      |
 | [`SEASON1_ROADMAP.md`](SEASON1_ROADMAP.md)                 | Season 1の完了条件とTestFlightまでのPhase配置        |
 | [`SEASON1_PHASE13_CHECK.md`](SEASON1_PHASE13_CHECK.md)     | Phase 13のWeb/PWA最終品質と実機確認境界              |
+| [`SEASON1_PHASE14_CHECK.md`](SEASON1_PHASE14_CHECK.md)     | Phase 14のREADMEポートフォリオ仕上げ記録             |
 | [`MOBILE_PWA_PREP.md`](MOBILE_PWA_PREP.md)                 | モバイル/PWAの準備メモ                               |
 | [`PWA_REAL_DEVICE_CHECK.md`](PWA_REAL_DEVICE_CHECK.md)     | Apple Safari 実機確認チェックリスト                  |
 | [`PWA_OFFLINE_DATA_POLICY.md`](PWA_OFFLINE_DATA_POLICY.md) | オフライン時に保存してよい/いけないデータの方針      |
@@ -75,7 +76,7 @@ Season 1 は Phase 10A で終わりではなく、Web/PWA完成と iOS TestFligh
 | 11    | Season 1 | 完了     | Season 1ゴール再定義、Roadmap/docs更新                       |
 | 12    | Season 1 | 完了     | Privacy / Terms / アカウント削除 / データ削除導線            |
 | 13    | Season 1 | 完了     | Web/PWA最終品質、Apple Safari実機、Production smoke          |
-| 14    | Season 1 | 未着手   | README中心のポートフォリオ仕上げ                             |
+| 14    | Season 1 | 完了     | README中心のポートフォリオ仕上げ                             |
 | 15    | Season 1 | 未着手   | iOS TestFlight用の最小ネイティブshell検証                    |
 | 16    | Season 1 | 未着手   | TestFlight内部配布、実機確認、Season 1完了記録               |
 | 17+   | Season 2 | 後続     | App Store審査対策、iOS固有価値追加、App Store本番公開、Mac化 |
@@ -85,6 +86,8 @@ Phase 6 の作業記録は [#23](https://github.com/ViNi-77/Markdown-Memory/issu
 Phase 12 では `/privacy`、`/terms`、ログイン後のアカウント設定、アカウント削除Server Actionを追加します。Apple公式の [Offering account deletion in your app](https://developer.apple.com/support/offering-account-deletion-in-your-app/) は、App Storeに提出するアプリがアカウント作成をサポートする場合、アプリ内でアカウント削除を開始できる必要があると説明しています。Season 1ではTestFlightまでですが、Phase 12でこの導線を前倒しで用意します。
 
 Phase 13 では [`SEASON1_PHASE13_CHECK.md`](SEASON1_PHASE13_CHECK.md) と [`PRODUCTION_SMOKE_CHECK.md`](PRODUCTION_SMOKE_CHECK.md) を使い、Preview、CI、Production軽量確認、Apple Safari実機確認の境界を分けて記録します。2026-06-20 時点で、CI、Preview、Production軽量確認、iOS PWA metaのProduction反映、Apple Safari実機確認は完了しています。
+
+Phase 14 では README をポートフォリオの入口として仕上げます。2026-06-20 時点で、Production、Demo、スクリーンショット、見どころ、技術構成、確認済み品質、Season 1 Roadmap がREADMEから追える状態です。詳細は [`SEASON1_PHASE14_CHECK.md`](SEASON1_PHASE14_CHECK.md) を参照します。
 
 ## 本番確認済み
 
