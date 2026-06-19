@@ -350,6 +350,36 @@ test.describe("デモワークスペース", () => {
       ),
     ).toBeVisible();
   });
+
+  test("狭いデスクトップ幅でも本文ヘッダーの操作が重ならない", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 980, height: 760 });
+    await page.goto("/demo");
+
+    await page.getByRole("button", { name: "新規作成" }).click();
+    await page.getByTestId("document-pane").evaluate((element) => {
+      const pane = element as HTMLElement;
+      pane.style.flex = "0 0 280px";
+      pane.style.width = "280px";
+    });
+
+    const header = page.getByTestId("document-header");
+    await expect(page.getByTestId("document-title-row")).toBeVisible();
+    await expect(page.getByTestId("document-header-actions")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "プレビュー" }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "編集" })).toBeVisible();
+
+    await expect
+      .poll(async () =>
+        header.evaluate(
+          (element) => element.scrollWidth <= element.clientWidth + 1,
+        ),
+      )
+      .toBeTruthy();
+  });
 });
 
 test.describe("デモワークスペース: モバイル前段確認", () => {

@@ -255,6 +255,17 @@
   }
 }
 
+/* ペイン幅を狭めた時は、本文ヘッダーの操作群をアイコン中心にして重なりを防ぐ。 */
+.document-header-responsive {
+  container: document-header / inline-size;
+}
+
+@container document-header (max-width: 24rem) {
+  .document-header-action-label {
+    display: none !important;
+  }
+}
+
 /* Markdown プレビューのスタイル（typography プラグイン不使用・役割トークンで構成）。 */
 .markdown-body {
   @apply text-foreground;
