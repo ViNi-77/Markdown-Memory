@@ -177,4 +177,35 @@ describe("AiAssistPanel", () => {
       ),
     );
   });
+
+  it("同じセッションのAI提案履歴から前の提案を戻せる", async () => {
+    vi.mocked(globalThis.fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ result: "## 1回目\n\n最初の提案です。" }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ result: "## 2回目\n\n次の提案です。" }),
+      } as Response);
+
+    renderPanel();
+    openPanel();
+
+    fireEvent.click(screen.getByRole("button", { name: /要約/ }));
+    expect(await screen.findByText("最初の提案です。")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /ノイズ除去/ }));
+    expect(await screen.findByText("次の提案です。")).toBeInTheDocument();
+
+    expect(screen.getByText("一時履歴")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /最初の提案/ }));
+
+    expect(await screen.findByText("最初の提案です。")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "一時履歴をクリア" }));
+
+    expect(screen.queryByText("一時履歴")).not.toBeInTheDocument();
+    expect(screen.getByText("最初の提案です。")).toBeInTheDocument();
+  });
 });

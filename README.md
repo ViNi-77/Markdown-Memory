@@ -17,22 +17,22 @@
 
 ## できること
 
-| 機能           | 内容                                                                         |
-| -------------- | ---------------------------------------------------------------------------- |
-| Markdown管理   | 作成、編集、プレビュー、アップロード、ダウンロード                           |
-| フォルダ整理   | Markdown ファイルをフォルダで整理                                            |
-| 自動保存       | 編集内容をデバウンス保存                                                     |
-| 共有           | 選択したファイルだけ公開リンクを発行                                         |
-| AI連携         | Claude / ChatGPT / Gemini に本文をコピーして開く                             |
-| アプリ内AI     | Claude / GPT / Gemini モード、Provider別キー保存、提案の追記・置き換え確認   |
-| Markdown表示   | CommonMark + GFM を安全に表示。表、脚注、コードブロック、通常改行にも対応    |
-| 全画面表示     | ログイン後、自分の Markdown を別ウィンドウで閲覧                             |
-| ペイン調整     | デスクトップでフォルダ、ファイル一覧、詳細ペインの幅を調整                   |
-| デモ           | `/demo` で未ログインのまま操作感を確認                                       |
-| スマホ操作     | 本文閲覧へ誘導し、下部ナビの現在地表示、選択中ファイルへの復帰も提供         |
-| PWA品質        | manifest、PNGアイコン、オフラインページ、限定的 Service Worker、スマホ読書面 |
-| 運用監視       | Vercel Analytics / Speed Insights / Runtime Logs / Cron / Webhook            |
-| フィードバック | GitHub Issues への導線。スマホ下部にも送信リンクを表示                       |
+| 機能           | 内容                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------ |
+| Markdown管理   | 作成、編集、プレビュー、アップロード、ダウンロード                                   |
+| フォルダ整理   | Markdown ファイルをフォルダで整理                                                    |
+| 自動保存       | 編集内容をデバウンス保存                                                             |
+| 共有           | 選択したファイルだけ公開リンクを発行                                                 |
+| AI連携         | Claude / ChatGPT / Gemini に本文をコピーして開く                                     |
+| アプリ内AI     | Claude / GPT / Gemini モード、Provider別キー保存、提案の追記・置き換え確認・一時履歴 |
+| Markdown表示   | CommonMark + GFM を安全に表示。表、脚注、コードブロック、通常改行にも対応            |
+| 全画面表示     | ログイン後、自分の Markdown を別ウィンドウで閲覧                                     |
+| ペイン調整     | デスクトップでフォルダ、ファイル一覧、詳細ペインの幅を調整                           |
+| デモ           | `/demo` で未ログインのまま操作感を確認                                               |
+| スマホ操作     | 本文閲覧へ誘導し、下部ナビの現在地表示、選択中ファイルへの復帰も提供                 |
+| PWA品質        | manifest、PNGアイコン、オフラインページ、限定的 Service Worker、スマホ読書面         |
+| 運用監視       | Vercel Analytics / Speed Insights / Runtime Logs / Cron / Webhook                    |
+| フィードバック | GitHub Issues への導線。スマホ下部にも送信リンクを表示                               |
 
 ## Markdown 表示仕様
 
@@ -146,6 +146,7 @@ flowchart TB
 | Markdown本文                    | Neon PostgreSQL に保存                                            |
 | 共有リンクの公開状態とトークン  | Neon PostgreSQL に保存                                            |
 | BYOKのProvider APIキー          | ブラウザの `localStorage` にProvider別で保存                      |
+| AI提案の一時履歴                | 画面を開いている間だけ保持。DB / `localStorage` には保存しない    |
 | AI Gateway / legacy Gemini 設定 | Vercel Environment Variables に保存                               |
 | DB接続URL・OAuth Secret         | Vercel Environment Variables に保存                               |
 | 非公開Markdown                  | Service Workerでキャッシュしない。初期PWAでは端末に永続保存しない |
@@ -213,7 +214,7 @@ ERROR_REPORT_WEBHOOK_URL
 CRON_SECRET
 ```
 
-アプリ内AIは Claude / GPT / Gemini を切り替えできます。Production では Vercel AI Gateway の OIDC または `AI_GATEWAY_API_KEY` を使い、必要に応じて Vercel 側の BYOK を設定します。ユーザーが画面で入力したProvider APIキーはブラウザにのみ保存され、AI実行時だけ送信されます。AI提案を本文へ反映する場合、追記はそのまま実行し、本文置き換えは確認してから保存します。
+アプリ内AIは Claude / GPT / Gemini を切り替えできます。Production では Vercel AI Gateway の OIDC または `AI_GATEWAY_API_KEY` を使い、必要に応じて Vercel 側の BYOK を設定します。ユーザーが画面で入力したProvider APIキーはブラウザにのみ保存され、AI実行時だけ送信されます。AI提案を本文へ反映する場合、追記はそのまま実行し、本文置き換えは確認してから保存します。AI提案の一時履歴は画面を開いている間だけ保持し、DBや `localStorage` には保存しません。
 `GEMINI_API_KEY` と `GEMINI_MODEL` は Geminiモードの legacy fallback 用で任意です。
 `ERROR_REPORT_WEBHOOK_URL` も任意です。設定すると、本文やAPIキーを含まないサーバーエラー通知をHTTPS Webhookへ送ります。
 `CRON_SECRET` は Vercel Cron の内部ヘルスチェック保護用です。
@@ -271,6 +272,7 @@ Pull Request の説明やコメントは日本語で記載します。
 | 7     | 完了（Apple対象） | PWA品質強化、スマホ読書体験の磨き込み、アプリ化準備               |
 | 8     | 完了              | Production保存・共有、AI provider切替、運用確認、レスポンシブ修正 |
 | 9     | 完了              | AI設定UX、結果適用確認、エラー表示、秘密情報非露出の固定          |
+| 10    | 完了              | AI提案の一時履歴、復元・クリア、永続保存なしの安全な再利用導線    |
 
 Phase ごとの確認記録と本番スモークの進め方は [`docs/MAINTAINERS.md`](docs/MAINTAINERS.md) から参照します。
 
