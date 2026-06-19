@@ -223,7 +223,7 @@ export function parseAiRequestBody(body: unknown): AiRequestPayload {
   const { documentContent, task, provider, customPrompt, apiKey } = source;
 
   if (typeof documentContent !== "string" || !documentContent.trim()) {
-    throw new AiValidationError("documentContent is required");
+    throw new AiValidationError("本文が空です。AIに渡す内容がありません。");
   }
 
   if (apiKey !== undefined && typeof apiKey !== "string") {
