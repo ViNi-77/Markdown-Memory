@@ -263,18 +263,20 @@ Pull Request の説明やコメントは日本語で記載します。
 
 ## Roadmap
 
-| Phase | 状態              | 内容                                                              |
-| ----- | ----------------- | ----------------------------------------------------------------- |
-| 4     | 完了              | 公開MVP。ログイン、保存、共有、AI連携まで確認済み                 |
-| 5     | 完了              | CI/CD、E2E、監視、バックアップ手順、フィードバック導線            |
-| 5.5   | 完了              | Cron監視、PWA下地、スマホ前段導線、README整備                     |
-| 6     | 完了              | スマホ閲覧最適化、PWA安全仕様、フィードバック運用整備             |
-| 7     | 完了（Apple対象） | PWA品質強化、スマホ読書体験の磨き込み、アプリ化準備               |
-| 8     | 完了              | Production保存・共有、AI provider切替、運用確認、レスポンシブ修正 |
-| 9     | 完了              | AI設定UX、結果適用確認、エラー表示、秘密情報非露出の固定          |
-| 10    | 完了              | AI提案の一時履歴、復元・クリア、永続保存なしの安全な再利用導線    |
+Season 1 は、Web/PWAとして完成度を高めたうえで iOS TestFlight の内部配布まで到達することをゴールにします。Phase 10A は Season 1 の途中成果であり、Season 1 の完了ではありません。App Store本番公開、App Store審査対策としてのiOS固有価値追加、Macアプリ化は Season 2 以降で扱います。
 
-Phase ごとの確認記録と本番スモークの進め方は [`docs/MAINTAINERS.md`](docs/MAINTAINERS.md) から参照します。
+| Phase | Season   | 状態     | 内容                                                         |
+| ----- | -------- | -------- | ------------------------------------------------------------ |
+| 1-10A | Season 1 | 完了済み | Web/PWAのMVP、保存、共有、AI、PWA品質、Production確認        |
+| 11    | Season 1 | 完了     | Season 1ゴール再定義、Roadmap/docs更新                       |
+| 12    | Season 1 | 未着手   | Privacy / Terms / アカウント削除 / データ削除導線            |
+| 13    | Season 1 | 未着手   | Web/PWA最終品質、Apple Safari実機、Production smoke          |
+| 14    | Season 1 | 未着手   | README中心のポートフォリオ仕上げ                             |
+| 15    | Season 1 | 未着手   | iOS TestFlight用の最小ネイティブshell検証                    |
+| 16    | Season 1 | 未着手   | TestFlight内部配布、実機確認、Season 1完了記録               |
+| 17+   | Season 2 | 後続     | App Store審査対策、iOS固有価値追加、App Store本番公開、Mac化 |
+
+Season 1 の詳細な完了条件は [`docs/SEASON1_ROADMAP.md`](docs/SEASON1_ROADMAP.md) にまとめています。Phase ごとの確認記録と本番スモークの進め方は [`docs/MAINTAINERS.md`](docs/MAINTAINERS.md) から参照します。
 
 ## リポジトリに置かないもの
 

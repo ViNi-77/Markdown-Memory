@@ -174,7 +174,8 @@ https://markdown-memory.vercel.app/demo
 | ローカル保存   | BYOKキーとMarkdown本文を同じ扱いにしない。本文保存は慎重に判断。                                 |
 | 共有リンク     | PWAでもURLを知る人が読める仕様は変えない。                                                       |
 | 通知           | 初期段階では不要。                                                                               |
-| ストア配信     | Web PWAの安定後に検討。                                                                          |
+| TestFlight     | Season 1 の終盤（Phase 15〜16）で、最小iOS shellの検証と内部配布まで進める。                     |
+| ストア本番公開 | App Store審査対策とiOS固有価値追加が必要なため、Season 2 以降で扱う。                            |
 
 ## 次のUI候補
 
@@ -208,4 +209,5 @@ Phase 6 と Phase 7 の自動確認・文書化範囲では以下を確認済み
 
 - [`docs/PWA_REAL_DEVICE_CHECK.md`](PWA_REAL_DEVICE_CHECK.md) に沿って、Apple Safari の実機結果を記録する
 - 実装済み範囲と実機確認待ちの扱いは [`docs/PWA_PHASE7_HANDOFF.md`](PWA_PHASE7_HANDOFF.md) で確認する
+- Season 1 の TestFlight までのPhase配置は [`docs/SEASON1_ROADMAP.md`](SEASON1_ROADMAP.md) で確認する
 - オフライン閲覧/編集を将来採用する場合、[`docs/PWA_OFFLINE_DATA_POLICY.md`](PWA_OFFLINE_DATA_POLICY.md) の条件を満たす仕様にする
