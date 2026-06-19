@@ -276,8 +276,8 @@ Season 1 は、Web/PWAとして完成度を高めたうえで iOS TestFlight の
 | ----- | -------- | -------- | ------------------------------------------------------------ |
 | 1-10A | Season 1 | 完了済み | Web/PWAのMVP、保存、共有、AI、PWA品質、Production確認        |
 | 11    | Season 1 | 完了     | Season 1ゴール再定義、Roadmap/docs更新                       |
-| 12    | Season 1 | 実装中   | Privacy / Terms / アカウント削除 / データ削除導線            |
-| 13    | Season 1 | 実装中   | Web/PWA最終品質、Apple Safari実機、Production smoke          |
+| 12    | Season 1 | 完了     | Privacy / Terms / アカウント削除 / データ削除導線            |
+| 13    | Season 1 | 実機待ち | Web/PWA最終品質、Apple Safari実機、Production smoke          |
 | 14    | Season 1 | 未着手   | README中心のポートフォリオ仕上げ                             |
 | 15    | Season 1 | 未着手   | iOS TestFlight用の最小ネイティブshell検証                    |
 | 16    | Season 1 | 未着手   | TestFlight内部配布、実機確認、Season 1完了記録               |

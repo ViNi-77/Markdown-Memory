@@ -15,15 +15,21 @@ Phase 13 の対象は Web/PWA です。iOS TestFlight shell の実装は Phase 1
 
 ## Preview 確認
 
-| 項目        | 確認内容                                             | 結果   |
-| ----------- | ---------------------------------------------------- | ------ |
-| Demo        | `/demo` が開き、作成・編集・プレビューができる       | 未実施 |
-| Privacy     | `/privacy` が開き、保存データと削除方針を読める      | 未実施 |
-| Terms       | `/terms` が開き、共有リンクとAI利用の注意を読める    | 未実施 |
-| Account     | ログイン後のアカウント設定が開ける                   | 未実施 |
-| AI key      | ブラウザ保存のProvider APIキー削除導線がある         | 未実施 |
-| Delete      | アカウント削除が確認ダイアログ付きで実行される       | 未実施 |
-| Mobile demo | 430px幅で一覧、本文、詳細、アカウントSheetを確認する | 未実施 |
+| 項目        | 確認内容                                             | 結果         |
+| ----------- | ---------------------------------------------------- | ------------ |
+| Demo        | `/demo` が開き、作成・編集・プレビューができる       | OK           |
+| Privacy     | `/privacy` が開き、保存データと削除方針を読める      | OK           |
+| Terms       | `/terms` が開き、共有リンクとAI利用の注意を読める    | OK           |
+| Account     | ログイン後のアカウント設定が開ける                   | 自動確認済み |
+| AI key      | ブラウザ保存のProvider APIキー削除導線がある         | 自動確認済み |
+| Delete      | アカウント削除が確認ダイアログ付きで実行される       | 自動確認済み |
+| Mobile demo | 430px幅で一覧、本文、詳細、アカウントSheetを確認する | OK           |
+
+記録:
+
+- 2026-06-20: PR #66 Preview `dpl_5f2UD76dSC8Qrk1akg1ChPGT7RdH` で `/demo`、`/privacy`、`/terms`、`/api/health` を確認。
+- 2026-06-20: PR #66 CIで `npm run format:check`、`npm run lint`、`npm run test`、`npm run build`、`npm run test:e2e` が成功。
+- 2026-06-20: PR #67 Preview `dpl_2iKMZMcxvLr8aNnCD9QLFzCPZRuG` で `apple-mobile-web-app-capable=yes`、`mobile-web-app-capable=yes`、Apple touch icon を確認。
 
 ## Production 軽量確認
 
@@ -38,9 +44,19 @@ https://markdown-memory.vercel.app/terms
 
 Runtime Logs では直近の想定外500、AIキー、DB接続URL、Markdown本文全文の露出がないことを確認します。
 
+記録:
+
+- 2026-06-20: PR #66 merge後、Production deployment `dpl_FaKJS4tWjxdPdPUpV8z1maEQUTiz` が `7f49513` で READY。
+- 2026-06-20: PR #67 merge後、Production deployment `dpl_ArRyWk6kng3YiPFvuefbQo3JqiLS` が `332ff8e` で READY。
+- 2026-06-20: Production で `/api/health`、`/demo`、`/privacy`、`/terms` が 200、`/api/cron/health` が未認証で 401。
+- 2026-06-20: Production HTMLで `apple-mobile-web-app-capable=yes`、`mobile-web-app-capable=yes`、Apple touch icon を確認。
+- 2026-06-20: Vercel Runtime Logs の直近30分で error/fatal、500、APIキー/Secret/DB URL/Markdown本文の露出検索に該当なし。
+
 ## Apple Safari 実機確認
 
 実機確認は Apple 端末に限定します。Android Chrome は引き続き確認対象外です。
+
+状態: 実機確認待ち。ここがOKになるまでは、Phase 13は完了扱いにしません。
 
 対象:
 

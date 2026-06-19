@@ -41,16 +41,27 @@ URL: `https://markdown-memory.vercel.app`
 
 Phase 12 / 13 では、TestFlightへ進む前にPrivacy / Termsとデータ削除導線も確認します。
 
-- [ ] `/privacy` が表示できる
-- [ ] `/terms` が表示できる
-- [ ] ログイン後のアカウント設定から Privacy / Terms を開ける
-- [ ] アカウント設定でProvider APIキーのブラウザ保存と削除方針が分かる
-- [ ] Provider APIキー削除ボタンで、このブラウザの保存キーを削除できる
-- [ ] アカウント削除は確認ダイアログ付きで、誤タップしやすい下部ナビには直接置かれていない
+- [x] `/privacy` が表示できる
+- [x] `/terms` が表示できる
+- [ ] ログイン後のアカウント設定から Privacy / Terms を開ける（Apple Safari実機待ち）
+- [x] アカウント設定でProvider APIキーのブラウザ保存と削除方針が分かる
+- [x] Provider APIキー削除ボタンで、このブラウザの保存キーを削除できる
+- [x] アカウント削除は確認ダイアログ付きで、誤タップしやすい下部ナビには直接置かれていない
 - [ ] アカウント削除を実際に確認する場合は、Production用テストアカウントだけを使う
 - [ ] 削除後、共有リンクや保存Markdownが残っていないことを確認する
 
 注意: 普段使いのProductionアカウントでは、アカウント削除の最終実行は行いません。導線確認はダイアログ表示までに止め、完全削除はテストアカウントでだけ実施します。
+
+実施記録:
+
+- 2026-06-20: PR #66 で `/privacy`、`/terms`、ログイン後アカウント設定、Provider APIキー削除、アカウント削除Server Actionを追加。
+- 2026-06-20: PR #67 で iOS PWA向け `apple-mobile-web-app-capable` meta をProduction HTMLへ明示。
+- 2026-06-20: Production deployment `dpl_ArRyWk6kng3YiPFvuefbQo3JqiLS` は commit `332ff8e` で READY。
+- 2026-06-20: Production で `/api/health`、`/demo`、`/privacy`、`/terms` は 200。
+- 2026-06-20: `/api/cron/health` は未認証で 401。
+- 2026-06-20: Production HTMLで `apple-mobile-web-app-capable=yes`、`mobile-web-app-capable=yes`、Apple touch icon を確認。
+- 2026-06-20: Vercel Runtime Logs の直近30分で error/fatal、500、APIキー/Secret/DB URL/Markdown本文の露出検索に該当なし。
+- Apple Safari実機確認は残件。実機確認がOKになるまで、Phase 13は「実機待ち」として扱う。
 
 ## 事前準備
 
