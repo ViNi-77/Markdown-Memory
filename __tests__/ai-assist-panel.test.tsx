@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AiAssistPanel } from "@/components/markdown/AiAssistPanel";
 import {
@@ -52,23 +58,25 @@ describe("AiAssistPanel", () => {
     ).toBeInTheDocument();
   });
 
-  it("最後に選んだproviderを復元する", () => {
+  it("最後に選んだproviderを復元する", async () => {
     localStorage.setItem(AI_PROVIDER_STORAGE, "gpt");
 
     renderPanel();
 
     expect(
-      screen.getByRole("button", { name: /アプリ内AI · GPT/ }),
+      await screen.findByRole("button", { name: /アプリ内AI · GPT/ }),
     ).toBeInTheDocument();
   });
 
-  it("旧Gemini APIキーを新しいGemini keyへ移行する", () => {
+  it("旧Gemini APIキーを新しいGemini keyへ移行する", async () => {
     localStorage.setItem(LEGACY_GEMINI_API_KEY_STORAGE, "AIza-legacy");
 
     renderPanel();
 
-    expect(localStorage.getItem(AI_PROVIDER_KEY_STORAGE.gemini)).toBe(
-      "AIza-legacy",
+    await waitFor(() =>
+      expect(localStorage.getItem(AI_PROVIDER_KEY_STORAGE.gemini)).toBe(
+        "AIza-legacy",
+      ),
     );
     expect(localStorage.getItem(LEGACY_GEMINI_API_KEY_STORAGE)).toBeNull();
   });

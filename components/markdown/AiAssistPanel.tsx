@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Sparkles,
   Loader2,
@@ -49,6 +49,8 @@ type Props = {
 
 type ProviderApiKeys = Record<AiProviderId, string>;
 
+const EMPTY_API_KEYS: ProviderApiKeys = { claude: "", gpt: "", gemini: "" };
+
 function readStoredProvider(): AiProviderId {
   if (typeof window === "undefined") return DEFAULT_AI_PROVIDER;
   const stored = localStorage.getItem(AI_PROVIDER_STORAGE);
@@ -56,8 +58,7 @@ function readStoredProvider(): AiProviderId {
 }
 
 function readStoredApiKeys(): ProviderApiKeys {
-  const emptyKeys: ProviderApiKeys = { claude: "", gpt: "", gemini: "" };
-  if (typeof window === "undefined") return emptyKeys;
+  if (typeof window === "undefined") return EMPTY_API_KEYS;
 
   const currentGeminiKey = localStorage.getItem(AI_PROVIDER_KEY_STORAGE.gemini);
   const legacyGeminiKey = localStorage.getItem(LEGACY_GEMINI_API_KEY_STORAGE);
@@ -84,8 +85,8 @@ export function AiAssistPanel({
   onContentChange,
   onError,
 }: Props) {
-  const [provider, setProvider] = useState<AiProviderId>(readStoredProvider);
-  const [apiKeys, setApiKeys] = useState<ProviderApiKeys>(readStoredApiKeys);
+  const [provider, setProvider] = useState<AiProviderId>(DEFAULT_AI_PROVIDER);
+  const [apiKeys, setApiKeys] = useState<ProviderApiKeys>(EMPTY_API_KEYS);
   const [showSettings, setShowSettings] = useState(false);
   const [customPrompt, setCustomPrompt] = useState("");
   const [result, setResult] = useState("");
@@ -95,6 +96,14 @@ export function AiAssistPanel({
   const selectedProvider =
     AI_PROVIDER_OPTIONS.find((option) => option.id === provider) ??
     AI_PROVIDER_OPTIONS[0];
+
+  useEffect(() => {
+    const restoreStoredPreferences = window.setTimeout(() => {
+      setProvider(readStoredProvider());
+      setApiKeys(readStoredApiKeys());
+    }, 0);
+    return () => window.clearTimeout(restoreStoredPreferences);
+  }, []);
 
   function saveApiKey() {
     const trimmed = apiKeys[provider].trim();
