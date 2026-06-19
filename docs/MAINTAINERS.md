@@ -73,8 +73,8 @@ Season 1 は Phase 10A で終わりではなく、Web/PWA完成と iOS TestFligh
 | ----- | -------- | -------- | ------------------------------------------------------------ |
 | 1-10A | Season 1 | 完了済み | Web/PWAのMVP、保存、共有、AI、PWA品質、Production確認        |
 | 11    | Season 1 | 完了     | Season 1ゴール再定義、Roadmap/docs更新                       |
-| 12    | Season 1 | 実装中   | Privacy / Terms / アカウント削除 / データ削除導線            |
-| 13    | Season 1 | 実装中   | Web/PWA最終品質、Apple Safari実機、Production smoke          |
+| 12    | Season 1 | 完了     | Privacy / Terms / アカウント削除 / データ削除導線            |
+| 13    | Season 1 | 実機待ち | Web/PWA最終品質、Apple Safari実機、Production smoke          |
 | 14    | Season 1 | 未着手   | README中心のポートフォリオ仕上げ                             |
 | 15    | Season 1 | 未着手   | iOS TestFlight用の最小ネイティブshell検証                    |
 | 16    | Season 1 | 未着手   | TestFlight内部配布、実機確認、Season 1完了記録               |
@@ -84,7 +84,7 @@ Phase 6 の作業記録は [#23](https://github.com/ViNi-77/Markdown-Memory/issu
 
 Phase 12 では `/privacy`、`/terms`、ログイン後のアカウント設定、アカウント削除Server Actionを追加します。Apple公式の [Offering account deletion in your app](https://developer.apple.com/support/offering-account-deletion-in-your-app/) は、App Storeに提出するアプリがアカウント作成をサポートする場合、アプリ内でアカウント削除を開始できる必要があると説明しています。Season 1ではTestFlightまでですが、Phase 12でこの導線を前倒しで用意します。
 
-Phase 13 では [`SEASON1_PHASE13_CHECK.md`](SEASON1_PHASE13_CHECK.md) と [`PRODUCTION_SMOKE_CHECK.md`](PRODUCTION_SMOKE_CHECK.md) を使い、Preview、CI、Production軽量確認、Apple Safari実機確認の境界を分けて記録します。
+Phase 13 では [`SEASON1_PHASE13_CHECK.md`](SEASON1_PHASE13_CHECK.md) と [`PRODUCTION_SMOKE_CHECK.md`](PRODUCTION_SMOKE_CHECK.md) を使い、Preview、CI、Production軽量確認、Apple Safari実機確認の境界を分けて記録します。2026-06-20 時点で、CI、Preview、Production軽量確認、iOS PWA metaのProduction反映は完了しています。Apple Safari実機確認だけが残っています。
 
 ## 本番確認済み
 
@@ -110,6 +110,7 @@ Phase 13 では [`SEASON1_PHASE13_CHECK.md`](SEASON1_PHASE13_CHECK.md) と [`PRO
 - `/api/cron/health` の `CRON_SECRET` 保護
 - Vercel Runtime Logs の想定外500なし
 - PWA manifest / PNG icon / offline page
+- iOS PWA向け `apple-mobile-web-app-capable` meta
 
 ## 公開リポジトリの確認
 
