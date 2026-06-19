@@ -30,7 +30,7 @@ URL: `https://markdown-memory.vercel.app`
 - PR #60 でブラウザ幅縮小時に本文ツールバーと詳細ペインが重なって見える問題を修正済み。
 - ユーザー確認により、Production のログイン後保存、共有、AI連携、Apple Safari の主要導線はOK。
 - 2026-06-19 の軽量確認で `/api/health` は 200、`/demo` は 200、`/api/cron/health` は未認証で 401。
-- Vercel Production deployment `dpl_2QZcm3CgeU8wTnXhP5cJffQANDov` は Ready。直近ログで想定外500、AIログのAPIキー/Markdown全文露出は確認されていません。
+- PR #61 merge後の Vercel Production deployment `dpl_8oX2Bpm8wSRW3hUFs93vMuMjbGvw` は Ready。直近ログで想定外500、AIログのAPIキー/Markdown全文露出は確認されていません。
 
 保留:
 
