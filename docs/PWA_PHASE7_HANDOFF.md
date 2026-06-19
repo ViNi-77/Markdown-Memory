@@ -69,7 +69,9 @@ Phase 7I 時点では、以下を採用しません。
 - オフライン編集
 - 共有ページの端末自動保存
 - Service Worker によるログイン後ワークスペースのキャッシュ
-- ストア配信やネイティブアプリ化の判断
+- App Store本番公開やMacアプリ化の判断
+
+TestFlight は Season 1 の Phase 15〜16 で扱います。App Store本番公開、App Store審査対策としてのiOS固有価値追加、Macアプリ化は Season 2 以降で扱います。詳細は [`docs/SEASON1_ROADMAP.md`](SEASON1_ROADMAP.md) を参照します。
 
 オフライン閲覧/編集を検討する場合は、先に [`docs/PWA_OFFLINE_DATA_POLICY.md`](PWA_OFFLINE_DATA_POLICY.md) の条件を満たします。
 

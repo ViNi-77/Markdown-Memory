@@ -10,6 +10,7 @@
 | [`BRANCH_PROTECTION.md`](BRANCH_PROTECTION.md)             | main ブランチ保護の推奨設定                          |
 | [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md)                   | Neon バックアップと復元ドリル                        |
 | [`PRODUCTION_SMOKE_CHECK.md`](PRODUCTION_SMOKE_CHECK.md)   | Production のログイン後保存、共有、AI、運用確認      |
+| [`SEASON1_ROADMAP.md`](SEASON1_ROADMAP.md)                 | Season 1の完了条件とTestFlightまでのPhase配置        |
 | [`MOBILE_PWA_PREP.md`](MOBILE_PWA_PREP.md)                 | モバイル/PWAの準備メモ                               |
 | [`PWA_REAL_DEVICE_CHECK.md`](PWA_REAL_DEVICE_CHECK.md)     | Apple Safari 実機確認チェックリスト                  |
 | [`PWA_OFFLINE_DATA_POLICY.md`](PWA_OFFLINE_DATA_POLICY.md) | オフライン時に保存してよい/いけないデータの方針      |
@@ -65,18 +66,20 @@ https://markdown-memory.vercel.app/api/auth/callback/google
 
 ## Phase 記録
 
-| Phase | 状態              | 内容                                                              |
-| ----- | ----------------- | ----------------------------------------------------------------- |
-| 4     | 完了              | 公開MVP。ログイン、保存、共有、AI連携まで確認済み                 |
-| 5     | 完了              | CI/CD、E2E、監視、バックアップ手順、フィードバック導線            |
-| 5.5   | 完了              | Cron監視、PWA下地、スマホ前段導線、README整備                     |
-| 6     | 完了              | スマホ閲覧最適化、PWA安全仕様、フィードバック運用整備             |
-| 7     | 完了（Apple対象） | PWA品質強化、スマホ読書体験の磨き込み、アプリ化準備               |
-| 8     | 完了              | Production保存・共有、AI provider切替、運用確認、レスポンシブ修正 |
-| 9     | 完了              | AI設定UX、結果適用確認、エラー表示、秘密情報非露出の固定          |
-| 10    | 完了              | AI提案の一時履歴、復元・クリア、永続保存なしの安全な再利用導線    |
+Season 1 は Phase 10A で終わりではなく、Web/PWA完成と iOS TestFlight 内部配布までを含みます。Season 1.5 は作らず、TestFlight は Season 1 の Phase 15〜16 に置きます。
 
-Phase 6 の作業記録は [#23](https://github.com/ViNi-77/Markdown-Memory/issues/23) にあります。Phase 7 は Apple Safari を対象にし、Android Chrome は現時点の確認対象に含めません。Phase 8 以降は [`PRODUCTION_SMOKE_CHECK.md`](PRODUCTION_SMOKE_CHECK.md) に沿って、PWA実機確認とは分けて Production のログイン後導線とAI UXを確認します。
+| Phase | Season   | 状態     | 内容                                                         |
+| ----- | -------- | -------- | ------------------------------------------------------------ |
+| 1-10A | Season 1 | 完了済み | Web/PWAのMVP、保存、共有、AI、PWA品質、Production確認        |
+| 11    | Season 1 | 完了     | Season 1ゴール再定義、Roadmap/docs更新                       |
+| 12    | Season 1 | 未着手   | Privacy / Terms / アカウント削除 / データ削除導線            |
+| 13    | Season 1 | 未着手   | Web/PWA最終品質、Apple Safari実機、Production smoke          |
+| 14    | Season 1 | 未着手   | README中心のポートフォリオ仕上げ                             |
+| 15    | Season 1 | 未着手   | iOS TestFlight用の最小ネイティブshell検証                    |
+| 16    | Season 1 | 未着手   | TestFlight内部配布、実機確認、Season 1完了記録               |
+| 17+   | Season 2 | 後続     | App Store審査対策、iOS固有価値追加、App Store本番公開、Mac化 |
+
+Phase 6 の作業記録は [#23](https://github.com/ViNi-77/Markdown-Memory/issues/23) にあります。Phase 7 は Apple Safari を対象にし、Android Chrome は現時点の確認対象に含めません。Phase 8 以降は [`PRODUCTION_SMOKE_CHECK.md`](PRODUCTION_SMOKE_CHECK.md) に沿って、PWA実機確認とは分けて Production のログイン後導線とAI UXを確認します。Season 1 の完了条件は [`SEASON1_ROADMAP.md`](SEASON1_ROADMAP.md) を正とします。
 
 ## 本番確認済み
 
