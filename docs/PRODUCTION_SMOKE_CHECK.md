@@ -19,7 +19,7 @@ Phase 8A では、PWA の `/demo` 実機確認とは分けて、OAuth、DB保存
 - 個人情報、APIキー、DB接続URL、非公開Markdown本文をスクリーンショットやIssueに残さない
 - テスト用Markdownは公開されても困らない内容にする
 - 共有リンクを作った場合は、確認後に非公開へ戻すか、テスト用ファイルを削除する
-- BYOK の Gemini API キーを使う場合、キー文字列そのものを記録しない
+- BYOK の Provider API キーを使う場合、キー文字列そのものを記録しない
 - Production DB に残してよいテストデータだけを作る
 
 ## デスクトップ確認
@@ -42,9 +42,12 @@ Phase 8A では、PWA の `/demo` 実機確認とは分けて、OAuth、DB保存
 
 - [ ] Claude / ChatGPT / Gemini へ本文コピーまたは再投入導線を開ける
 - [ ] アプリ内AIパネルを開閉できる
-- [ ] APIキー未設定時の案内が自然に表示される
+- [ ] Claude / GPT / Gemini モードを切り替えできる
+- [ ] Provider別 APIキーを保存・削除できる
+- [ ] APIキー未設定時またはGateway未設定時の案内が自然に表示される
 - [ ] BYOK またはサーバー側キーがある環境では、要約または整形を1回実行できる
-- [ ] AI API のエラー表示にAPIキーやMarkdown全文が露出しない
+- [ ] 無効キーのエラー表示にAPIキーやMarkdown全文が露出しない
+- [ ] AI API の Runtime Logs に provider/model/status は出るが、APIキーやMarkdown全文は露出しない
 
 ## モバイル確認
 

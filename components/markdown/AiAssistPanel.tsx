@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Sparkles,
   Loader2,
@@ -16,9 +16,23 @@ import * as actions from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
 import { MarkdownView } from "@/components/markdown/MarkdownView";
-
-const API_KEY_STORAGE = "markdown_memory_gemini_api_key";
+import {
+  AI_PROVIDER_KEY_STORAGE,
+  AI_PROVIDER_OPTIONS,
+  AI_PROVIDER_STORAGE,
+  DEFAULT_AI_PROVIDER,
+  LEGACY_GEMINI_API_KEY_STORAGE,
+  isAiProviderId,
+  resolveMigratedGeminiApiKey,
+  type AiProviderId,
+} from "@/lib/ai";
 
 const PRESETS = [
   { id: "summarize", label: "要約 (TL;DR)" },
@@ -33,37 +47,89 @@ type Props = {
   onError: (message: string) => void;
 };
 
+type ProviderApiKeys = Record<AiProviderId, string>;
+
+const EMPTY_API_KEYS: ProviderApiKeys = { claude: "", gpt: "", gemini: "" };
+
+function readStoredProvider(): AiProviderId {
+  if (typeof window === "undefined") return DEFAULT_AI_PROVIDER;
+  const stored = localStorage.getItem(AI_PROVIDER_STORAGE);
+  return isAiProviderId(stored) ? stored : DEFAULT_AI_PROVIDER;
+}
+
+function readStoredApiKeys(): ProviderApiKeys {
+  if (typeof window === "undefined") return EMPTY_API_KEYS;
+
+  const currentGeminiKey = localStorage.getItem(AI_PROVIDER_KEY_STORAGE.gemini);
+  const legacyGeminiKey = localStorage.getItem(LEGACY_GEMINI_API_KEY_STORAGE);
+  const migratedGeminiKey = resolveMigratedGeminiApiKey({
+    currentGeminiKey,
+    legacyGeminiKey,
+  });
+
+  if (!currentGeminiKey?.trim() && migratedGeminiKey) {
+    localStorage.setItem(AI_PROVIDER_KEY_STORAGE.gemini, migratedGeminiKey);
+    localStorage.removeItem(LEGACY_GEMINI_API_KEY_STORAGE);
+  }
+
+  return {
+    claude: localStorage.getItem(AI_PROVIDER_KEY_STORAGE.claude) ?? "",
+    gpt: localStorage.getItem(AI_PROVIDER_KEY_STORAGE.gpt) ?? "",
+    gemini: migratedGeminiKey,
+  };
+}
+
 export function AiAssistPanel({
   document,
   demoMode = false,
   onContentChange,
   onError,
 }: Props) {
-  const [apiKey, setApiKey] = useState(() =>
-    typeof window === "undefined"
-      ? ""
-      : (localStorage.getItem(API_KEY_STORAGE) ?? ""),
-  );
+  const [provider, setProvider] = useState<AiProviderId>(DEFAULT_AI_PROVIDER);
+  const [apiKeys, setApiKeys] = useState<ProviderApiKeys>(EMPTY_API_KEYS);
   const [showSettings, setShowSettings] = useState(false);
   const [customPrompt, setCustomPrompt] = useState("");
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  const selectedProvider =
+    AI_PROVIDER_OPTIONS.find((option) => option.id === provider) ??
+    AI_PROVIDER_OPTIONS[0];
+
+  useEffect(() => {
+    const restoreStoredPreferences = window.setTimeout(() => {
+      setProvider(readStoredProvider());
+      setApiKeys(readStoredApiKeys());
+    }, 0);
+    return () => window.clearTimeout(restoreStoredPreferences);
+  }, []);
 
   function saveApiKey() {
-    const trimmed = apiKey.trim();
+    const trimmed = apiKeys[provider].trim();
+    const storageKey = AI_PROVIDER_KEY_STORAGE[provider];
     if (trimmed) {
-      localStorage.setItem(API_KEY_STORAGE, trimmed);
+      localStorage.setItem(storageKey, trimmed);
     } else {
-      localStorage.removeItem(API_KEY_STORAGE);
+      localStorage.removeItem(storageKey);
     }
-    setApiKey(trimmed);
+    setApiKeys((current) => ({ ...current, [provider]: trimmed }));
     setShowSettings(false);
   }
 
+  function handleProviderChange(value: string | null) {
+    if (!isAiProviderId(value)) return;
+    setProvider(value);
+    setResult("");
+    localStorage.setItem(AI_PROVIDER_STORAGE, value);
+  }
+
+  function updateApiKey(value: string) {
+    setApiKeys((current) => ({ ...current, [provider]: value }));
+  }
+
   async function runAi(task: string, prompt?: string) {
-    const key = localStorage.getItem(API_KEY_STORAGE)?.trim();
+    const key = apiKeys[provider].trim();
     if (!document.content.trim()) {
       onError("本文が空です。AIに渡す内容がありません。");
       return;
@@ -78,6 +144,7 @@ export function AiAssistPanel({
         body: JSON.stringify({
           documentContent: document.content,
           task,
+          provider,
           customPrompt: prompt ?? customPrompt,
           ...(key ? { apiKey: key } : {}),
         }),
@@ -155,7 +222,7 @@ export function AiAssistPanel({
         >
           <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <Sparkles className="size-3.5" />
-            アプリ内AI
+            アプリ内AI · {selectedProvider.label}
           </span>
           <ChevronDown
             className={`size-3.5 text-muted-foreground transition-transform ${panelOpen ? "rotate-180" : ""}`}
@@ -179,19 +246,43 @@ export function AiAssistPanel({
           {showSettings && (
             <div className="flex flex-col gap-2 rounded-lg border border-border bg-canvas/70 p-3">
               <label className="text-xs text-muted-foreground">
-                Gemini APIキー
+                AIプロバイダー
+              </label>
+              <Select value={provider} onValueChange={handleProviderChange}>
+                <SelectTrigger
+                  size="sm"
+                  className="w-full"
+                  aria-label="AIプロバイダー"
+                >
+                  <span
+                    data-slot="select-value"
+                    className="flex flex-1 items-center gap-1.5 text-left"
+                  >
+                    {selectedProvider.modeLabel}
+                  </span>
+                </SelectTrigger>
+                <SelectContent align="start">
+                  {AI_PROVIDER_OPTIONS.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.modeLabel}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <label className="text-xs text-muted-foreground">
+                {selectedProvider.label} APIキー
               </label>
               <Input
                 type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="AIza..."
+                value={apiKeys[provider]}
+                onChange={(e) => updateApiKey(e.target.value)}
+                placeholder={selectedProvider.keyPlaceholder}
                 className="font-mono text-xs"
               />
               <p className="text-xs leading-relaxed text-muted-foreground">
                 {demoMode
-                  ? "デモではブラウザに保存したキーだけを使います。入力したキーはAI実行時だけサーバーに送られます。"
-                  : "空欄ならサーバー側の GEMINI_API_KEY を使います。入力したキーはブラウザにのみ保存され、AI実行時だけサーバーに送られます。"}
+                  ? "デモではブラウザに保存した選択中プロバイダーのキーだけを使います。キーはAI実行時だけサーバーに送られます。"
+                  : "キーはブラウザにのみ保存され、AI実行時だけ選択中プロバイダー用のキーをサーバーに送ります。空欄ならAI Gatewayまたはサーバー側設定を使います。"}
               </p>
               <Button size="sm" onClick={saveApiKey}>
                 保存

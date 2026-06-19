@@ -24,7 +24,7 @@
 | 自動保存       | 編集内容をデバウンス保存                                                     |
 | 共有           | 選択したファイルだけ公開リンクを発行                                         |
 | AI連携         | Claude / ChatGPT / Gemini に本文をコピーして開く                             |
-| アプリ内AI     | Gemini API による要約・整形。BYOK またはサーバー側キーを使用                 |
+| アプリ内AI     | Claude / GPT / Gemini モードで要約・整形。BYOK または AI Gateway 設定を使用  |
 | Markdown表示   | CommonMark + GFM を安全に表示。表、脚注、コードブロック、通常改行にも対応    |
 | 全画面表示     | ログイン後、自分の Markdown を別ウィンドウで閲覧                             |
 | ペイン調整     | デスクトップでフォルダ、ファイル一覧、詳細ペインの幅を調整                   |
@@ -56,7 +56,7 @@ flowchart TB
 
     subgraph Client["Client"]
         Workspace["Workspace UI<br/>Markdownエディタ・プレビュー・共有操作"]
-        LocalKey["Browser Storage<br/>BYOKのGemini APIキーを保存"]
+        LocalKey["Browser Storage<br/>Provider別BYOK APIキーを保存"]
         SW["Service Worker<br/>デモ・オフライン画面・静的資産のみキャッシュ"]
     end
 
@@ -64,14 +64,15 @@ flowchart TB
         Pages["App Pages<br/>ログイン・デモ・共有・全画面表示"]
         Actions["Server Actions<br/>文書・フォルダ・共有設定を処理"]
         Auth["Auth.js<br/>GoogleログインとJWTセッションを管理"]
-        AiApi["AI API<br/>Geminiへ要約・整形を依頼"]
+        AiApi["AI API<br/>Providerを選んで要約・整形を依頼"]
         Health["Health APIs<br/>公開ヘルスチェックとCron内部チェック"]
     end
 
     subgraph Data["Data / External Services"]
         Neon[("Neon PostgreSQL<br/>ユーザー・フォルダ・Markdown本文・共有トークンを保存")]
         Google["Google OAuth<br/>ユーザー認証"]
-        Gemini["Gemini API<br/>Markdownの要約・整形・プロンプト化"]
+        Gateway["Vercel AI Gateway<br/>Claude / GPT / Geminiへ統一接続"]
+        GeminiLegacy["Gemini API<br/>legacy fallback"]
         Env[["Vercel Environment Variables<br/>DB接続URL・OAuth Secret・APIキーを保管"]]
     end
 
@@ -94,7 +95,8 @@ flowchart TB
     Actions --> Neon
     Auth --> Google
     Auth --> Neon
-    AiApi --> Gemini
+    AiApi --> Gateway
+    AiApi -.-> GeminiLegacy
     Health --> VercelLogs
 
     Env -.-> Auth
@@ -111,43 +113,44 @@ flowchart TB
 
 | Component                    | 役割                                                                             |
 | ---------------------------- | -------------------------------------------------------------------------------- |
-| Browser / PWA                | Markdownの閲覧・編集・共有。BYOKのGemini APIキーはlocalStorageに保存             |
+| Browser / PWA                | Markdownの閲覧・編集・共有。Provider別BYOK APIキーはlocalStorageに保存           |
 | Service Worker               | `/demo`、`/offline`、PWAアイコン、静的資産のみキャッシュ。非公開Markdownは対象外 |
 | Next.js App on Vercel        | 画面、Server Actions、API Routes、共有ページ、全画面表示を提供                   |
 | Auth.js                      | Google OAuth と JWT セッションを管理                                             |
 | Drizzle ORM                  | Neon PostgreSQL への型付きアクセス                                               |
 | Neon PostgreSQL              | ユーザー、フォルダ、文書、共有トークンを保存                                     |
-| Gemini API                   | Markdownの要約・整形・プロンプト化                                               |
+| Vercel AI Gateway            | Claude / GPT / Gemini への統一接続、モデル指定、BYOK、利用ログ                   |
+| Gemini API                   | Geminiモードの既存APIキー互換 fallback                                           |
 | Vercel Environment Variables | DB接続URL、OAuth Secret、APIキー、CRON_SECRETを保管                              |
 | GitHub Actions               | lint / test / build / E2E / audit を実行                                         |
 | Vercel Observability         | Analytics、Speed Insights、Runtime Logs、Cron、Webhookで運用確認                 |
 
 ### 主要フロー
 
-| Flow       | 経路                                                     | 補足                                             |
-| ---------- | -------------------------------------------------------- | ------------------------------------------------ |
-| Login      | Browser → Auth.js → Google OAuth                         | セッションはJWTで管理                            |
-| Save       | Browser → Server Actions → Drizzle ORM → Neon PostgreSQL | Markdown本文・フォルダ・共有状態を保存           |
-| AI Assist  | Browser → AI API → Gemini API                            | BYOKキーまたはVercel側の `GEMINI_API_KEY` を使用 |
-| Share      | Browser → Server Actions → `/share/[token]`              | 公開リンクを知っている人だけが閲覧可能           |
-| Monitoring | Vercel Cron → Cron Health API → Runtime Logs / Webhook   | `CRON_SECRET` で内部ヘルスチェックを保護         |
+| Flow       | 経路                                                     | 補足                                                                        |
+| ---------- | -------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Login      | Browser → Auth.js → Google OAuth                         | セッションはJWTで管理                                                       |
+| Save       | Browser → Server Actions → Drizzle ORM → Neon PostgreSQL | Markdown本文・フォルダ・共有状態を保存                                      |
+| AI Assist  | Browser → AI API → Vercel AI Gateway / Gemini fallback   | Claude / GPT / Gemini を切り替え。Provider別BYOKキーまたはGateway設定を使用 |
+| Share      | Browser → Server Actions → `/share/[token]`              | 公開リンクを知っている人だけが閲覧可能                                      |
+| Monitoring | Vercel Cron → Cron Health API → Runtime Logs / Webhook   | `CRON_SECRET` で内部ヘルスチェックを保護                                    |
 
 ## データ保護方針
 
 このアプリはローカル専用ではありません。ログイン後に作成したデータは、設定された Neon PostgreSQL に保存されます。
 
-| 対象                           | 扱い                                                              |
-| ------------------------------ | ----------------------------------------------------------------- |
-| ユーザー情報・認証情報         | Neon PostgreSQL / Auth.js Cookie に保存                           |
-| フォルダ                       | Neon PostgreSQL に保存                                            |
-| Markdown本文                   | Neon PostgreSQL に保存                                            |
-| 共有リンクの公開状態とトークン | Neon PostgreSQL に保存                                            |
-| BYOKのGemini APIキー           | ブラウザの `localStorage` に保存                                  |
-| サーバー側Gemini APIキー       | Vercel Environment Variables に保存                               |
-| DB接続URL・OAuth Secret        | Vercel Environment Variables に保存                               |
-| 非公開Markdown                 | Service Workerでキャッシュしない。初期PWAでは端末に永続保存しない |
-| 共有ページ                     | Service Workerでキャッシュしない。受信側端末への自動保存もしない  |
-| デモ画面の編集内容             | DBには保存しない。ページ再読み込みで初期化。                      |
+| 対象                            | 扱い                                                              |
+| ------------------------------- | ----------------------------------------------------------------- |
+| ユーザー情報・認証情報          | Neon PostgreSQL / Auth.js Cookie に保存                           |
+| フォルダ                        | Neon PostgreSQL に保存                                            |
+| Markdown本文                    | Neon PostgreSQL に保存                                            |
+| 共有リンクの公開状態とトークン  | Neon PostgreSQL に保存                                            |
+| BYOKのProvider APIキー          | ブラウザの `localStorage` にProvider別で保存                      |
+| AI Gateway / legacy Gemini 設定 | Vercel Environment Variables に保存                               |
+| DB接続URL・OAuth Secret         | Vercel Environment Variables に保存                               |
+| 非公開Markdown                  | Service Workerでキャッシュしない。初期PWAでは端末に永続保存しない |
+| 共有ページ                      | Service Workerでキャッシュしない。受信側端末への自動保存もしない  |
+| デモ画面の編集内容              | DBには保存しない。ページ再読み込みで初期化。                      |
 
 共有リンクを発行した Markdown は、URL を知っている人が閲覧できます。公開したくない内容では共有リンクを作成しないでください。
 
@@ -161,23 +164,23 @@ flowchart TB
 - Auth.js v5
 - Neon PostgreSQL
 - Drizzle ORM
-- Google Gemini API
+- Vercel AI Gateway / Google Gemini API fallback
 - Vercel
 
 ## 主なルート
 
-| ルート                    | 内容                                  |
-| ------------------------- | ------------------------------------- |
-| `/`                       | ログイン後の Markdown ワークスペース  |
-| `/login`                  | Google ログイン画面                   |
-| `/demo`                   | 未ログインで確認できるデモ画面        |
-| `/share/[token]`          | 公開共有された Markdown の閲覧画面    |
-| `/view/[id]`              | ログイン済みユーザー向けの全画面閲覧  |
-| `/offline`                | オフライン時の案内画面                |
-| `/api/health`             | 本番監視用の軽量ヘルスチェック        |
-| `/api/cron/health`        | Vercel Cron 用の内部ヘルスチェック    |
-| `/api/auth/[...nextauth]` | Auth.js の認証エンドポイント          |
-| `/api/ai`                 | Gemini API 用のサーバーエンドポイント |
+| ルート                    | 内容                                 |
+| ------------------------- | ------------------------------------ |
+| `/`                       | ログイン後の Markdown ワークスペース |
+| `/login`                  | Google ログイン画面                  |
+| `/demo`                   | 未ログインで確認できるデモ画面       |
+| `/share/[token]`          | 公開共有された Markdown の閲覧画面   |
+| `/view/[id]`              | ログイン済みユーザー向けの全画面閲覧 |
+| `/offline`                | オフライン時の案内画面               |
+| `/api/health`             | 本番監視用の軽量ヘルスチェック       |
+| `/api/cron/health`        | Vercel Cron 用の内部ヘルスチェック   |
+| `/api/auth/[...nextauth]` | Auth.js の認証エンドポイント         |
+| `/api/ai`                 | アプリ内AI用のサーバーエンドポイント |
 
 ## ローカル起動
 
@@ -201,11 +204,17 @@ AUTH_SECRET
 AUTH_GOOGLE_ID
 AUTH_GOOGLE_SECRET
 GEMINI_API_KEY
+GEMINI_MODEL
+AI_GATEWAY_API_KEY
+AI_MODEL_CLAUDE
+AI_MODEL_GPT
+AI_MODEL_GEMINI
 ERROR_REPORT_WEBHOOK_URL
 CRON_SECRET
 ```
 
-`GEMINI_API_KEY` は任意です。未設定でも、ユーザーが画面から自分の Gemini API キーを保存すれば AI 機能を利用できます。
+アプリ内AIは Claude / GPT / Gemini を切り替えできます。Production では Vercel AI Gateway の OIDC または `AI_GATEWAY_API_KEY` を使い、必要に応じて Vercel 側の BYOK を設定します。ユーザーが画面で入力したProvider APIキーはブラウザにのみ保存され、AI実行時だけ送信されます。
+`GEMINI_API_KEY` と `GEMINI_MODEL` は Geminiモードの legacy fallback 用で任意です。
 `ERROR_REPORT_WEBHOOK_URL` も任意です。設定すると、本文やAPIキーを含まないサーバーエラー通知をHTTPS Webhookへ送ります。
 `CRON_SECRET` は Vercel Cron の内部ヘルスチェック保護用です。
 

@@ -1,12 +1,18 @@
 import { describe, expect, it } from "vitest";
 import {
   AI_PRESET_PROMPTS,
+  DEFAULT_AI_MODELS,
+  DEFAULT_AI_PROVIDER,
+  DEFAULT_DIRECT_GEMINI_MODEL,
   DEFAULT_GEMINI_MODEL,
   buildAiPrompt,
+  buildGatewayProviderOptions,
   parseAiRequestBody,
   resolveAiProviderErrorResponse,
   resolveAiInstruction,
+  resolveAiModel,
   resolveGeminiModel,
+  resolveMigratedGeminiApiKey,
 } from "@/lib/ai";
 
 describe("AI request helpers", () => {
@@ -28,7 +34,7 @@ describe("AI request helpers", () => {
     );
   });
 
-  it("必須入力と apiKey 型を検証する", () => {
+  it("必須入力、apiKey型、providerを検証する", () => {
     expect(() => parseAiRequestBody({ task: "summarize" })).toThrow(
       "documentContent is required",
     );
@@ -39,22 +45,98 @@ describe("AI request helpers", () => {
         apiKey: 123,
       }),
     ).toThrow("apiKey must be a string");
+    expect(() =>
+      parseAiRequestBody({
+        documentContent: "# Memo",
+        task: "summarize",
+        provider: "unknown",
+      }),
+    ).toThrow("有効なAIプロバイダーを指定してください");
 
     expect(
       parseAiRequestBody({
         documentContent: "# Memo",
         task: "summarize",
-        apiKey: "AIza-test",
+        apiKey: "sk-test",
       }),
     ).toEqual({
       documentContent: "# Memo",
       task: "summarize",
+      provider: DEFAULT_AI_PROVIDER,
       customPrompt: undefined,
-      apiKey: "AIza-test",
+      apiKey: "sk-test",
+    });
+
+    expect(
+      parseAiRequestBody({
+        documentContent: "# Memo",
+        task: "summarize",
+        provider: "gpt",
+      }).provider,
+    ).toBe("gpt");
+  });
+
+  it("AI Gatewayモデルをprovider別に解決する", () => {
+    expect(DEFAULT_GEMINI_MODEL).toBe(DEFAULT_AI_MODELS.gemini);
+    expect(resolveAiModel("claude", {})).toBe("anthropic/claude-sonnet-4.6");
+    expect(resolveAiModel("gpt", { AI_MODEL_GPT: " openai/gpt-5.4 " })).toBe(
+      "openai/gpt-5.4",
+    );
+    expect(
+      resolveAiModel("gemini", { AI_MODEL_GEMINI: " google/gemini-3-flash " }),
+    ).toBe("google/gemini-3-flash");
+  });
+
+  it("Gemini direct fallbackモデルはGoogle prefixを外す", () => {
+    expect(DEFAULT_DIRECT_GEMINI_MODEL).toBe("gemini-2.5-flash");
+    expect(resolveGeminiModel(" google/gemini-2.5-flash ")).toBe(
+      "gemini-2.5-flash",
+    );
+    expect(resolveGeminiModel(" gemini-3.5-flash ")).toBe("gemini-3.5-flash");
+  });
+
+  it("Claude/GPT BYOK はGateway providerOptionsにだけ入る", () => {
+    expect(
+      buildGatewayProviderOptions({
+        provider: "claude",
+        apiKey: " sk-ant-secret ",
+        userId: "user-1",
+      }),
+    ).toEqual({
+      user: "user-1",
+      tags: ["feature:ai-assist", "provider:claude"],
+      byok: {
+        anthropic: [{ apiKey: "sk-ant-secret" }],
+      },
+    });
+
+    expect(
+      buildGatewayProviderOptions({
+        provider: "gpt",
+        apiKey: "",
+        userId: null,
+      }),
+    ).toEqual({
+      tags: ["feature:ai-assist", "provider:gpt"],
     });
   });
 
-  it("Gemini に渡すプロンプトは本文のみの出力を明示する", () => {
+  it("旧Gemini APIキーは新Gemini keyへ移行できる", () => {
+    expect(
+      resolveMigratedGeminiApiKey({
+        currentGeminiKey: " AIza-current ",
+        legacyGeminiKey: "AIza-legacy",
+      }),
+    ).toBe("AIza-current");
+    expect(
+      resolveMigratedGeminiApiKey({
+        currentGeminiKey: "",
+        legacyGeminiKey: " AIza-legacy ",
+      }),
+    ).toBe("AIza-legacy");
+  });
+
+  it("AI に渡すプロンプトは本文のみの出力を明示する", () => {
     const prompt = buildAiPrompt({
       documentContent: "# Original",
       instruction: "要約してください",
@@ -65,32 +147,40 @@ describe("AI request helpers", () => {
     expect(prompt).toContain("【対象Markdown】\n# Original");
   });
 
-  it("Gemini モデルは現行の安定モデルを既定値にする", () => {
-    expect(DEFAULT_GEMINI_MODEL).toBe("gemini-3.5-flash");
-    expect(resolveGeminiModel()).toBe(DEFAULT_GEMINI_MODEL);
-    expect(resolveGeminiModel(" gemini-2.5-flash ")).toBe("gemini-2.5-flash");
-  });
-
-  it("BYOK の認証・権限エラーはキー確認を促す", () => {
+  it("BYOK の認証・権限エラーはprovider別キー確認を促す", () => {
     const error = Object.assign(new Error("API key not valid"), {
       status: 400,
     });
 
-    expect(resolveAiProviderErrorResponse(error, true)).toEqual({
+    const response = resolveAiProviderErrorResponse(error, "claude", true);
+    expect(response).toMatchObject({
       kind: "auth_or_config",
       providerStatus: 400,
       responseStatus: 400,
-      publicMessage:
-        "Gemini APIキーが無効、権限不足、または利用できない状態です。設定からキーを確認して保存し直してください。",
     });
+    expect(response.publicMessage).toContain("Claude APIキー");
   });
 
-  it("Gemini の payload 系 400 はキー案内にしない", () => {
+  it("AI Gateway認証不足はサーバー側設定の案内にする", () => {
+    const error = Object.assign(new Error("Gateway authentication failed"), {
+      statusCode: 401,
+    });
+
+    const response = resolveAiProviderErrorResponse(error, "gpt", true);
+    expect(response).toMatchObject({
+      kind: "auth_or_config",
+      providerStatus: 401,
+      responseStatus: 502,
+    });
+    expect(response.publicMessage).toContain("AI Gateway");
+  });
+
+  it("payload 系 400 はキー案内にしない", () => {
     const error = Object.assign(new Error("Request contains invalid content"), {
       status: 400,
     });
 
-    expect(resolveAiProviderErrorResponse(error, true)).toEqual({
+    expect(resolveAiProviderErrorResponse(error, "gemini", true)).toEqual({
       kind: "unknown",
       providerStatus: 400,
       responseStatus: 500,
@@ -98,33 +188,19 @@ describe("AI request helpers", () => {
     });
   });
 
-  it("サーバー側 Gemini 設定エラーは管理者向け案内にする", () => {
-    const error = Object.assign(new Error("Permission denied"), {
-      status: 403,
-    });
-
-    expect(resolveAiProviderErrorResponse(error, false)).toEqual({
-      kind: "auth_or_config",
-      providerStatus: 403,
-      responseStatus: 502,
-      publicMessage:
-        "サーバー側のGemini API設定でエラーが発生しています。管理者はGEMINI_API_KEYとモデル設定を確認してください。",
-    });
-  });
-
-  it("Gemini モデル未検出はモデル設定の案内にする", () => {
+  it("モデル未検出はモデル設定の案内にする", () => {
     const error = Object.assign(
       new Error("models/gemini-old is not found for API version v1beta"),
       { status: 404 },
     );
 
-    expect(resolveAiProviderErrorResponse(error, true)).toEqual({
+    const response = resolveAiProviderErrorResponse(error, "gemini", true);
+    expect(response).toMatchObject({
       kind: "model_config",
       providerStatus: 404,
       responseStatus: 502,
-      publicMessage:
-        "サーバー側のGemini API設定でエラーが発生しています。管理者はGEMINI_API_KEYとモデル設定を確認してください。",
     });
+    expect(response.publicMessage).toContain("Geminiモデル設定");
   });
 
   it("利用上限エラーは再試行と利用状況確認を促す", () => {
@@ -132,18 +208,18 @@ describe("AI request helpers", () => {
       status: 429,
     });
 
-    expect(resolveAiProviderErrorResponse(error, true)).toEqual({
+    const response = resolveAiProviderErrorResponse(error, "gpt", true);
+    expect(response).toMatchObject({
       kind: "rate_limit",
       providerStatus: 429,
       responseStatus: 429,
-      publicMessage:
-        "Gemini APIの利用上限に達している可能性があります。時間をおいて再試行するか、APIキーの利用状況を確認してください。",
     });
+    expect(response.publicMessage).toContain("GPT APIまたはAI Gateway");
   });
 
   it("分類できないプロバイダーエラーは汎用メッセージにする", () => {
     expect(
-      resolveAiProviderErrorResponse(new Error("Unexpected"), true),
+      resolveAiProviderErrorResponse(new Error("Unexpected"), "claude", true),
     ).toEqual({
       kind: "unknown",
       providerStatus: null,
