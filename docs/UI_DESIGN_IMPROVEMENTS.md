@@ -29,7 +29,7 @@ This is the best fit because the product is a daily-use application workspace: u
    - Verify long file names and empty folders at desktop and mobile widths.
 
 2. Pane 3 Markdown surface
-   - Tighten the document toolbar so save state, preview/edit, fullscreen, and delete actions read as one tool surface.
+   - PR #60 tightened the document toolbar wrapping so save state, preview/edit, fullscreen, and delete actions stay contained at narrower desktop widths.
    - Preserve the reading surface as the visual priority.
    - Confirm empty body, loading body, long headings, tables, and code blocks do not shift or overlap controls.
 
