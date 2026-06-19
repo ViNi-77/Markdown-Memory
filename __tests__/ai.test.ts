@@ -36,7 +36,7 @@ describe("AI request helpers", () => {
 
   it("必須入力、apiKey型、providerを検証する", () => {
     expect(() => parseAiRequestBody({ task: "summarize" })).toThrow(
-      "documentContent is required",
+      "本文が空です。AIに渡す内容がありません。",
     );
     expect(() =>
       parseAiRequestBody({

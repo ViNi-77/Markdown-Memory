@@ -2,27 +2,44 @@
 
 import { useEffect, useState } from "react";
 import {
-  Sparkles,
-  Loader2,
-  Settings,
-  Replace,
-  Plus,
-  Copy,
+  AlertTriangle,
   Check,
   ChevronDown,
+  Copy,
+  KeyRound,
+  Loader2,
+  Plus,
+  Replace,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
 } from "lucide-react";
 import type { Document } from "@/lib/db/schema";
 import * as actions from "@/lib/actions";
+import { MarkdownView } from "@/components/markdown/MarkdownView";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select";
-import { MarkdownView } from "@/components/markdown/MarkdownView";
+import { Textarea } from "@/components/ui/textarea";
 import {
   AI_PROVIDER_KEY_STORAGE,
   AI_PROVIDER_OPTIONS,
@@ -32,13 +49,34 @@ import {
   isAiProviderId,
   resolveMigratedGeminiApiKey,
   type AiProviderId,
+  type AiTask,
 } from "@/lib/ai";
 
 const PRESETS = [
-  { id: "summarize", label: "要約 (TL;DR)" },
-  { id: "noise-removal", label: "ノイズ除去" },
-  { id: "promptify", label: "プロンプト化" },
-] as const;
+  {
+    id: "summarize",
+    label: "要約",
+    description: "3〜5行のTL;DRを作成",
+    prompt: "3〜5行で要約してください",
+  },
+  {
+    id: "noise-removal",
+    label: "ノイズ除去",
+    description: "挨拶や定型文を削って本文を整理",
+    prompt: "あいさつや絵文字を削って中身だけ残してください",
+  },
+  {
+    id: "promptify",
+    label: "プロンプト化",
+    description: "再利用できる指示文テンプレートへ変換",
+    prompt: "再利用できる指示文テンプレに変換してください",
+  },
+] as const satisfies ReadonlyArray<{
+  id: Exclude<AiTask, "custom">;
+  label: string;
+  description: string;
+  prompt: string;
+}>;
 
 type Props = {
   document: Document;
@@ -79,6 +117,14 @@ function readStoredApiKeys(): ProviderApiKeys {
   };
 }
 
+function redactUserVisibleAiText(value: string): string {
+  return value
+    .replace(/AIza[0-9A-Za-z_-]{20,}/g, "[REDACTED_GEMINI_KEY]")
+    .replace(/sk-[0-9A-Za-z_-]{20,}/g, "[REDACTED_API_KEY]")
+    .replace(/postgres(?:ql)?:\/\/[^\s"']+/gi, "[REDACTED_DATABASE_URL]")
+    .replace(/Bearer\s+[0-9A-Za-z._-]+/gi, "Bearer [REDACTED_TOKEN]");
+}
+
 export function AiAssistPanel({
   document,
   demoMode = false,
@@ -87,56 +133,93 @@ export function AiAssistPanel({
 }: Props) {
   const [provider, setProvider] = useState<AiProviderId>(DEFAULT_AI_PROVIDER);
   const [apiKeys, setApiKeys] = useState<ProviderApiKeys>(EMPTY_API_KEYS);
+  const [savedApiKeys, setSavedApiKeys] =
+    useState<ProviderApiKeys>(EMPTY_API_KEYS);
   const [showSettings, setShowSettings] = useState(false);
   const [customPrompt, setCustomPrompt] = useState("");
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [replaceConfirmOpen, setReplaceConfirmOpen] = useState(false);
   const selectedProvider =
     AI_PROVIDER_OPTIONS.find((option) => option.id === provider) ??
     AI_PROVIDER_OPTIONS[0];
+  const providerInputId = `ai-provider-key-${provider}`;
+  const selectedDraftKey = apiKeys[provider].trim();
+  const selectedSavedKey = savedApiKeys[provider].trim();
+  const hasSavedKey = Boolean(selectedSavedKey);
+  const hasUnsavedKeyChange = selectedDraftKey !== selectedSavedKey;
+  const documentHasContent = Boolean(document.content.trim());
+  const canRunPreset = documentHasContent && !loading;
+  const canRunCustom = canRunPreset && Boolean(customPrompt.trim());
 
   useEffect(() => {
     const restoreStoredPreferences = window.setTimeout(() => {
+      const restoredKeys = readStoredApiKeys();
       setProvider(readStoredProvider());
-      setApiKeys(readStoredApiKeys());
+      setApiKeys(restoredKeys);
+      setSavedApiKeys(restoredKeys);
     }, 0);
     return () => window.clearTimeout(restoreStoredPreferences);
   }, []);
 
+  function reportPanelError(message: string) {
+    const redacted = redactUserVisibleAiText(message);
+    setLocalError(redacted);
+    onError(redacted);
+  }
+
   function saveApiKey() {
-    const trimmed = apiKeys[provider].trim();
+    if (!selectedDraftKey) return;
+
     const storageKey = AI_PROVIDER_KEY_STORAGE[provider];
-    if (trimmed) {
-      localStorage.setItem(storageKey, trimmed);
-    } else {
-      localStorage.removeItem(storageKey);
-    }
-    setApiKeys((current) => ({ ...current, [provider]: trimmed }));
-    setShowSettings(false);
+    localStorage.setItem(storageKey, selectedDraftKey);
+    setApiKeys((current) => ({ ...current, [provider]: selectedDraftKey }));
+    setSavedApiKeys((current) => ({
+      ...current,
+      [provider]: selectedDraftKey,
+    }));
+    setLocalError(null);
+    setStatusMessage(`${selectedProvider.label} APIキーを保存しました。`);
+  }
+
+  function deleteApiKey() {
+    const storageKey = AI_PROVIDER_KEY_STORAGE[provider];
+    localStorage.removeItem(storageKey);
+    setApiKeys((current) => ({ ...current, [provider]: "" }));
+    setSavedApiKeys((current) => ({ ...current, [provider]: "" }));
+    setLocalError(null);
+    setStatusMessage(`${selectedProvider.label} APIキーを削除しました。`);
   }
 
   function handleProviderChange(value: string | null) {
     if (!isAiProviderId(value)) return;
     setProvider(value);
     setResult("");
+    setLocalError(null);
+    setStatusMessage(null);
     localStorage.setItem(AI_PROVIDER_STORAGE, value);
   }
 
   function updateApiKey(value: string) {
     setApiKeys((current) => ({ ...current, [provider]: value }));
+    setStatusMessage(null);
   }
 
-  async function runAi(task: string, prompt?: string) {
-    const key = apiKeys[provider].trim();
-    if (!document.content.trim()) {
-      onError("本文が空です。AIに渡す内容がありません。");
+  async function runAi(task: AiTask, prompt?: string) {
+    const key = savedApiKeys[provider].trim();
+    if (!documentHasContent) {
+      reportPanelError("本文が空です。AIに渡す内容がありません。");
       return;
     }
 
     setLoading(true);
     setResult("");
+    setLocalError(null);
+    setStatusMessage(null);
     try {
       const res = await fetch("/api/ai", {
         method: "POST",
@@ -149,11 +232,22 @@ export function AiAssistPanel({
           ...(key ? { apiKey: key } : {}),
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "AI処理に失敗しました");
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: unknown;
+        result?: unknown;
+      };
+      if (!res.ok) {
+        throw new Error(
+          typeof data.error === "string" ? data.error : "AI処理に失敗しました",
+        );
+      }
+      if (typeof data.result !== "string" || !data.result.trim()) {
+        throw new Error("AIから空の応答が返されました");
+      }
       setResult(data.result);
+      setStatusMessage(`${selectedProvider.label}から提案が返りました。`);
     } catch (e) {
-      onError(e instanceof Error ? e.message : "AI処理に失敗しました");
+      reportPanelError(e instanceof Error ? e.message : "AI処理に失敗しました");
     } finally {
       setLoading(false);
     }
@@ -161,18 +255,24 @@ export function AiAssistPanel({
 
   async function applyReplace() {
     if (!result) return;
+    setReplaceConfirmOpen(false);
     if (demoMode) {
       onContentChange(result);
       setResult("");
+      setStatusMessage("本文を置き換えました。");
       return;
     }
     setLoading(true);
+    setLocalError(null);
     try {
       await actions.updateDocumentContent(document.id, result);
       onContentChange(result);
       setResult("");
+      setStatusMessage("本文を置き換えました。");
     } catch (e) {
-      onError(e instanceof Error ? e.message : "本文の置き換えに失敗しました");
+      reportPanelError(
+        e instanceof Error ? e.message : "本文の置き換えに失敗しました",
+      );
     } finally {
       setLoading(false);
     }
@@ -186,52 +286,62 @@ export function AiAssistPanel({
     if (demoMode) {
       onContentChange(newContent);
       setResult("");
+      setStatusMessage("末尾に追記しました。");
       return;
     }
     setLoading(true);
+    setLocalError(null);
     try {
       await actions.updateDocumentContent(document.id, newContent);
       onContentChange(newContent);
       setResult("");
+      setStatusMessage("末尾に追記しました。");
     } catch (e) {
-      onError(e instanceof Error ? e.message : "本文の追記に失敗しました");
+      reportPanelError(
+        e instanceof Error ? e.message : "本文の追記に失敗しました",
+      );
     } finally {
       setLoading(false);
     }
   }
 
   async function copyResult() {
+    if (!result) return;
     try {
       await navigator.clipboard.writeText(result);
       setCopied(true);
+      setStatusMessage("提案をコピーしました。");
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      onError("コピーに失敗しました");
+      reportPanelError("コピーに失敗しました");
     }
   }
 
   return (
     <div className="flex flex-col gap-3 border-t border-border pt-3 sm:pt-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <Button
           variant="ghost"
           size="sm"
-          className="-ml-2 flex-1 justify-between px-2"
+          className="-ml-2 min-w-0 flex-1 justify-between px-2"
           aria-expanded={panelOpen}
           onClick={() => setPanelOpen((v) => !v)}
         >
-          <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-            <Sparkles className="size-3.5" />
-            アプリ内AI · {selectedProvider.label}
+          <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <Sparkles className="size-3.5 shrink-0" />
+            <span className="truncate">
+              アプリ内AI · {selectedProvider.label}
+            </span>
           </span>
           <ChevronDown
-            className={`size-3.5 text-muted-foreground transition-transform ${panelOpen ? "rotate-180" : ""}`}
+            className={`size-3.5 shrink-0 text-muted-foreground transition-transform ${panelOpen ? "rotate-180" : ""}`}
           />
         </Button>
         <Button
-          variant="ghost"
+          variant={showSettings ? "secondary" : "ghost"}
           size="icon-xs"
           title="APIキー設定"
+          aria-label="APIキー設定"
           onClick={() => {
             setPanelOpen(true);
             setShowSettings((v) => !v);
@@ -243,96 +353,172 @@ export function AiAssistPanel({
 
       {panelOpen && (
         <>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="secondary">{selectedProvider.modeLabel}</Badge>
+            <Badge variant={hasSavedKey ? "outline" : "ghost"}>
+              <KeyRound />
+              {hasSavedKey ? "キー保存済み" : "キー未保存"}
+            </Badge>
+            {hasUnsavedKeyChange && (
+              <Badge variant="outline">未保存の変更</Badge>
+            )}
+          </div>
+
           {showSettings && (
-            <div className="flex flex-col gap-2 rounded-lg border border-border bg-canvas/70 p-3">
-              <label className="text-xs text-muted-foreground">
-                AIプロバイダー
-              </label>
-              <Select value={provider} onValueChange={handleProviderChange}>
-                <SelectTrigger
-                  size="sm"
-                  className="w-full"
-                  aria-label="AIプロバイダー"
-                >
-                  <span
-                    data-slot="select-value"
-                    className="flex flex-1 items-center gap-1.5 text-left"
+            <div className="flex flex-col gap-3 rounded-lg border border-border bg-canvas/70 p-3 shadow-2xs">
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs text-muted-foreground">
+                  アプリ内AIプロバイダー
+                </Label>
+                <Select value={provider} onValueChange={handleProviderChange}>
+                  <SelectTrigger
+                    size="sm"
+                    className="w-full"
+                    aria-label="アプリ内AIプロバイダー"
                   >
-                    {selectedProvider.modeLabel}
+                    <span
+                      data-slot="select-value"
+                      className="flex flex-1 items-center gap-1.5 text-left"
+                    >
+                      {selectedProvider.modeLabel}
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent align="start">
+                    {AI_PROVIDER_OPTIONS.map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.modeLabel}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <Label
+                    htmlFor={providerInputId}
+                    className="text-xs text-muted-foreground"
+                  >
+                    {selectedProvider.label} APIキー
+                  </Label>
+                  <span className="text-xs text-muted-foreground">
+                    {hasSavedKey ? "保存済み" : "未保存"}
                   </span>
-                </SelectTrigger>
-                <SelectContent align="start">
-                  {AI_PROVIDER_OPTIONS.map((option) => (
-                    <SelectItem key={option.id} value={option.id}>
-                      {option.modeLabel}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <label className="text-xs text-muted-foreground">
-                {selectedProvider.label} APIキー
-              </label>
-              <Input
-                type="password"
-                value={apiKeys[provider]}
-                onChange={(e) => updateApiKey(e.target.value)}
-                placeholder={selectedProvider.keyPlaceholder}
-                className="font-mono text-xs"
-              />
+                </div>
+                <Input
+                  id={providerInputId}
+                  type="password"
+                  value={apiKeys[provider]}
+                  onChange={(e) => updateApiKey(e.target.value)}
+                  placeholder={selectedProvider.keyPlaceholder}
+                  className="font-mono text-xs"
+                />
+              </div>
+
               <p className="text-xs leading-relaxed text-muted-foreground">
                 {demoMode
-                  ? "デモではブラウザに保存した選択中プロバイダーのキーだけを使います。キーはAI実行時だけサーバーに送られます。"
-                  : "キーはブラウザにのみ保存され、AI実行時だけ選択中プロバイダー用のキーをサーバーに送ります。空欄ならAI Gatewayまたはサーバー側設定を使います。"}
+                  ? "デモではブラウザに保存した選択中プロバイダーのキーだけを使います。"
+                  : "キーはブラウザにのみ保存され、AI実行時だけ送信されます。空欄ならAI Gatewayまたはサーバー側設定を使います。"}
               </p>
-              <Button size="sm" onClick={saveApiKey}>
-                保存
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  size="sm"
+                  onClick={saveApiKey}
+                  disabled={!selectedDraftKey || !hasUnsavedKeyChange}
+                >
+                  <ShieldCheck />
+                  キーを保存
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={deleteApiKey}
+                  disabled={!hasSavedKey && !selectedDraftKey}
+                >
+                  <Trash2 />
+                  キーを削除
+                </Button>
+              </div>
             </div>
           )}
 
-          <div className="flex flex-wrap gap-1.5">
+          <div className="grid gap-2">
             {PRESETS.map((preset) => (
               <Button
                 key={preset.id}
                 variant="outline"
-                size="xs"
-                disabled={loading}
+                size="sm"
+                className="h-auto min-h-12 w-full flex-col items-start justify-start gap-0.5 px-2.5 py-2 text-left whitespace-normal"
+                disabled={!canRunPreset}
                 onClick={() => {
-                  setCustomPrompt(
-                    preset.id === "summarize"
-                      ? "3〜5行で要約してください"
-                      : preset.id === "noise-removal"
-                        ? "あいさつや絵文字を削って中身だけ残してください"
-                        : "再利用できる指示文テンプレに変換してください",
-                  );
+                  setCustomPrompt(preset.prompt);
                   runAi(preset.id);
                 }}
               >
-                {preset.label}
+                <span className="flex items-center gap-1.5">
+                  <Sparkles />
+                  {preset.label}
+                </span>
+                <span className="text-xs leading-snug font-normal text-muted-foreground">
+                  {preset.description}
+                </span>
               </Button>
             ))}
           </div>
 
-          <Textarea
-            value={customPrompt}
-            onChange={(e) => setCustomPrompt(e.target.value)}
-            placeholder="自由指示（例: 見出しを整理して読みやすくして）"
-            rows={2}
-            className="text-xs"
-          />
-          <Button
-            size="sm"
-            disabled={loading || !customPrompt.trim()}
-            onClick={() => runAi("custom", customPrompt)}
-          >
-            {loading ? <Loader2 className="animate-spin" /> : <Sparkles />}
-            AIで整形
-          </Button>
+          {!documentHasContent && (
+            <p className="flex items-start gap-1.5 rounded-md border border-border bg-muted/50 px-2.5 py-2 text-xs leading-relaxed text-muted-foreground">
+              <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+              本文が空です。編集してからAIを実行できます。
+            </p>
+          )}
+
+          <Separator />
+
+          <div className="flex flex-col gap-2">
+            <Label className="text-xs text-muted-foreground">自由指示</Label>
+            <Textarea
+              value={customPrompt}
+              onChange={(e) => {
+                setCustomPrompt(e.target.value);
+                setStatusMessage(null);
+              }}
+              placeholder="例: 見出しを整理して読みやすくして"
+              rows={3}
+              className="text-xs"
+              disabled={loading}
+            />
+            <Button
+              size="sm"
+              disabled={!canRunCustom}
+              onClick={() => runAi("custom", customPrompt)}
+            >
+              {loading ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              自由指示で実行
+            </Button>
+          </div>
 
           {loading && (
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Loader2 className="size-3 animate-spin" />
-              処理中...
+              {selectedProvider.label}で処理中...
+            </p>
+          )}
+
+          {localError && (
+            <p
+              role="alert"
+              className="flex items-start gap-1.5 rounded-md border border-destructive/20 bg-card px-2.5 py-2 text-xs leading-relaxed text-destructive shadow-2xs"
+            >
+              <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+              <span>{localError}</span>
+            </p>
+          )}
+
+          {statusMessage && !localError && (
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Check className="size-3.5 text-primary" />
+              {statusMessage}
             </p>
           )}
 
@@ -341,25 +527,66 @@ export function AiAssistPanel({
               <span className="text-xs font-medium text-muted-foreground">
                 提案（適用するまで原文は変わりません）
               </span>
-              <div className="max-h-48 overflow-y-auto text-sm">
+              <div className="max-h-64 overflow-y-auto rounded-md border border-border bg-card p-2 text-sm">
                 <MarkdownView content={result} />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <Button size="sm" variant="secondary" onClick={applyReplace}>
+              <div className="grid gap-1.5">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={loading}
+                  onClick={() => setReplaceConfirmOpen(true)}
+                >
                   <Replace />
                   本文を置き換え
                 </Button>
-                <Button size="sm" variant="outline" onClick={applyAppend}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={loading}
+                  onClick={applyAppend}
+                >
                   <Plus />
                   末尾に追記
                 </Button>
-                <Button size="sm" variant="ghost" onClick={copyResult}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={loading}
+                  onClick={copyResult}
+                >
                   {copied ? <Check /> : <Copy />}
                   {copied ? "コピーしました" : "コピー"}
                 </Button>
               </div>
             </div>
           )}
+
+          <AlertDialog
+            open={replaceConfirmOpen}
+            onOpenChange={setReplaceConfirmOpen}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>本文を置き換えますか</AlertDialogTitle>
+                <AlertDialogDescription>
+                  現在の本文をAIの提案で置き換えます。元の本文は上書きされます。
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={loading}>
+                  キャンセル
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  variant="destructive"
+                  disabled={loading}
+                  onClick={applyReplace}
+                >
+                  置き換える
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </>
       )}
     </div>

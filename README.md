@@ -24,7 +24,7 @@
 | 自動保存       | 編集内容をデバウンス保存                                                     |
 | 共有           | 選択したファイルだけ公開リンクを発行                                         |
 | AI連携         | Claude / ChatGPT / Gemini に本文をコピーして開く                             |
-| アプリ内AI     | Claude / GPT / Gemini モードで要約・整形。BYOK または AI Gateway 設定を使用  |
+| アプリ内AI     | Claude / GPT / Gemini モード、Provider別キー保存、提案の追記・置き換え確認   |
 | Markdown表示   | CommonMark + GFM を安全に表示。表、脚注、コードブロック、通常改行にも対応    |
 | 全画面表示     | ログイン後、自分の Markdown を別ウィンドウで閲覧                             |
 | ペイン調整     | デスクトップでフォルダ、ファイル一覧、詳細ペインの幅を調整                   |
@@ -213,7 +213,7 @@ ERROR_REPORT_WEBHOOK_URL
 CRON_SECRET
 ```
 
-アプリ内AIは Claude / GPT / Gemini を切り替えできます。Production では Vercel AI Gateway の OIDC または `AI_GATEWAY_API_KEY` を使い、必要に応じて Vercel 側の BYOK を設定します。ユーザーが画面で入力したProvider APIキーはブラウザにのみ保存され、AI実行時だけ送信されます。
+アプリ内AIは Claude / GPT / Gemini を切り替えできます。Production では Vercel AI Gateway の OIDC または `AI_GATEWAY_API_KEY` を使い、必要に応じて Vercel 側の BYOK を設定します。ユーザーが画面で入力したProvider APIキーはブラウザにのみ保存され、AI実行時だけ送信されます。AI提案を本文へ反映する場合、追記はそのまま実行し、本文置き換えは確認してから保存します。
 `GEMINI_API_KEY` と `GEMINI_MODEL` は Geminiモードの legacy fallback 用で任意です。
 `ERROR_REPORT_WEBHOOK_URL` も任意です。設定すると、本文やAPIキーを含まないサーバーエラー通知をHTTPS Webhookへ送ります。
 `CRON_SECRET` は Vercel Cron の内部ヘルスチェック保護用です。
@@ -270,6 +270,7 @@ Pull Request の説明やコメントは日本語で記載します。
 | 6     | 完了              | スマホ閲覧最適化、PWA安全仕様、フィードバック運用整備             |
 | 7     | 完了（Apple対象） | PWA品質強化、スマホ読書体験の磨き込み、アプリ化準備               |
 | 8     | 完了              | Production保存・共有、AI provider切替、運用確認、レスポンシブ修正 |
+| 9     | 完了              | AI設定UX、結果適用確認、エラー表示、秘密情報非露出の固定          |
 
 Phase ごとの確認記録と本番スモークの進め方は [`docs/MAINTAINERS.md`](docs/MAINTAINERS.md) から参照します。
 

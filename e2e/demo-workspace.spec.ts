@@ -479,12 +479,12 @@ test.describe("デモワークスペース: モバイル前段確認", () => {
     await expect(
       page.getByTestId("details-pane").getByRole("button", { name: "全画面" }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "AIへ渡す" }).click();
+    await page.getByRole("button", { name: "外部AIへ渡す" }).click();
     await expect(
       page.getByRole("button", { name: "Claude を開く" }),
     ).toBeVisible();
     await page.getByRole("button", { name: "アプリ内AI" }).click();
-    await expect(page.getByRole("button", { name: "AIで整形" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /要約/ })).toBeVisible();
 
     await page
       .getByRole("button", { name: "ファイル一覧ペインを表示" })

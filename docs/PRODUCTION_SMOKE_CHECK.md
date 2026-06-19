@@ -67,8 +67,11 @@ URL: `https://markdown-memory.vercel.app`
 - [ ] アプリ内AIパネルを開閉できる
 - [ ] Claude / GPT / Gemini モードを切り替えできる
 - [ ] Provider別 APIキーを保存・削除できる
+- [ ] 選択中Provider、キー保存状態、未保存変更が区別して表示される
+- [ ] 空本文ではAI実行が止まり、本文やAPIキーを含まない案内が表示される
 - [ ] APIキー未設定時またはGateway未設定時の案内が自然に表示される
 - [ ] BYOK またはサーバー側キーがある環境では、要約または整形を1回実行できる
+- [ ] AI提案をコピー、末尾に追記、本文置き換え確認から適用できる
 - [ ] 無効キーのエラー表示にAPIキーやMarkdown全文が露出しない
 - [ ] AI API の Runtime Logs に provider/model/status は出るが、APIキーやMarkdown全文は露出しない
 

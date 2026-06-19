@@ -1490,7 +1490,7 @@ export function MarkdownWorkspace({
             </DetailsActionGroup>
 
             <DetailsActionGroup
-              title="AIへ渡す"
+              title="外部AIへ渡す"
               icon={<Sparkles className="size-3.5" />}
             >
               {contentCopied && (
@@ -1519,7 +1519,7 @@ export function MarkdownWorkspace({
                 ))}
               </div>
               <p className="text-xs leading-relaxed text-muted-foreground">
-                本文をコピーしてから各AIを開きます。貼り付け（Ctrl+V /
+                本文をコピーしてから外部AIを開きます。貼り付け（Ctrl+V /
                 ⌘V）で渡せます。
               </p>
             </DetailsActionGroup>

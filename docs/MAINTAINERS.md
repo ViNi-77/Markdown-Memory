@@ -73,8 +73,9 @@ https://markdown-memory.vercel.app/api/auth/callback/google
 | 6     | 完了              | スマホ閲覧最適化、PWA安全仕様、フィードバック運用整備             |
 | 7     | 完了（Apple対象） | PWA品質強化、スマホ読書体験の磨き込み、アプリ化準備               |
 | 8     | 完了              | Production保存・共有、AI provider切替、運用確認、レスポンシブ修正 |
+| 9     | 完了              | AI設定UX、結果適用確認、エラー表示、秘密情報非露出の固定          |
 
-Phase 6 の作業記録は [#23](https://github.com/ViNi-77/Markdown-Memory/issues/23) にあります。Phase 7 は Apple Safari を対象にし、Android Chrome は現時点の確認対象に含めません。Phase 8 では [`PRODUCTION_SMOKE_CHECK.md`](PRODUCTION_SMOKE_CHECK.md) に沿って、PWA実機確認とは分けて Production のログイン後導線を確認しました。
+Phase 6 の作業記録は [#23](https://github.com/ViNi-77/Markdown-Memory/issues/23) にあります。Phase 7 は Apple Safari を対象にし、Android Chrome は現時点の確認対象に含めません。Phase 8 以降は [`PRODUCTION_SMOKE_CHECK.md`](PRODUCTION_SMOKE_CHECK.md) に沿って、PWA実機確認とは分けて Production のログイン後導線とAI UXを確認します。
 
 ## 本番確認済み
 
@@ -94,6 +95,7 @@ Phase 6 の作業記録は [#23](https://github.com/ViNi-77/Markdown-Memory/issu
 - 外部AI連携（Claude / ChatGPT / Gemini）
 - アプリ内AIの Claude / GPT / Gemini モード切替
 - Provider別 APIキーの保存・削除、未設定/無効キー案内
+- アプリ内AIのキー保存状態、空本文案内、AI提案の追記・置き換え確認
 - `/api/health`
 - `/api/cron/health` の `CRON_SECRET` 保護
 - Vercel Runtime Logs の想定外500なし
