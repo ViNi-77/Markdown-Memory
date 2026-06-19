@@ -55,13 +55,13 @@ https://markdown-memory.vercel.app/demo
 
 ログイン後の本番ワークスペースまで確認できる場合は、以下も見ます。アカウント削除の最終実行は、Production用テストアカウントでだけ行います。
 
-2026-06-20 時点で、Production HTMLのPWA meta、manifest、Apple touch icon、公開ページ、Runtime Logsは自動確認済みです。残りはこの節のApple Safari実機確認です。
+2026-06-20 時点で、Production HTMLのPWA meta、manifest、Apple touch icon、公開ページ、Runtime Logsは自動確認済みです。同日にApple Safari実機確認も完了しました。
 
-- [ ] アカウントSheetまたはアカウント設定を開ける
-- [ ] Privacy / Terms を開ける
-- [ ] Provider APIキー削除導線が表示される
-- [ ] アカウント削除は確認ダイアログ付きで表示される
-- [ ] 下部ナビにアカウント削除の直接ボタンがない
+- [x] アカウントSheetまたはアカウント設定を開ける
+- [x] Privacy / Terms を開ける
+- [x] Provider APIキー削除導線が表示される
+- [x] アカウント削除は確認ダイアログ付きで表示される
+- [x] 下部ナビにアカウント削除の直接ボタンがない
 
 ## 結果の書き方
 
