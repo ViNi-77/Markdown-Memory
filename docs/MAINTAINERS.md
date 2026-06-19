@@ -65,32 +65,38 @@ https://markdown-memory.vercel.app/api/auth/callback/google
 
 ## Phase 記録
 
-| Phase | 状態              | 内容                                                   |
-| ----- | ----------------- | ------------------------------------------------------ |
-| 4     | 完了              | 公開MVP。ログイン、保存、共有、AI連携まで確認済み      |
-| 5     | 完了              | CI/CD、E2E、監視、バックアップ手順、フィードバック導線 |
-| 5.5   | 完了              | Cron監視、PWA下地、スマホ前段導線、README整備          |
-| 6     | 完了              | スマホ閲覧最適化、PWA安全仕様、フィードバック運用整備  |
-| 7     | 完了（Apple対象） | PWA品質強化、スマホ読書体験の磨き込み、アプリ化準備    |
-| 8     | 進行中            | ログイン後Productionの保存、共有、AI連携、運用確認     |
+| Phase | 状態              | 内容                                                              |
+| ----- | ----------------- | ----------------------------------------------------------------- |
+| 4     | 完了              | 公開MVP。ログイン、保存、共有、AI連携まで確認済み                 |
+| 5     | 完了              | CI/CD、E2E、監視、バックアップ手順、フィードバック導線            |
+| 5.5   | 完了              | Cron監視、PWA下地、スマホ前段導線、README整備                     |
+| 6     | 完了              | スマホ閲覧最適化、PWA安全仕様、フィードバック運用整備             |
+| 7     | 完了（Apple対象） | PWA品質強化、スマホ読書体験の磨き込み、アプリ化準備               |
+| 8     | 完了              | Production保存・共有、AI provider切替、運用確認、レスポンシブ修正 |
 
-Phase 6 の作業記録は [#23](https://github.com/ViNi-77/Markdown-Memory/issues/23) にあります。Phase 7 は Apple Safari を対象にし、Android Chrome は現時点の確認対象に含めません。Phase 8A では [`PRODUCTION_SMOKE_CHECK.md`](PRODUCTION_SMOKE_CHECK.md) に沿って、PWA実機確認とは分けて Production のログイン後導線を確認します。
+Phase 6 の作業記録は [#23](https://github.com/ViNi-77/Markdown-Memory/issues/23) にあります。Phase 7 は Apple Safari を対象にし、Android Chrome は現時点の確認対象に含めません。Phase 8 では [`PRODUCTION_SMOKE_CHECK.md`](PRODUCTION_SMOKE_CHECK.md) に沿って、PWA実機確認とは分けて Production のログイン後導線を確認しました。
 
 ## 本番確認済み
 
-2026-06-13 時点で、Production 環境で以下を確認済みです。
+2026-06-19 時点で、Production 環境で以下を確認済みです。対象は desktop と Apple Safari です。Android Chrome は引き続き確認対象外です。
 
 - Google ログイン
 - Markdown ファイル作成
 - Markdown 本文の編集と保存
 - ページ再読み込み後の保存内容復元
+- フォルダ作成、ファイル移動、ファイル名変更
 - 公開リンク作成
 - 共有 URL の未ログイン閲覧
-- フォルダ作成とファイル移動
+- 共有解除
 - ペイン幅調整
+- ブラウザ幅縮小時の本文ツールバー折り返し
 - 全画面表示
+- 外部AI連携（Claude / ChatGPT / Gemini）
+- アプリ内AIの Claude / GPT / Gemini モード切替
+- Provider別 APIキーの保存・削除、未設定/無効キー案内
 - `/api/health`
 - `/api/cron/health` の `CRON_SECRET` 保護
+- Vercel Runtime Logs の想定外500なし
 - PWA manifest / PNG icon / offline page
 
 ## 公開リポジトリの確認

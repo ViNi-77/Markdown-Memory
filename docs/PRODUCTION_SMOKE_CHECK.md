@@ -2,7 +2,7 @@
 
 Markdown Memory の Production 環境で、ログイン後ワークスペース、保存、共有、AI連携、運用ヘルスチェックが壊れていないことを小さく確認します。
 
-Phase 8A では、PWA の `/demo` 実機確認とは分けて、OAuth、DB保存、共有URL、本番環境変数に触れる流れを確認対象にします。
+Phase 8 では、PWA の `/demo` 実機確認とは分けて、OAuth、DB保存、共有URL、本番環境変数に触れる流れを確認対象にしました。
 
 ## 確認対象
 
@@ -13,6 +13,29 @@ Phase 8A では、PWA の `/demo` 実機確認とは分けて、OAuth、DB保存
 | Health     | `https://markdown-memory.vercel.app/api/health` |
 
 確認は Production で行います。Preview で同じ流れを試す場合も、結果には対象URLを明記します。
+
+## 実施結果（2026-06-19 / Phase 8B-8C）
+
+対象: Production
+
+URL: `https://markdown-memory.vercel.app`
+
+確認者: Vini / Codex
+
+端末/ブラウザ: desktop、Apple Safari
+
+判定: OK
+
+- PR #59 でアプリ内AIの Claude / GPT / Gemini provider切替、Provider別APIキー保存・削除、AI Gateway / Gemini fallback 導線を main へ反映済み。
+- PR #60 でブラウザ幅縮小時に本文ツールバーと詳細ペインが重なって見える問題を修正済み。
+- ユーザー確認により、Production のログイン後保存、共有、AI連携、Apple Safari の主要導線はOK。
+- 2026-06-19 の軽量確認で `/api/health` は 200、`/demo` は 200、`/api/cron/health` は未認証で 401。
+- Vercel Production deployment `dpl_2QZcm3CgeU8wTnXhP5cJffQANDov` は Ready。直近ログで想定外500、AIログのAPIキー/Markdown全文露出は確認されていません。
+
+保留:
+
+- Android Chrome はサポート/実機確認対象外。
+- AI成功系は、有効なBYOKまたはAI Gateway設定が使える環境でのみ実施します。キー文字列や非公開本文は記録しません。
 
 ## 事前準備
 
@@ -51,7 +74,7 @@ Phase 8A では、PWA の `/demo` 実機確認とは分けて、OAuth、DB保存
 
 ## モバイル確認
 
-Phase 8A のモバイル確認はログイン後ワークスペースの実用導線だけを見ます。PWAのホーム画面追加とオフライン導線は [`docs/PWA_REAL_DEVICE_CHECK.md`](PWA_REAL_DEVICE_CHECK.md) で扱います。
+Phase 8 のモバイル確認はログイン後ワークスペースの実用導線だけを見ます。PWAのホーム画面追加とオフライン導線は [`docs/PWA_REAL_DEVICE_CHECK.md`](PWA_REAL_DEVICE_CHECK.md) で扱います。Android Chrome は現時点の確認対象に含めません。
 
 - [ ] スマホ幅でログイン後ワークスペースを開ける
 - [ ] ファイル一覧、本文、詳細を往復できる
