@@ -4,7 +4,7 @@ import { and, desc, eq, ilike, or } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { folders, documents } from "@/lib/db/schema";
+import { folders, documents, users } from "@/lib/db/schema";
 import type { Folder, Document } from "@/lib/db/schema";
 import type { WorkspaceDocument } from "@/lib/data";
 
@@ -224,4 +224,23 @@ export async function disableShare(id: string): Promise<void> {
     .where(and(eq(documents.id, id), eq(documents.userId, userId)))
     .returning({ id: documents.id });
   assertMutation(row, "ファイルが見つかりません。");
+}
+
+// ===== アカウント / データ削除 =====
+
+/**
+ * ログイン中ユーザーのアカウントと保存データを削除する。
+ *
+ * Auth.js の account/session、Markdown Memory の folder/document は
+ * users.id への外部キーで onDelete: "cascade" になっているため、
+ * ユーザー行の削除をSSoTにする。
+ */
+export async function deleteCurrentUserAccount(): Promise<void> {
+  const userId = await requireUserId();
+  const [row] = await db
+    .delete(users)
+    .where(eq(users.id, userId))
+    .returning({ id: users.id });
+
+  assertMutation(row, "アカウントが見つかりません。");
 }

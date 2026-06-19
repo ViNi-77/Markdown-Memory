@@ -50,6 +50,15 @@ export default function OfflinePage() {
                 デモを開く
               </Link>
             </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              <Link href="/privacy" className="hover:text-foreground">
+                Privacy
+              </Link>
+              <Link href="/terms" className="hover:text-foreground">
+                Terms
+              </Link>
+            </div>
           </div>
         </div>
       </section>
