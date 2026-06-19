@@ -72,6 +72,7 @@ URL: `https://markdown-memory.vercel.app`
 - [ ] APIキー未設定時またはGateway未設定時の案内が自然に表示される
 - [ ] BYOK またはサーバー側キーがある環境では、要約または整形を1回実行できる
 - [ ] AI提案をコピー、末尾に追記、本文置き換え確認から適用できる
+- [ ] 複数回AIを実行した後、一時履歴から前の提案を復元・クリアできる
 - [ ] 無効キーのエラー表示にAPIキーやMarkdown全文が露出しない
 - [ ] AI API の Runtime Logs に provider/model/status は出るが、APIキーやMarkdown全文は露出しない
 

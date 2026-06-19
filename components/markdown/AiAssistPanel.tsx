@@ -6,10 +6,12 @@ import {
   Check,
   ChevronDown,
   Copy,
+  History,
   KeyRound,
   Loader2,
   Plus,
   Replace,
+  RotateCcw,
   Settings,
   ShieldCheck,
   Sparkles,
@@ -87,6 +89,14 @@ type Props = {
 
 type ProviderApiKeys = Record<AiProviderId, string>;
 
+type AiHistoryItem = {
+  id: string;
+  taskLabel: string;
+  providerLabel: string;
+  content: string;
+};
+
+const MAX_AI_HISTORY_ITEMS = 5;
 const EMPTY_API_KEYS: ProviderApiKeys = { claude: "", gpt: "", gemini: "" };
 
 function readStoredProvider(): AiProviderId {
@@ -125,6 +135,20 @@ function redactUserVisibleAiText(value: string): string {
     .replace(/Bearer\s+[0-9A-Za-z._-]+/gi, "Bearer [REDACTED_TOKEN]");
 }
 
+function createHistoryItemId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function resolveTaskLabel(task: AiTask): string {
+  if (task === "custom") return "自由指示";
+  return PRESETS.find((preset) => preset.id === task)?.label ?? "AI提案";
+}
+
+function getHistoryPreview(content: string): string {
+  const preview = content.replace(/\s+/g, " ").trim();
+  return preview.length > 96 ? `${preview.slice(0, 96)}...` : preview;
+}
+
 export function AiAssistPanel({
   document,
   demoMode = false,
@@ -144,6 +168,8 @@ export function AiAssistPanel({
   const [localError, setLocalError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [replaceConfirmOpen, setReplaceConfirmOpen] = useState(false);
+  const [historyItems, setHistoryItems] = useState<AiHistoryItem[]>([]);
+  const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
   const selectedProvider =
     AI_PROVIDER_OPTIONS.find((option) => option.id === provider) ??
     AI_PROVIDER_OPTIONS[0];
@@ -199,6 +225,7 @@ export function AiAssistPanel({
     if (!isAiProviderId(value)) return;
     setProvider(value);
     setResult("");
+    setActiveHistoryId(null);
     setLocalError(null);
     setStatusMessage(null);
     localStorage.setItem(AI_PROVIDER_STORAGE, value);
@@ -244,7 +271,17 @@ export function AiAssistPanel({
       if (typeof data.result !== "string" || !data.result.trim()) {
         throw new Error("AIから空の応答が返されました");
       }
+      const historyItem: AiHistoryItem = {
+        id: createHistoryItemId(),
+        taskLabel: resolveTaskLabel(task),
+        providerLabel: selectedProvider.label,
+        content: data.result,
+      };
       setResult(data.result);
+      setActiveHistoryId(historyItem.id);
+      setHistoryItems((current) =>
+        [historyItem, ...current].slice(0, MAX_AI_HISTORY_ITEMS),
+      );
       setStatusMessage(`${selectedProvider.label}から提案が返りました。`);
     } catch (e) {
       reportPanelError(e instanceof Error ? e.message : "AI処理に失敗しました");
@@ -259,6 +296,7 @@ export function AiAssistPanel({
     if (demoMode) {
       onContentChange(result);
       setResult("");
+      setActiveHistoryId(null);
       setStatusMessage("本文を置き換えました。");
       return;
     }
@@ -268,6 +306,7 @@ export function AiAssistPanel({
       await actions.updateDocumentContent(document.id, result);
       onContentChange(result);
       setResult("");
+      setActiveHistoryId(null);
       setStatusMessage("本文を置き換えました。");
     } catch (e) {
       reportPanelError(
@@ -286,6 +325,7 @@ export function AiAssistPanel({
     if (demoMode) {
       onContentChange(newContent);
       setResult("");
+      setActiveHistoryId(null);
       setStatusMessage("末尾に追記しました。");
       return;
     }
@@ -295,6 +335,7 @@ export function AiAssistPanel({
       await actions.updateDocumentContent(document.id, newContent);
       onContentChange(newContent);
       setResult("");
+      setActiveHistoryId(null);
       setStatusMessage("末尾に追記しました。");
     } catch (e) {
       reportPanelError(
@@ -315,6 +356,19 @@ export function AiAssistPanel({
     } catch {
       reportPanelError("コピーに失敗しました");
     }
+  }
+
+  function restoreHistoryItem(item: AiHistoryItem) {
+    setResult(item.content);
+    setActiveHistoryId(item.id);
+    setLocalError(null);
+    setStatusMessage(`${item.taskLabel}の提案を表示しました。`);
+  }
+
+  function clearHistory() {
+    setHistoryItems([]);
+    setActiveHistoryId(null);
+    setStatusMessage("一時履歴をクリアしました。");
   }
 
   return (
@@ -558,6 +612,56 @@ export function AiAssistPanel({
                   {copied ? <Check /> : <Copy />}
                   {copied ? "コピーしました" : "コピー"}
                 </Button>
+              </div>
+            </div>
+          )}
+
+          {historyItems.length > 0 && (
+            <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3 shadow-2xs">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <History className="size-3.5 shrink-0" />
+                  <span className="truncate">一時履歴</span>
+                  <Badge variant="ghost">{historyItems.length}</Badge>
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-label="一時履歴をクリア"
+                  disabled={loading}
+                  onClick={clearHistory}
+                >
+                  <Trash2 />
+                  クリア
+                </Button>
+              </div>
+              <div className="grid gap-1.5">
+                {historyItems.map((item, index) => (
+                  <Button
+                    key={item.id}
+                    variant={
+                      item.id === activeHistoryId ? "secondary" : "outline"
+                    }
+                    size="sm"
+                    className="h-auto min-h-12 w-full flex-col items-start justify-start gap-1 px-2.5 py-2 text-left whitespace-normal"
+                    disabled={loading}
+                    onClick={() => restoreHistoryItem(item)}
+                  >
+                    <span className="flex w-full min-w-0 items-center gap-1.5">
+                      <RotateCcw className="size-3.5 shrink-0" />
+                      <span className="min-w-0 flex-1 truncate">
+                        {item.taskLabel}
+                      </span>
+                      <Badge variant={index === 0 ? "secondary" : "ghost"}>
+                        {index === 0 ? "最新" : `${index + 1}件目`}
+                      </Badge>
+                      <Badge variant="ghost">{item.providerLabel}</Badge>
+                    </span>
+                    <span className="w-full truncate text-xs leading-snug font-normal text-muted-foreground">
+                      {getHistoryPreview(item.content)}
+                    </span>
+                  </Button>
+                ))}
               </div>
             </div>
           )}
