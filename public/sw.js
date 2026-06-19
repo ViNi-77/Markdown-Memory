@@ -1,5 +1,19 @@
 const CACHE_NAME = "markdown-memory-shell-v3";
 const OFFLINE_FALLBACK_TEST_PATH = "/offline-check";
+const OFFLINE_FALLBACK_HTML = `<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Markdown Memory オフライン</title>
+  </head>
+  <body>
+    <main>
+      <h1>Markdown Memory に接続できません</h1>
+      <p>非公開のMarkdown本文、API応答、共有ページは端末にキャッシュしない設計です。</p>
+    </main>
+  </body>
+</html>`;
 const APP_SHELL = [
   "/demo",
   "/offline",
@@ -55,7 +69,9 @@ self.addEventListener("fetch", (event) => {
     // Synthetic navigation used by E2E to verify the cached offline fallback.
     if (url.pathname === OFFLINE_FALLBACK_TEST_PATH) {
       event.respondWith(
-        caches.match("/offline").then((cached) => cached ?? fetch("/offline")),
+        new Response(OFFLINE_FALLBACK_HTML, {
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        }),
       );
       return;
     }

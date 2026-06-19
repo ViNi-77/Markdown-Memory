@@ -28,12 +28,16 @@ AUTH_URL=https://markdown-memory.vercel.app
 NEXTAUTH_URL=https://markdown-memory.vercel.app
 GEMINI_API_KEY
 GEMINI_MODEL
+AI_GATEWAY_API_KEY
+AI_MODEL_CLAUDE
+AI_MODEL_GPT
+AI_MODEL_GEMINI
 ERROR_REPORT_WEBHOOK_URL
 CRON_SECRET
 ```
 
 `DATABASE_URL` は Neon PostgreSQL の接続文字列です。スキーマ変更後は、対象環境を確認してから `npm run db:push` を実行します。
-`GEMINI_MODEL` は任意です。未設定時は `gemini-3.5-flash` を使います。Google側のモデル廃止や切り替えがあった場合は、まず Vercel Environment Variables で差し替えて挙動を確認します。
+アプリ内AIは Vercel AI Gateway 経由で Claude / GPT / Gemini を切り替えます。Production では Vercel OIDC または `AI_GATEWAY_API_KEY` を使い、モデル差し替えは `AI_MODEL_CLAUDE`、`AI_MODEL_GPT`、`AI_MODEL_GEMINI` で行います。`GEMINI_API_KEY` / `GEMINI_MODEL` は Geminiモードの legacy fallback 用で任意です。
 
 ## Google OAuth
 

@@ -55,8 +55,13 @@ const REQUIRED_ENV_GROUPS = [
 
 const OPTIONAL_ENV_GROUPS = [
   {
-    name: "gemini_api",
-    label: "GEMINI_API_KEY",
+    name: "ai_gateway_auth",
+    label: "AI_GATEWAY_API_KEY or Vercel OIDC",
+    keys: ["AI_GATEWAY_API_KEY", "VERCEL_OIDC_TOKEN"],
+  },
+  {
+    name: "gemini_legacy_api",
+    label: "GEMINI_API_KEY (legacy fallback)",
     keys: ["GEMINI_API_KEY"],
   },
   {

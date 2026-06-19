@@ -1,14 +1,20 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { GoogleGenAI } from "@google/genai";
+import { generateText, gateway } from "ai";
 
 import {
+  AI_PROVIDERS,
   AiValidationError,
+  DEFAULT_AI_PROVIDER,
   buildAiPrompt,
+  buildGatewayProviderOptions,
   parseAiRequestBody,
   resolveAiInstruction,
+  resolveAiModel,
   resolveAiProviderErrorResponse,
   resolveGeminiModel,
+  type AiProviderId,
 } from "@/lib/ai";
 import {
   getRequestId,
@@ -17,20 +23,60 @@ import {
   reportOperationalError,
 } from "@/lib/monitoring";
 
+async function generateWithDirectGemini(input: {
+  apiKey: string;
+  prompt: string;
+}) {
+  const ai = new GoogleGenAI({ apiKey: input.apiKey });
+  const response = await ai.models.generateContent({
+    model: resolveGeminiModel(),
+    contents: input.prompt,
+  });
+  return response.text ?? "";
+}
+
+async function generateWithGateway(input: {
+  provider: AiProviderId;
+  model: string;
+  prompt: string;
+  apiKey?: string;
+  userId?: string | null;
+}) {
+  const { text } = await generateText({
+    model: gateway(input.model),
+    prompt: input.prompt,
+    providerOptions: {
+      gateway: buildGatewayProviderOptions({
+        provider: input.provider,
+        apiKey: input.apiKey,
+        userId: input.userId,
+      }),
+    },
+  });
+  return text;
+}
+
 export async function POST(request: Request) {
   const start = Date.now();
   const requestId = getRequestId(request);
+  let provider: AiProviderId = DEFAULT_AI_PROVIDER;
+  let model: string = AI_PROVIDERS[DEFAULT_AI_PROVIDER].defaultModel;
   let usesUserApiKey = false;
   let providerRequestStarted = false;
   try {
     const payload = parseAiRequestBody(await request.json());
+    provider = payload.provider;
+    model = resolveAiModel(provider);
     const userApiKey = payload.apiKey?.trim();
     usesUserApiKey = Boolean(userApiKey);
     const session = await auth();
+    const userId = session?.user?.id ?? null;
     logInfo("ai.request.start", {
       route: "/api/ai",
       requestId,
       task: payload.task,
+      provider,
+      model,
       hasSession: Boolean(session?.user),
       usesUserApiKey,
     });
@@ -39,31 +85,17 @@ export async function POST(request: Request) {
       logInfo("ai.request.rejected", {
         route: "/api/ai",
         requestId,
+        provider,
+        model,
         status: 401,
         ms: Date.now() - start,
       });
       return NextResponse.json(
         {
           error:
-            "ログインするか、デモでは設定からGemini APIキーを登録してください。",
+            "ログインするか、設定から選択中AIプロバイダーのAPIキーを登録してください。",
         },
         { status: 401 },
-      );
-    }
-
-    const apiKey = userApiKey || process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      logInfo("ai.request.rejected", {
-        route: "/api/ai",
-        requestId,
-        status: 400,
-        ms: Date.now() - start,
-      });
-      return NextResponse.json(
-        {
-          error: "Gemini APIキーが未設定です。設定からキーを登録してください。",
-        },
-        { status: 400 },
       );
     }
 
@@ -76,18 +108,34 @@ export async function POST(request: Request) {
       instruction,
     });
 
-    const ai = new GoogleGenAI({ apiKey });
-    providerRequestStarted = true;
-    const response = await ai.models.generateContent({
-      model: resolveGeminiModel(),
-      contents: prompt,
-    });
+    const legacyGeminiApiKey =
+      provider === "gemini" ? process.env.GEMINI_API_KEY?.trim() : undefined;
+    const directGeminiApiKey =
+      provider === "gemini" ? userApiKey || legacyGeminiApiKey : undefined;
+    if (directGeminiApiKey) {
+      model = resolveGeminiModel();
+    }
 
-    const result = response.text ?? "";
+    providerRequestStarted = true;
+    const result = directGeminiApiKey
+      ? await generateWithDirectGemini({
+          apiKey: directGeminiApiKey,
+          prompt,
+        })
+      : await generateWithGateway({
+          provider,
+          model,
+          prompt,
+          apiKey: userApiKey,
+          userId,
+        });
+
     if (!result.trim()) {
       logError("ai.request.empty_response", new Error("Empty AI response"), {
         route: "/api/ai",
         requestId,
+        provider,
+        model,
         status: 500,
         ms: Date.now() - start,
       });
@@ -100,6 +148,8 @@ export async function POST(request: Request) {
     logInfo("ai.request.done", {
       route: "/api/ai",
       requestId,
+      provider,
+      model,
       status: 200,
       ms: Date.now() - start,
     });
@@ -109,6 +159,8 @@ export async function POST(request: Request) {
       logInfo("ai.request.validation_error", {
         route: "/api/ai",
         requestId,
+        provider,
+        model,
         status: 400,
         ms: Date.now() - start,
       });
@@ -116,7 +168,7 @@ export async function POST(request: Request) {
     }
 
     const providerError = providerRequestStarted
-      ? resolveAiProviderErrorResponse(error, usesUserApiKey)
+      ? resolveAiProviderErrorResponse(error, provider, usesUserApiKey)
       : {
           kind: "unknown" as const,
           providerStatus: null,
@@ -128,6 +180,8 @@ export async function POST(request: Request) {
       route: "/api/ai",
       requestId,
       status: providerError.responseStatus,
+      provider,
+      model,
       providerStatus: providerError.providerStatus,
       providerErrorKind: providerError.kind,
       providerRequestStarted,

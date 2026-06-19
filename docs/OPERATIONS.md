@@ -124,9 +124,23 @@ Phase 7のPWA実装範囲を確認するときは、[`docs/PWA_PHASE7_HANDOFF.md
 - `/api/ai` の構造化ログ
 - 任意の外部エラー通知Webhook
 
-AI API のログには Markdown 本文、Gemini API キー、DB 接続URLを出しません。記録するのは、リクエストID、処理結果、HTTPステータス、処理時間などの運用メタデータだけです。
+AI API のログには Markdown 本文、Provider API キー、DB 接続URLを出しません。記録するのは、リクエストID、選択Provider、モデルID、処理結果、HTTPステータス、処理時間などの運用メタデータだけです。
 
 本番で問題が出た場合は、Vercel Dashboard の Runtime Logs で `ai.request.failed` や 500 エラーを確認します。
+
+### AI Gateway / BYOK
+
+アプリ内AIは Claude / GPT / Gemini を Vercel AI Gateway 経由で呼び出します。Production では Vercel の OIDC 認証を基本にし、ローカルやCIなど静的キーが必要な環境では `AI_GATEWAY_API_KEY` を使います。
+
+確認項目:
+
+- Vercel Project の AI Gateway が有効になっている
+- 必要なら AI Gateway Credits または Vercel 側 BYOK が設定されている
+- ローカルで Gateway を使う場合は `vercel env pull` で OIDC token を更新するか、`AI_GATEWAY_API_KEY` を設定する
+- モデルを変える場合は `AI_MODEL_CLAUDE`、`AI_MODEL_GPT`、`AI_MODEL_GEMINI` を設定する
+- `GEMINI_API_KEY` / `GEMINI_MODEL` は Geminiモードの legacy fallback としてだけ使う
+
+ユーザーが画面で入力したProvider APIキーはブラウザの `localStorage` にProvider別で保存され、AI実行時だけ `/api/ai` に送られます。Markdown Memory のDBには保存しません。
 
 ### ヘルスチェック
 

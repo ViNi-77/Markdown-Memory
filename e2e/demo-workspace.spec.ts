@@ -189,7 +189,7 @@ test.describe("PWA下地", () => {
         name: "Markdown Memory に接続できません",
       }),
     ).toBeVisible();
-    await expect(page.getByText("非公開のMarkdown本文")).toBeVisible();
+    await expect(page.getByRole("main")).toContainText("非公開のMarkdown本文");
   });
 
   test("オフライン画面で復帰先とキャッシュ方針を確認できる", async ({
@@ -202,7 +202,7 @@ test.describe("PWA下地", () => {
         name: "Markdown Memory に接続できません",
       }),
     ).toBeVisible();
-    await expect(page.getByText("非公開のMarkdown本文")).toBeVisible();
+    await expect(page.getByRole("main")).toContainText("非公開のMarkdown本文");
     await expect(
       page.getByRole("link", { name: "ワークスペースを開く" }),
     ).toHaveAttribute("href", "/");

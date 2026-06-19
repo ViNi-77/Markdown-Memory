@@ -67,4 +67,21 @@ describe("operational health helpers", () => {
     expect(payload.status).toBe("ok");
     expect(payload.checks.filter((check) => check.required)).toHaveLength(5);
   });
+
+  it("AI Gatewayとlegacy Geminiは任意チェックとして名前だけを返す", () => {
+    delete process.env.AI_GATEWAY_API_KEY;
+    delete process.env.VERCEL_OIDC_TOKEN;
+    delete process.env.GEMINI_API_KEY;
+
+    const payload = createPrivateHealthPayload();
+    const summary = summarizeOperationalStatus(payload);
+    const serialized = JSON.stringify(payload);
+
+    expect(summary.optionalMissingChecks).toContain("ai_gateway_auth");
+    expect(summary.optionalMissingChecks).toContain("gemini_legacy_api");
+    expect(serialized).toContain("AI_GATEWAY_API_KEY or Vercel OIDC");
+    expect(serialized).toContain("GEMINI_API_KEY (legacy fallback)");
+    expect(serialized).not.toContain("sk-");
+    expect(serialized).not.toContain("AIza");
+  });
 });
