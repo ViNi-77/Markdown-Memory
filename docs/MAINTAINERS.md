@@ -14,6 +14,7 @@
 | [`SEASON1_PHASE13_CHECK.md`](SEASON1_PHASE13_CHECK.md)     | Phase 13のWeb/PWA最終品質と実機確認境界              |
 | [`SEASON1_PHASE14_CHECK.md`](SEASON1_PHASE14_CHECK.md)     | Phase 14のREADMEポートフォリオ仕上げ記録             |
 | [`SEASON1_PHASE15_CHECK.md`](SEASON1_PHASE15_CHECK.md)     | Phase 15のiOS最小shell検証と完了記録                 |
+| [`SEASON1_PHASE16_CHECK.md`](SEASON1_PHASE16_CHECK.md)     | Phase 16のTestFlight内部配布手順と完了記録           |
 | [`MOBILE_PWA_PREP.md`](MOBILE_PWA_PREP.md)                 | モバイル/PWAの準備メモ                               |
 | [`PWA_REAL_DEVICE_CHECK.md`](PWA_REAL_DEVICE_CHECK.md)     | Apple Safari 実機確認チェックリスト                  |
 | [`PWA_OFFLINE_DATA_POLICY.md`](PWA_OFFLINE_DATA_POLICY.md) | オフライン時に保存してよい/いけないデータの方針      |
@@ -79,7 +80,7 @@ Season 1 は Phase 10A で終わりではなく、Web/PWA完成と iOS TestFligh
 | 13    | Season 1 | 完了     | Web/PWA最終品質、Apple Safari実機、Production smoke                |
 | 14    | Season 1 | 完了     | README中心のポートフォリオ仕上げ                                   |
 | 15    | Season 1 | 完了     | iOS shell追加、自動build/Simulator起動確認、ログイン後手動スモーク |
-| 16    | Season 1 | 未着手   | TestFlight内部配布、実機確認、Season 1完了記録                     |
+| 16    | Season 1 | 進行中   | TestFlight内部配布、実機確認、Season 1完了記録                     |
 | 17+   | Season 2 | 後続     | App Store審査対策、iOS固有価値追加、App Store本番公開、Mac化       |
 
 Phase 6 の作業記録は [#23](https://github.com/ViNi-77/Markdown-Memory/issues/23) にあります。Phase 7 は Apple Safari を対象にし、Android Chrome は現時点の確認対象に含めません。Phase 8 以降は [`PRODUCTION_SMOKE_CHECK.md`](PRODUCTION_SMOKE_CHECK.md) に沿って、PWA実機確認とは分けて Production のログイン後導線とAI UXを確認します。Season 1 の完了条件は [`SEASON1_ROADMAP.md`](SEASON1_ROADMAP.md) を正とします。
@@ -91,6 +92,8 @@ Phase 13 では [`SEASON1_PHASE13_CHECK.md`](SEASON1_PHASE13_CHECK.md) と [`PRO
 Phase 14 では README をポートフォリオの入口として仕上げます。2026-06-20 時点で、Production、Demo、スクリーンショット、見どころ、技術構成、確認済み品質、Season 1 Roadmap がREADMEから追える状態です。詳細は [`SEASON1_PHASE14_CHECK.md`](SEASON1_PHASE14_CHECK.md) を参照します。
 
 Phase 15 では `ios/MarkdownMemory/MarkdownMemory.xcodeproj` と SwiftUI ベースの最小iOS shellを追加しました。Google OAuth互換性を優先し、Production URLは埋め込み `WKWebView` ではなく `SFSafariViewController` で開きます。2026-06-20 時点で、GitHub Actions の `iOS Shell` workflowにより、Xcode project認識、iOS Simulator向けDebug build、Simulatorインストール、起動、Productionログイン画面のスクリーンショット保存まで確認済みです。同日、iOS shell上でのGoogleログイン後の保存、共有、AIパネル表示も手動確認済みとなり、Phase 15は完了です。詳細は [`SEASON1_PHASE15_CHECK.md`](SEASON1_PHASE15_CHECK.md) を参照します。
+
+Phase 16 では TestFlight 内部配布へ進みます。2026-06-21 時点で、リポジトリ側はPhase 16Aとして、TestFlight手順、ユーザー/Codexの役割分担、Release build確認を整備中です。Apple Developer Program加入、App Store Connect登録、Bundle ID登録、Xcode Team設定、Archive、TestFlight upload、iPhone実機確認はユーザー環境で進めます。詳細は [`SEASON1_PHASE16_CHECK.md`](SEASON1_PHASE16_CHECK.md) を参照します。
 
 ## 本番確認済み
 

@@ -27,7 +27,7 @@ Markdown Memory は、AIチャットで生まれたMarkdownを「その場限り
 | 実装範囲     | Next.js App Router、Auth.js、Neon PostgreSQL、Drizzle、Vercel AI Gateway、PWA、Vercel運用 |
 | 安全性       | 非公開MarkdownをService Workerでキャッシュしない。Provider APIキーはブラウザ保存のみ      |
 | 公開品質     | CI、E2E、Production smoke、Apple Safari実機確認、Runtime Logs確認まで実施済み             |
-| 現在地       | Season 1 Phase 15完了。iOS shellの自動build/Simulator起動とログイン後手動スモーク確認済み |
+| 現在地       | Season 1 Phase 16A。TestFlight内部配布に向けた手順化とRelease build確認を進行中           |
 
 ## 見どころ
 
@@ -316,7 +316,7 @@ Season 1 は、Web/PWAとして完成度を高めたうえで iOS TestFlight の
 | 13    | Season 1 | 完了     | Web/PWA最終品質、Apple Safari実機、Production smoke                |
 | 14    | Season 1 | 完了     | README中心のポートフォリオ仕上げ                                   |
 | 15    | Season 1 | 完了     | iOS shell追加、自動build/Simulator起動確認、ログイン後手動スモーク |
-| 16    | Season 1 | 未着手   | TestFlight内部配布、実機確認、Season 1完了記録                     |
+| 16    | Season 1 | 進行中   | TestFlight内部配布、実機確認、Season 1完了記録                     |
 | 17+   | Season 2 | 後続     | App Store審査対策、iOS固有価値追加、App Store本番公開、Mac化       |
 
 Season 1 の詳細な完了条件は [`docs/SEASON1_ROADMAP.md`](docs/SEASON1_ROADMAP.md) にまとめています。Phase ごとの確認記録と本番スモークの進め方は [`docs/MAINTAINERS.md`](docs/MAINTAINERS.md) から参照します。
