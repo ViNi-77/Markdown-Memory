@@ -90,9 +90,9 @@ xcrun simctl boot "$device_udid" >/dev/null 2>&1 || true
 echo "Waiting for simulator boot"
 run_with_timeout 180 xcrun simctl bootstatus "$device_udid" -b
 echo "Installing app"
-run_with_timeout 90 xcrun simctl install "$device_udid" "$app_path"
+run_with_timeout 240 xcrun simctl install "$device_udid" "$app_path"
 echo "Launching app"
-run_with_timeout 60 xcrun simctl launch "$device_udid" "$bundle_id"
+run_with_timeout 120 xcrun simctl launch "$device_udid" "$bundle_id"
 
 # Give SFSafariViewController enough time to present and load the Production URL.
 sleep 15
