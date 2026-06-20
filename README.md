@@ -21,13 +21,13 @@ Markdown Memory は、AIチャットで生まれたMarkdownを「その場限り
 
 個人開発のポートフォリオとして、単なる静的デモではなく、ログイン、DB保存、共有URL、AI Provider切替、PWA、Production運用、Privacy / Terms、アカウント削除までを一つのプロダクトとして通しています。
 
-| 観点         | 内容                                                                                      |
-| ------------ | ----------------------------------------------------------------------------------------- |
-| ユーザー価値 | AIが生成したMarkdownを、あとから探し、読み、編集し、共有し、別のAIへ渡せる                |
-| 実装範囲     | Next.js App Router、Auth.js、Neon PostgreSQL、Drizzle、Vercel AI Gateway、PWA、Vercel運用 |
-| 安全性       | 非公開MarkdownをService Workerでキャッシュしない。Provider APIキーはブラウザ保存のみ      |
-| 公開品質     | CI、E2E、Production smoke、Apple Safari実機確認、Runtime Logs確認まで実施済み             |
-| 現在地       | Season 1 Phase 16B待ち。Phase 16Aの手順化とRelease build確認は完了、Apple/Xcode準備へ進行 |
+| 観点         | 内容                                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------------------- |
+| ユーザー価値 | AIが生成したMarkdownを、あとから探し、読み、編集し、共有し、別のAIへ渡せる                              |
+| 実装範囲     | Next.js App Router、Auth.js、Neon PostgreSQL、Drizzle、Vercel AI Gateway、PWA、Vercel運用               |
+| 安全性       | 非公開MarkdownをService Workerでキャッシュしない。Provider APIキーはブラウザ保存のみ                    |
+| 公開品質     | CI、E2E、Production smoke、Apple Safari実機確認、Runtime Logs確認まで実施済み                           |
+| 現在地       | Season 1 Phase 16B待ち。手順化、Release build確認、Xcode前提チェックhelperは完了、Apple/Xcode準備へ進行 |
 
 ## 見どころ
 

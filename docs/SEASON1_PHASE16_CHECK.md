@@ -64,6 +64,27 @@ Codexが、Phase 16の進行中化、TestFlight手順、リポジトリ側の確
 - [ ] Xcodeで `ios/MarkdownMemory/MarkdownMemory.xcodeproj` を開く
 - [ ] Signing & CapabilitiesでTeamを選択する
 
+Apple側の入力メモ:
+
+| 場所                                 | 入力/選択                                                                                    |
+| ------------------------------------ | -------------------------------------------------------------------------------------------- |
+| Apple Developer Program              | 個人または組織で加入する。個人情報、決済情報、Team IDなどは公開リポジトリへ記録しない        |
+| Certificates, Identifiers & Profiles | Explicit App IDを作成し、Bundle IDは `com.vini.markdownmemory` にする                        |
+| App Store Connect app record         | Platformは `iOS`、App nameは `Markdown Memory`、Bundle IDは `com.vini.markdownmemory` を選ぶ |
+| App Store Connect SKU                | 例: `markdown-memory-ios`。内部管理用で、同じアカウント内では再利用できない前提で決める      |
+| Primary language                     | UIに合わせて `Japanese` を優先。必要なら英語メタデータはSeason 2で追加する                   |
+| Category                             | `Productivity`                                                                               |
+| Privacy Policy URL                   | `https://markdown-memory.vercel.app/privacy`                                                 |
+| Support URL                          | `https://markdown-memory.vercel.app`                                                         |
+
+TestFlight内部配布の入力メモ:
+
+| 場所                   | 入力/選択                                                                                                 |
+| ---------------------- | --------------------------------------------------------------------------------------------------------- |
+| Internal Testing group | 例: `Season 1 Internal`                                                                                   |
+| What to Test           | `Login, markdown save/restore, sharing, AI panel, provider switching, and production web shell behavior.` |
+| Feedback email         | Apple Developer Programで管理できるメールアドレス。公開リポジトリへ記録しない                             |
+
 2026-06-21 時点のローカル確認では、Xcode本体ではなくCommand Line Toolsが選択されています。
 
 ```text
@@ -82,6 +103,8 @@ scripts/check-ios-testflight-prereqs.sh
 参考:
 
 - [Apple Developer Program enrollment](https://developer.apple.com/help/account/membership/program-enrollment/)
+- [Certificates, Identifiers & Profiles](https://developer.apple.com/account/resources/identifiers/list)
+- [App Store Connect](https://appstoreconnect.apple.com/)
 - [Add a new app](https://developer.apple.com/help/app-store-connect/create-an-app-record/add-a-new-app/)
 
 ## Phase 16C: Archive / Upload
