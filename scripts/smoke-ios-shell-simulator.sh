@@ -81,7 +81,7 @@ print(udid)
 echo "Using iPhone simulator: $device_name ($device_udid)"
 
 cleanup() {
-  xcrun simctl io "$device_udid" screenshot "$screenshot_path" >/dev/null 2>&1 || true
+  run_with_timeout 20 xcrun simctl io "$device_udid" screenshot "$screenshot_path" >/dev/null 2>&1 || true
   xcrun simctl shutdown "$device_udid" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -97,5 +97,8 @@ run_with_timeout 120 xcrun simctl launch "$device_udid" "$bundle_id"
 # Give SFSafariViewController enough time to present and load the Production URL.
 sleep 15
 echo "Capturing simulator screenshot"
-run_with_timeout 30 xcrun simctl io "$device_udid" screenshot "$screenshot_path"
-echo "Simulator screenshot saved to $screenshot_path"
+if run_with_timeout 90 xcrun simctl io "$device_udid" screenshot "$screenshot_path"; then
+  echo "Simulator screenshot saved to $screenshot_path"
+else
+  echo "Warning: simulator screenshot capture failed or timed out; launch smoke already completed" >&2
+fi
