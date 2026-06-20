@@ -60,6 +60,7 @@ Codexが、Phase 16の進行中化、TestFlight手順、リポジトリ側の確
 - [ ] Bundle ID `com.vini.markdownmemory` を登録する
 - [ ] Xcode本体をインストールする
 - [ ] `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` を実行する
+- [ ] `scripts/check-ios-testflight-prereqs.sh` が必須項目PASSになる
 - [ ] Xcodeで `ios/MarkdownMemory/MarkdownMemory.xcodeproj` を開く
 - [ ] Signing & CapabilitiesでTeamを選択する
 
@@ -75,6 +76,7 @@ Xcode本体をインストール後、以下で切り替えます。
 ```bash
 sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 xcodebuild -version
+scripts/check-ios-testflight-prereqs.sh
 ```
 
 参考:

@@ -93,7 +93,7 @@ Phase 14 では README をポートフォリオの入口として仕上げます
 
 Phase 15 では `ios/MarkdownMemory/MarkdownMemory.xcodeproj` と SwiftUI ベースの最小iOS shellを追加しました。Google OAuth互換性を優先し、Production URLは埋め込み `WKWebView` ではなく `SFSafariViewController` で開きます。2026-06-20 時点で、GitHub Actions の `iOS Shell` workflowにより、Xcode project認識、iOS Simulator向けDebug build、Simulatorインストール、起動、Productionログイン画面のスクリーンショット保存まで確認済みです。同日、iOS shell上でのGoogleログイン後の保存、共有、AIパネル表示も手動確認済みとなり、Phase 15は完了です。詳細は [`SEASON1_PHASE15_CHECK.md`](SEASON1_PHASE15_CHECK.md) を参照します。
 
-Phase 16 では TestFlight 内部配布へ進みます。2026-06-21 時点で、リポジトリ側のPhase 16Aとして、TestFlight手順、ユーザー/Codexの役割分担、Release build確認を整備済みです。次はPhase 16Bとして、Apple Developer Program加入、App Store Connect登録、Bundle ID登録、Xcode本体の選択、Xcode Team設定をユーザー環境で進めます。詳細は [`SEASON1_PHASE16_CHECK.md`](SEASON1_PHASE16_CHECK.md) を参照します。
+Phase 16 では TestFlight 内部配布へ進みます。2026-06-21 時点で、リポジトリ側のPhase 16Aとして、TestFlight手順、ユーザー/Codexの役割分担、Release build確認を整備済みです。次はPhase 16Bとして、Apple Developer Program加入、App Store Connect登録、Bundle ID登録、Xcode本体の選択、Xcode Team設定をユーザー環境で進めます。Xcode本体を選択した後は `scripts/check-ios-testflight-prereqs.sh` でローカル前提を確認します。詳細は [`SEASON1_PHASE16_CHECK.md`](SEASON1_PHASE16_CHECK.md) を参照します。
 
 ## 本番確認済み
 
