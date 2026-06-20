@@ -60,23 +60,40 @@ scripts/verify-ios-shell.sh
 
 この確認で証明できるのは、Xcode projectの構文、target認識、iOS Simulator向けDebug build、Simulatorでのアプリ起動です。Googleログイン、保存、共有、AIパネル表示は、SimulatorまたはiPhone実機での手動確認を完了条件として残します。
 
-## Xcodeでの確認手順
+## 2026-06-20 自動確認結果
 
-Xcodeをインストールまたは選択したあとに実施します。
+Phase 15 の自動確認は以下まで完了しています。
+
+- PR #71: iOS shell project 追加
+- PR #72: `iOS Shell` workflow と `scripts/verify-ios-shell.sh` 追加
+- PR #73: Simulatorインストール、起動、スクリーンショットartifact保存を追加
+- main CI: `27858054868` success
+- main iOS Shell: `27858054865` success
+- Vercel Production deployment: commit `63616191d02951f459dafcb25c3b67065221b7e7` で success
+- Production `/api/health`: 200
+- Production `/demo`: 200
+
+`iOS Shell` workflow のartifact `ios-shell-simulator-screenshot` では、iPhone Simulator上の `SFSafariViewController` が `markdown-memory.vercel.app` を開き、ログイン画面を表示していることを確認済みです。
+
+この時点で、Xcode project認識、Debug build、Simulator起動、Production表示、Safe Areaの大きな崩れなし、Googleログイン開始画面の表示までは自動証拠があります。
+
+## 手動確認手順
+
+Phase 15 を完了扱いにするには、iOS shell上でログイン後の主要導線を確認します。Xcodeをインストールまたは選択した環境では、以下で同じshellを起動できます。
 
 ```bash
 sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 scripts/verify-ios-shell.sh
 ```
 
-Xcode上で確認します。
+Xcode上、またはGitHub ActionsのSimulator artifactで起動済みshellを確認したうえで、実機/Simulatorで以下を確認します。
 
 1. `ios/MarkdownMemory/MarkdownMemory.xcodeproj` を開く
 2. Team を選択する
 3. Bundle Identifier が `com.vini.markdownmemory` でよいか確認する
 4. iPhone Simulator または実機でRunする
 5. 起動後にProductionが開くことを確認する
-6. Googleログインが進められることを確認する
+6. Googleログインを完了できることを確認する
 7. Markdown作成、保存、リロード復元を確認する
 8. 共有リンク作成、未ログイン閲覧、共有解除を確認する
 9. アプリ内AIパネル表示とProvider切替を確認する
@@ -93,8 +110,9 @@ Xcode上で確認します。
 
 ## 残タスク
 
-- Xcode本体を使ったbuild確認
-- Apple Developer Team設定
-- 実機Run確認
-- Archive作成可否確認
-- Phase 16でApp Store Connect登録とTestFlight upload
+- iOS shell上でGoogleログインを完了する
+- ログイン後にMarkdown作成、保存、リロード復元を確認する
+- 共有リンク作成、未ログイン閲覧、共有解除を確認する
+- アプリ内AIパネル表示とProvider切替を確認する
+- 手動確認結果をこの文書とRoadmapへ反映し、Phase 15を完了に更新する
+- Phase 16でApple Developer Team設定、Archive、App Store Connect登録、TestFlight uploadへ進む

@@ -13,7 +13,7 @@
 | [`SEASON1_ROADMAP.md`](SEASON1_ROADMAP.md)                 | Season 1の完了条件とTestFlightまでのPhase配置        |
 | [`SEASON1_PHASE13_CHECK.md`](SEASON1_PHASE13_CHECK.md)     | Phase 13のWeb/PWA最終品質と実機確認境界              |
 | [`SEASON1_PHASE14_CHECK.md`](SEASON1_PHASE14_CHECK.md)     | Phase 14のREADMEポートフォリオ仕上げ記録             |
-| [`SEASON1_PHASE15_CHECK.md`](SEASON1_PHASE15_CHECK.md)     | Phase 15のiOS最小shell検証とXcode残タスク            |
+| [`SEASON1_PHASE15_CHECK.md`](SEASON1_PHASE15_CHECK.md)     | Phase 15のiOS最小shell検証と手動スモーク残タスク     |
 | [`MOBILE_PWA_PREP.md`](MOBILE_PWA_PREP.md)                 | モバイル/PWAの準備メモ                               |
 | [`PWA_REAL_DEVICE_CHECK.md`](PWA_REAL_DEVICE_CHECK.md)     | Apple Safari 実機確認チェックリスト                  |
 | [`PWA_OFFLINE_DATA_POLICY.md`](PWA_OFFLINE_DATA_POLICY.md) | オフライン時に保存してよい/いけないデータの方針      |
@@ -71,16 +71,16 @@ https://markdown-memory.vercel.app/api/auth/callback/google
 
 Season 1 は Phase 10A で終わりではなく、Web/PWA完成と iOS TestFlight 内部配布までを含みます。Season 1.5 は作らず、TestFlight は Season 1 の Phase 15〜16 に置きます。
 
-| Phase | Season   | 状態     | 内容                                                         |
-| ----- | -------- | -------- | ------------------------------------------------------------ |
-| 1-10A | Season 1 | 完了済み | Web/PWAのMVP、保存、共有、AI、PWA品質、Production確認        |
-| 11    | Season 1 | 完了     | Season 1ゴール再定義、Roadmap/docs更新                       |
-| 12    | Season 1 | 完了     | Privacy / Terms / アカウント削除 / データ削除導線            |
-| 13    | Season 1 | 完了     | Web/PWA最終品質、Apple Safari実機、Production smoke          |
-| 14    | Season 1 | 完了     | README中心のポートフォリオ仕上げ                             |
-| 15    | Season 1 | 検証待ち | iOS TestFlight用の最小ネイティブshell追加、Xcode実機検証待ち |
-| 16    | Season 1 | 未着手   | TestFlight内部配布、実機確認、Season 1完了記録               |
-| 17+   | Season 2 | 後続     | App Store審査対策、iOS固有価値追加、App Store本番公開、Mac化 |
+| Phase | Season   | 状態         | 内容                                                                       |
+| ----- | -------- | ------------ | -------------------------------------------------------------------------- |
+| 1-10A | Season 1 | 完了済み     | Web/PWAのMVP、保存、共有、AI、PWA品質、Production確認                      |
+| 11    | Season 1 | 完了         | Season 1ゴール再定義、Roadmap/docs更新                                     |
+| 12    | Season 1 | 完了         | Privacy / Terms / アカウント削除 / データ削除導線                          |
+| 13    | Season 1 | 完了         | Web/PWA最終品質、Apple Safari実機、Production smoke                        |
+| 14    | Season 1 | 完了         | README中心のポートフォリオ仕上げ                                           |
+| 15    | Season 1 | 手動確認待ち | iOS shell追加、自動build/Simulator起動確認完了、ログイン後手動スモーク待ち |
+| 16    | Season 1 | 未着手       | TestFlight内部配布、実機確認、Season 1完了記録                             |
+| 17+   | Season 2 | 後続         | App Store審査対策、iOS固有価値追加、App Store本番公開、Mac化               |
 
 Phase 6 の作業記録は [#23](https://github.com/ViNi-77/Markdown-Memory/issues/23) にあります。Phase 7 は Apple Safari を対象にし、Android Chrome は現時点の確認対象に含めません。Phase 8 以降は [`PRODUCTION_SMOKE_CHECK.md`](PRODUCTION_SMOKE_CHECK.md) に沿って、PWA実機確認とは分けて Production のログイン後導線とAI UXを確認します。Season 1 の完了条件は [`SEASON1_ROADMAP.md`](SEASON1_ROADMAP.md) を正とします。
 
@@ -90,7 +90,7 @@ Phase 13 では [`SEASON1_PHASE13_CHECK.md`](SEASON1_PHASE13_CHECK.md) と [`PRO
 
 Phase 14 では README をポートフォリオの入口として仕上げます。2026-06-20 時点で、Production、Demo、スクリーンショット、見どころ、技術構成、確認済み品質、Season 1 Roadmap がREADMEから追える状態です。詳細は [`SEASON1_PHASE14_CHECK.md`](SEASON1_PHASE14_CHECK.md) を参照します。
 
-Phase 15 では `ios/MarkdownMemory/MarkdownMemory.xcodeproj` と SwiftUI ベースの最小iOS shellを追加しました。Google OAuth互換性を優先し、Production URLは埋め込み `WKWebView` ではなく `SFSafariViewController` で開きます。2026-06-20 時点の作業環境ではXcode本体が選択されていないため、Xcode build、Simulator、実機Run、Archiveは未確認です。詳細は [`SEASON1_PHASE15_CHECK.md`](SEASON1_PHASE15_CHECK.md) を参照します。
+Phase 15 では `ios/MarkdownMemory/MarkdownMemory.xcodeproj` と SwiftUI ベースの最小iOS shellを追加しました。Google OAuth互換性を優先し、Production URLは埋め込み `WKWebView` ではなく `SFSafariViewController` で開きます。2026-06-20 時点で、GitHub Actions の `iOS Shell` workflowにより、Xcode project認識、iOS Simulator向けDebug build、Simulatorインストール、起動、Productionログイン画面のスクリーンショット保存まで確認済みです。残りは、iOS shell上でGoogleログイン後の保存、共有、AIパネル表示を手動確認することです。詳細は [`SEASON1_PHASE15_CHECK.md`](SEASON1_PHASE15_CHECK.md) を参照します。
 
 ## 本番確認済み
 

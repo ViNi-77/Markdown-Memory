@@ -21,13 +21,13 @@ Markdown Memory は、AIチャットで生まれたMarkdownを「その場限り
 
 個人開発のポートフォリオとして、単なる静的デモではなく、ログイン、DB保存、共有URL、AI Provider切替、PWA、Production運用、Privacy / Terms、アカウント削除までを一つのプロダクトとして通しています。
 
-| 観点         | 内容                                                                                      |
-| ------------ | ----------------------------------------------------------------------------------------- |
-| ユーザー価値 | AIが生成したMarkdownを、あとから探し、読み、編集し、共有し、別のAIへ渡せる                |
-| 実装範囲     | Next.js App Router、Auth.js、Neon PostgreSQL、Drizzle、Vercel AI Gateway、PWA、Vercel運用 |
-| 安全性       | 非公開MarkdownをService Workerでキャッシュしない。Provider APIキーはブラウザ保存のみ      |
-| 公開品質     | CI、E2E、Production smoke、Apple Safari実機確認、Runtime Logs確認まで実施済み             |
-| 現在地       | Season 1 Phase 15着手。iOS TestFlight用の最小ネイティブshellを追加し、Xcode検証待ち       |
+| 観点         | 内容                                                                                            |
+| ------------ | ----------------------------------------------------------------------------------------------- |
+| ユーザー価値 | AIが生成したMarkdownを、あとから探し、読み、編集し、共有し、別のAIへ渡せる                      |
+| 実装範囲     | Next.js App Router、Auth.js、Neon PostgreSQL、Drizzle、Vercel AI Gateway、PWA、Vercel運用       |
+| 安全性       | 非公開MarkdownをService Workerでキャッシュしない。Provider APIキーはブラウザ保存のみ            |
+| 公開品質     | CI、E2E、Production smoke、Apple Safari実機確認、Runtime Logs確認まで実施済み                   |
+| 現在地       | Season 1 Phase 15終盤。iOS shellの自動build/Simulator起動確認は完了、ログイン後手動スモーク待ち |
 
 ## 見どころ
 
@@ -308,16 +308,16 @@ Pull Request の説明やコメントは日本語で記載します。
 
 Season 1 は、Web/PWAとして完成度を高めたうえで iOS TestFlight の内部配布まで到達することをゴールにします。Phase 10A は Season 1 の途中成果であり、Season 1 の完了ではありません。App Store本番公開、App Store審査対策としてのiOS固有価値追加、Macアプリ化は Season 2 以降で扱います。
 
-| Phase | Season   | 状態     | 内容                                                         |
-| ----- | -------- | -------- | ------------------------------------------------------------ |
-| 1-10A | Season 1 | 完了済み | Web/PWAのMVP、保存、共有、AI、PWA品質、Production確認        |
-| 11    | Season 1 | 完了     | Season 1ゴール再定義、Roadmap/docs更新                       |
-| 12    | Season 1 | 完了     | Privacy / Terms / アカウント削除 / データ削除導線            |
-| 13    | Season 1 | 完了     | Web/PWA最終品質、Apple Safari実機、Production smoke          |
-| 14    | Season 1 | 完了     | README中心のポートフォリオ仕上げ                             |
-| 15    | Season 1 | 検証待ち | iOS TestFlight用の最小ネイティブshell追加、Xcode実機検証待ち |
-| 16    | Season 1 | 未着手   | TestFlight内部配布、実機確認、Season 1完了記録               |
-| 17+   | Season 2 | 後続     | App Store審査対策、iOS固有価値追加、App Store本番公開、Mac化 |
+| Phase | Season   | 状態         | 内容                                                                       |
+| ----- | -------- | ------------ | -------------------------------------------------------------------------- |
+| 1-10A | Season 1 | 完了済み     | Web/PWAのMVP、保存、共有、AI、PWA品質、Production確認                      |
+| 11    | Season 1 | 完了         | Season 1ゴール再定義、Roadmap/docs更新                                     |
+| 12    | Season 1 | 完了         | Privacy / Terms / アカウント削除 / データ削除導線                          |
+| 13    | Season 1 | 完了         | Web/PWA最終品質、Apple Safari実機、Production smoke                        |
+| 14    | Season 1 | 完了         | README中心のポートフォリオ仕上げ                                           |
+| 15    | Season 1 | 手動確認待ち | iOS shell追加、自動build/Simulator起動確認完了、ログイン後手動スモーク待ち |
+| 16    | Season 1 | 未着手       | TestFlight内部配布、実機確認、Season 1完了記録                             |
+| 17+   | Season 2 | 後続         | App Store審査対策、iOS固有価値追加、App Store本番公開、Mac化               |
 
 Season 1 の詳細な完了条件は [`docs/SEASON1_ROADMAP.md`](docs/SEASON1_ROADMAP.md) にまとめています。Phase ごとの確認記録と本番スモークの進め方は [`docs/MAINTAINERS.md`](docs/MAINTAINERS.md) から参照します。
 
