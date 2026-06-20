@@ -35,6 +35,25 @@ run_with_timeout() {
   return "$command_status"
 }
 
+launch_app() {
+  local attempt
+
+  for attempt in 1 2; do
+    echo "Launching app (attempt $attempt)"
+    if run_with_timeout 180 xcrun simctl launch "$device_udid" "$bundle_id"; then
+      return 0
+    fi
+
+    echo "Warning: simulator launch attempt $attempt failed; preparing retry" >&2
+    xcrun simctl terminate "$device_udid" "$bundle_id" >/dev/null 2>&1 || true
+    run_with_timeout 120 xcrun simctl bootstatus "$device_udid" -b >/dev/null 2>&1 || true
+    sleep 15
+  done
+
+  echo "App launch failed after retry" >&2
+  return 1
+}
+
 if [[ ! -d "$app_path" ]]; then
   scripts/verify-ios-shell.sh
 fi
@@ -91,8 +110,7 @@ echo "Waiting for simulator boot"
 run_with_timeout 180 xcrun simctl bootstatus "$device_udid" -b
 echo "Installing app"
 run_with_timeout 240 xcrun simctl install "$device_udid" "$app_path"
-echo "Launching app"
-run_with_timeout 120 xcrun simctl launch "$device_udid" "$bundle_id"
+launch_app
 
 # Give SFSafariViewController enough time to present and load the Production URL.
 sleep 15
