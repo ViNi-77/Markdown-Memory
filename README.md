@@ -27,7 +27,7 @@ Markdown Memory は、AIチャットで生まれたMarkdownを「その場限り
 | 実装範囲     | Next.js App Router、Auth.js、Neon PostgreSQL、Drizzle、Vercel AI Gateway、PWA、Vercel運用 |
 | 安全性       | 非公開MarkdownをService Workerでキャッシュしない。Provider APIキーはブラウザ保存のみ      |
 | 公開品質     | CI、E2E、Production smoke、Apple Safari実機確認、Runtime Logs確認まで実施済み             |
-| 現在地       | Season 1 Phase 16A。TestFlight内部配布に向けた手順化とRelease build確認を進行中           |
+| 現在地       | Season 1 Phase 16B待ち。Phase 16Aの手順化とRelease build確認は完了、Apple/Xcode準備へ進行 |
 
 ## 見どころ
 
