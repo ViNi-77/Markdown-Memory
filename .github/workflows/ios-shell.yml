@@ -8,6 +8,7 @@ on:
       - ".github/workflows/ios-shell.yml"
       - "ios/**"
       - "scripts/verify-ios-shell.sh"
+      - "scripts/smoke-ios-shell-simulator.sh"
       - "docs/SEASON1_PHASE15_CHECK.md"
   push:
     branches:
@@ -16,6 +17,7 @@ on:
       - ".github/workflows/ios-shell.yml"
       - "ios/**"
       - "scripts/verify-ios-shell.sh"
+      - "scripts/smoke-ios-shell-simulator.sh"
       - "docs/SEASON1_PHASE15_CHECK.md"
   workflow_dispatch:
 
@@ -38,3 +40,14 @@ jobs:
 
       - name: iOS shell をビルド
         run: scripts/verify-ios-shell.sh
+
+      - name: Simulator で起動確認
+        run: scripts/smoke-ios-shell-simulator.sh
+
+      - name: Simulator スクリーンショットを保存
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-shell-simulator-screenshot
+          path: ${{ runner.temp }}/markdown-memory-ios-shell.png
+          if-no-files-found: ignore
