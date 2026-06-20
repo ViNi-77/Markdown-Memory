@@ -56,7 +56,9 @@ scripts/verify-ios-shell.sh
 - `xcodebuild -list -project ios/MarkdownMemory/MarkdownMemory.xcodeproj`
 - `xcodebuild -project ios/MarkdownMemory/MarkdownMemory.xcodeproj -scheme MarkdownMemory -configuration Debug -sdk iphonesimulator -destination "generic/platform=iOS Simulator" CODE_SIGNING_ALLOWED=NO clean build`
 
-この確認で証明できるのは、Xcode projectの構文、target認識、iOS Simulator向けDebug buildです。Googleログイン、保存、共有、AIパネル表示は、SimulatorまたはiPhone実機での手動確認を完了条件として残します。
+さらに `scripts/smoke-ios-shell-simulator.sh` で、build済みアプリをiPhone Simulatorへインストールし、起動後のスクリーンショットをartifactとして保存します。
+
+この確認で証明できるのは、Xcode projectの構文、target認識、iOS Simulator向けDebug build、Simulatorでのアプリ起動です。Googleログイン、保存、共有、AIパネル表示は、SimulatorまたはiPhone実機での手動確認を完了条件として残します。
 
 ## Xcodeでの確認手順
 
