@@ -8,8 +8,10 @@ on:
       - ".github/workflows/ios-shell.yml"
       - "ios/**"
       - "scripts/verify-ios-shell.sh"
+      - "scripts/verify-ios-release-build.sh"
       - "scripts/smoke-ios-shell-simulator.sh"
       - "docs/SEASON1_PHASE15_CHECK.md"
+      - "docs/SEASON1_PHASE16_CHECK.md"
   push:
     branches:
       - main
@@ -17,8 +19,10 @@ on:
       - ".github/workflows/ios-shell.yml"
       - "ios/**"
       - "scripts/verify-ios-shell.sh"
+      - "scripts/verify-ios-release-build.sh"
       - "scripts/smoke-ios-shell-simulator.sh"
       - "docs/SEASON1_PHASE15_CHECK.md"
+      - "docs/SEASON1_PHASE16_CHECK.md"
   workflow_dispatch:
 
 permissions:
@@ -40,6 +44,9 @@ jobs:
 
       - name: iOS shell をビルド
         run: scripts/verify-ios-shell.sh
+
+      - name: iOS shell のRelease buildを確認
+        run: scripts/verify-ios-release-build.sh
 
       - name: Simulator で起動確認
         run: scripts/smoke-ios-shell-simulator.sh
