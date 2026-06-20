@@ -10,9 +10,10 @@ xcodebuild -showsdks
 xcodebuild -list -project "$project_path"
 xcodebuild \
   -project "$project_path" \
-  -target "$target_name" \
+  -scheme "$target_name" \
   -configuration Debug \
   -sdk iphonesimulator \
+  -destination "generic/platform=iOS Simulator" \
   -derivedDataPath "$derived_data_path" \
   CODE_SIGNING_ALLOWED=NO \
   clean build
