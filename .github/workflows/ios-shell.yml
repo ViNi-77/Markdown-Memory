@@ -10,6 +10,7 @@ on:
       - "scripts/verify-ios-shell.sh"
       - "scripts/verify-ios-release-build.sh"
       - "scripts/smoke-ios-shell-simulator.sh"
+      - "scripts/check-ios-testflight-prereqs.sh"
       - "docs/SEASON1_PHASE15_CHECK.md"
       - "docs/SEASON1_PHASE16_CHECK.md"
   push:
@@ -21,6 +22,7 @@ on:
       - "scripts/verify-ios-shell.sh"
       - "scripts/verify-ios-release-build.sh"
       - "scripts/smoke-ios-shell-simulator.sh"
+      - "scripts/check-ios-testflight-prereqs.sh"
       - "docs/SEASON1_PHASE15_CHECK.md"
       - "docs/SEASON1_PHASE16_CHECK.md"
   workflow_dispatch:
