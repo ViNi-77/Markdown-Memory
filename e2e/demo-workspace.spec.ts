@@ -38,6 +38,80 @@ test.describe("PWA下地", () => {
       page.getByRole("link", { name: "デモを開く" }),
     ).toHaveAttribute("href", "/demo");
   });
+
+  test("Service Workerが非公開・動的ルートをキャッシュしない", async ({
+    page,
+  }) => {
+    const uncachedPaths = [
+      "/",
+      "/login",
+      "/api/health",
+      "/share/not-a-real-token",
+      "/view/not-a-real-document",
+    ];
+
+    await page.goto("/demo");
+
+    await page.evaluate(async () => {
+      await Promise.all(
+        (await navigator.serviceWorker.getRegistrations()).map((registration) =>
+          registration.unregister(),
+        ),
+      );
+      await Promise.all((await caches.keys()).map((key) => caches.delete(key)));
+
+      await navigator.serviceWorker.register("/sw.js");
+      await navigator.serviceWorker.ready;
+    });
+    await page.reload();
+
+    const origin = new URL(page.url()).origin;
+    for (const path of uncachedPaths) {
+      await page.route(`${origin}${path}`, async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "text/plain",
+          body: "private or dynamic route response",
+        });
+      });
+    }
+
+    await page.evaluate(async (paths) => {
+      await Promise.allSettled([
+        fetch("/demo", { cache: "reload" }),
+        fetch("/offline", { cache: "reload" }),
+        ...paths.map((path) => fetch(path, { cache: "no-store" })),
+      ]);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }, uncachedPaths);
+
+    const cachedPaths = await page.evaluate(async () => {
+      const cacheNames = await caches.keys();
+      const requests = await Promise.all(
+        cacheNames.map(async (cacheName) => {
+          const cache = await caches.open(cacheName);
+          return cache.keys();
+        }),
+      );
+
+      return requests
+        .flat()
+        .map((request) => new URL(request.url).pathname)
+        .sort();
+    });
+
+    expect(cachedPaths).toEqual(expect.arrayContaining(["/demo", "/offline"]));
+    expect(cachedPaths).toEqual(
+      expect.arrayContaining(["/icons/icon.svg", "/icons/maskable-icon.svg"]),
+    );
+    expect(cachedPaths).not.toContain("/");
+    expect(cachedPaths).not.toContain("/login");
+    for (const path of cachedPaths) {
+      expect(path).not.toMatch(/^\/api\//);
+      expect(path).not.toMatch(/^\/share\//);
+      expect(path).not.toMatch(/^\/view\//);
+    }
+  });
 });
 
 test.describe("デモワークスペース", () => {
