@@ -59,6 +59,7 @@ Codexが、Phase 16の進行中化、TestFlight手順、リポジトリ側の確
 - [ ] App Store Connectで新規アプリを作成する
 - [ ] Bundle ID `com.vini.markdownmemory` を登録する
 - [ ] Xcode本体をインストールする
+- [ ] Xcode > Settings > Components で iOS Simulator runtime をインストールする
 - [ ] `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` を実行する
 - [ ] `scripts/check-ios-testflight-prereqs.sh` が必須項目PASSになる
 - [ ] Xcodeで `ios/MarkdownMemory/MarkdownMemory.xcodeproj` を開く
@@ -85,14 +86,18 @@ TestFlight内部配布の入力メモ:
 | What to Test           | `Login, markdown save/restore, sharing, AI panel, provider switching, and production web shell behavior.` |
 | Feedback email         | Apple Developer Programで管理できるメールアドレス。公開リポジトリへ記録しない                             |
 
-2026-06-21 時点のローカル確認では、Xcode本体ではなくCommand Line Toolsが選択されています。
+2026-06-23 時点のローカル確認では、Xcode本体は選択済みです。ただし `xcrun simctl list runtimes available -j` が空で、iOS Simulator runtime が未登録のため、`scripts/check-ios-testflight-prereqs.sh` はこの項目で停止します。
 
 ```text
 xcode-select -p
-/Library/Developer/CommandLineTools
+/Applications/Xcode.app/Contents/Developer
+
+xcodebuild -version
+Xcode 26.5
+Build version 17F42
 ```
 
-Xcode本体をインストール後、以下で切り替えます。
+Xcode本体の選択とiOS Simulator runtimeのインストール後、以下で再確認します。
 
 ```bash
 sudo xcode-select -s /Applications/Xcode.app/Contents/Developer

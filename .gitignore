@@ -62,6 +62,7 @@ yarn-error.log*
 
 # Xcode
 DerivedData/
+ios/MarkdownMemory/build/
 *.xcuserstate
 xcuserdata/
 

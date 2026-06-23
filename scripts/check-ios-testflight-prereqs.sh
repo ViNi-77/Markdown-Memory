@@ -33,12 +33,13 @@ read_project_build_setting_values() {
 
 read_release_build_setting() {
   local key="$1"
-  xcodebuild \
+  local settings
+  settings="$(xcodebuild \
     -project "$project_path" \
-    -scheme "$target_name" \
+    -target "$target_name" \
     -configuration Release \
-    -showBuildSettings 2>/dev/null \
-    | awk -F ' = ' -v key="$key" '$1 ~ "^[[:space:]]*" key "$" { print $2; exit }'
+    -showBuildSettings 2>/dev/null || true)"
+  printf '%s\n' "$settings" | awk -F ' = ' -v key="$key" '$1 ~ "^[[:space:]]*" key "$" { print $2; exit }'
 }
 
 check_build_setting() {
@@ -49,12 +50,15 @@ check_build_setting() {
   if [[ "$xcode_project_readable" == true ]]; then
     local value
     value="$(read_release_build_setting "$key")"
-    if [[ "$value" == "$expected" ]]; then
-      pass "$label is $expected for Release"
-    else
-      fail "$label is '$value' for Release; expected '$expected'"
+    if [[ -n "$value" ]]; then
+      if [[ "$value" == "$expected" ]]; then
+        pass "$label is $expected for Release"
+      else
+        fail "$label is '$value' for Release; expected '$expected'"
+      fi
+      return
     fi
-    return
+    warn "Could not read $label from xcodebuild; falling back to project file"
   fi
 
   local values
@@ -85,6 +89,31 @@ if command -v xcodebuild >/dev/null 2>&1 && xcodebuild -version >/dev/null 2>&1;
   xcodebuild_available=true
 else
   fail "xcodebuild is not available with the selected developer directory"
+fi
+
+if [[ "$xcodebuild_available" == true ]] && xcodebuild -showsdks | grep -q -- '-sdk iphoneos'; then
+  pass "iOS SDK is available"
+else
+  fail "iOS SDK is not available; open Xcode > Settings > Components and install the iOS platform"
+fi
+
+if command -v xcrun >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
+  if xcrun simctl list runtimes available -j \
+    | python3 -c 'import json, sys
+data = json.load(sys.stdin)
+for runtime in data.get("runtimes", []):
+    name = runtime.get("name", "")
+    identifier = runtime.get("identifier", "")
+    if runtime.get("isAvailable") and ("iOS" in name or ".iOS-" in identifier):
+        sys.exit(0)
+sys.exit(1)
+'; then
+    pass "iOS Simulator runtime is available"
+  else
+    fail "No available iOS Simulator runtime was found; open Xcode > Settings > Components and install an iOS Simulator runtime"
+  fi
+else
+  warn "xcrun or python3 is unavailable; iOS Simulator runtime was not checked"
 fi
 
 if [[ -d "$project_path" ]]; then
