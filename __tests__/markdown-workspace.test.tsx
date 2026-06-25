@@ -27,6 +27,8 @@ const updatedAt = new Date("2026-06-16T00:05:00.000Z");
 describe("MarkdownWorkspace", () => {
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   beforeEach(() => {
@@ -231,5 +233,76 @@ describe("MarkdownWorkspace", () => {
     expect(
       screen.getByText("一致するファイルがありません。"),
     ).toBeInTheDocument();
+  });
+
+  it("モバイル下部ナビはスムーズスクロール中もタップしたペインを維持する", () => {
+    vi.useFakeTimers();
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: vi.fn().mockReturnValue({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }),
+    });
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      callback(0);
+      return 1;
+    });
+    vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+
+    render(
+      <MarkdownWorkspace
+        initialFolders={[]}
+        initialDocuments={[
+          {
+            id: "doc-1",
+            userId: "user-1",
+            folderId: null,
+            name: "memo.md",
+            content: "# Loaded",
+            isPublic: false,
+            shareToken: null,
+            createdAt,
+            updatedAt,
+          },
+        ]}
+        userSlot={<div data-testid="user-slot" />}
+      />,
+    );
+
+    const workspace = screen.getByTestId("markdown-workspace");
+    Object.defineProperty(workspace, "scrollLeft", {
+      configurable: true,
+      writable: true,
+      value: 0,
+    });
+    Object.defineProperty(workspace, "scrollTo", {
+      configurable: true,
+      value: vi.fn(),
+    });
+    Object.defineProperty(screen.getByTestId("file-list-pane"), "offsetLeft", {
+      configurable: true,
+      value: 0,
+    });
+    Object.defineProperty(screen.getByTestId("document-pane"), "offsetLeft", {
+      configurable: true,
+      value: 375,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /memo\.md/ }));
+
+    const detailsPane = screen.getByTestId("details-pane");
+    Object.defineProperty(detailsPane, "offsetLeft", {
+      configurable: true,
+      value: 750,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "詳細ペインを表示" }));
+    fireEvent.scroll(workspace);
+
+    expect(
+      screen.getByRole("button", { name: "詳細ペインを表示" }),
+    ).toHaveAttribute("aria-current", "page");
   });
 });

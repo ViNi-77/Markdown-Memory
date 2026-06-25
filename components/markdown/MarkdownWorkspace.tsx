@@ -216,6 +216,10 @@ export function MarkdownWorkspace({
   const pendingSave = useRef<{ id: string; content: string } | null>(null);
   const selectedDocIdRef = useRef<string | null>(null);
   const searchRequestIdRef = useRef(0);
+  const mobileScrollTargetView = useRef<MobileView | null>(null);
+  const mobileScrollReleaseTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   // Server Action を実行し、失敗時はエラーを表面化する共通ラッパー。
   const run = useCallback((fn: () => Promise<void>) => {
@@ -403,7 +407,19 @@ export function MarkdownWorkspace({
     const workspace = workspaceRef.current;
     const pane = ref.current;
     if (!workspace || !pane) return;
-    if (nextView) setMobileView(nextView);
+    if (nextView) {
+      setMobileView(nextView);
+      if (shouldUseMobilePaneNavigation()) {
+        mobileScrollTargetView.current = nextView;
+        if (mobileScrollReleaseTimer.current) {
+          clearTimeout(mobileScrollReleaseTimer.current);
+        }
+        mobileScrollReleaseTimer.current = setTimeout(() => {
+          mobileScrollTargetView.current = null;
+          mobileScrollReleaseTimer.current = null;
+        }, 700);
+      }
+    }
     workspace.scrollTo({
       left: pane.offsetLeft,
       behavior: "smooth",
@@ -448,6 +464,27 @@ export function MarkdownWorkspace({
             ? candidate
             : best,
         );
+      const targetView = mobileScrollTargetView.current;
+      const targetCandidate = candidates.find(
+        (candidate) => candidate.view === targetView && candidate.available,
+      );
+      if (
+        targetView &&
+        targetCandidate &&
+        Math.abs(workspaceElement.scrollLeft - targetCandidate.left) > 4
+      ) {
+        setMobileView((current) =>
+          current === targetView ? current : targetView,
+        );
+        return;
+      }
+      if (targetView) {
+        mobileScrollTargetView.current = null;
+        if (mobileScrollReleaseTimer.current) {
+          clearTimeout(mobileScrollReleaseTimer.current);
+          mobileScrollReleaseTimer.current = null;
+        }
+      }
       setMobileView((current) =>
         current === closest.view ? current : closest.view,
       );
@@ -463,6 +500,11 @@ export function MarkdownWorkspace({
     window.addEventListener("resize", onScroll);
     return () => {
       if (frame) window.cancelAnimationFrame(frame);
+      if (mobileScrollReleaseTimer.current) {
+        clearTimeout(mobileScrollReleaseTimer.current);
+        mobileScrollReleaseTimer.current = null;
+      }
+      mobileScrollTargetView.current = null;
       workspaceElement.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
@@ -555,7 +597,9 @@ export function MarkdownWorkspace({
     setError(null);
     if (shouldUseMobilePaneNavigation()) {
       setMobileView("document");
-      requestAnimationFrame(() => scrollToMobilePane(documentPaneRef));
+      requestAnimationFrame(() =>
+        scrollToMobilePane(documentPaneRef, "document"),
+      );
     }
     if (hasLoadedContent(doc) || demoMode) {
       setLoadingDocId((current) => (current === doc.id ? null : current));
@@ -598,7 +642,7 @@ export function MarkdownWorkspace({
     setContentCopied(false);
     if (shouldUseMobilePaneNavigation()) {
       setMobileView("files");
-      requestAnimationFrame(() => scrollToMobilePane(fileListPaneRef));
+      requestAnimationFrame(() => scrollToMobilePane(fileListPaneRef, "files"));
     }
   }
 
@@ -899,9 +943,9 @@ export function MarkdownWorkspace({
 
   function mobileNavClass(view: MobileView) {
     return cn(
-      "h-11 px-2",
+      "h-11 min-w-0 touch-manipulation gap-1 px-2 ring-1 ring-transparent transition-colors duration-150 ease-out active:not-aria-[haspopup]:translate-y-0",
       mobileView === view &&
-        "bg-secondary text-secondary-foreground shadow-sm ring-1 ring-border/70 hover:bg-secondary",
+        "bg-secondary text-secondary-foreground ring-border/70 hover:bg-secondary",
     );
   }
 
