@@ -39,6 +39,8 @@ Markdown Memory は、AIチャットで生まれたMarkdownを「その場限り
 | 公開運用         | `/api/health`、Cron保護、Vercel Analytics / Speed Insights / Runtime Logs を用意       |
 | ポートフォリオ性 | READMEからProduction、Demo、技術構成、確認状況、TestFlight到達まで追える               |
 
+Season 1 の歩みは [`docs/SEASON1_JOURNEY.md`](docs/SEASON1_JOURNEY.md) にまとめています。どの判断をし、何をSeason 2へ送ったかもここから辿れます。
+
 ## できること
 
 | 機能            | 内容                                                                                 |
@@ -320,7 +322,7 @@ Season 1 は、Web/PWAとして完成度を高めたうえで iOS TestFlight の
 | 16    | Season 1 | 完了     | TestFlight内部配布、実機確認、Season 1完了記録                     |
 | 17+   | Season 2 | 後続     | App Store審査対策、iOS固有価値追加、App Store本番公開、Mac化       |
 
-Season 1 の詳細な完了条件は [`docs/SEASON1_ROADMAP.md`](docs/SEASON1_ROADMAP.md) にまとめています。Phase ごとの確認記録と本番スモークの進め方は [`docs/MAINTAINERS.md`](docs/MAINTAINERS.md) から参照します。
+Season 1 の軌跡は [`docs/SEASON1_JOURNEY.md`](docs/SEASON1_JOURNEY.md)、詳細な完了条件は [`docs/SEASON1_ROADMAP.md`](docs/SEASON1_ROADMAP.md) にまとめています。Phase ごとの確認記録と本番スモークの進め方は [`docs/MAINTAINERS.md`](docs/MAINTAINERS.md) から参照します。
 
 ## リポジトリに置かないもの
 
