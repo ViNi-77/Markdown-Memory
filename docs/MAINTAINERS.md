@@ -10,6 +10,7 @@
 | [`BRANCH_PROTECTION.md`](BRANCH_PROTECTION.md)             | main ブランチ保護の推奨設定                          |
 | [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md)                   | Neon バックアップと復元ドリル                        |
 | [`PRODUCTION_SMOKE_CHECK.md`](PRODUCTION_SMOKE_CHECK.md)   | Production のログイン後保存、共有、AI、運用確認      |
+| [`SEASON1_JOURNEY.md`](SEASON1_JOURNEY.md)                 | Season 1の軌跡、主要判断、ポートフォリオ観点         |
 | [`SEASON1_ROADMAP.md`](SEASON1_ROADMAP.md)                 | Season 1の完了条件とTestFlightまでのPhase配置        |
 | [`SEASON1_PHASE13_CHECK.md`](SEASON1_PHASE13_CHECK.md)     | Phase 13のWeb/PWA最終品質と実機確認境界              |
 | [`SEASON1_PHASE14_CHECK.md`](SEASON1_PHASE14_CHECK.md)     | Phase 14のREADMEポートフォリオ仕上げ記録             |
