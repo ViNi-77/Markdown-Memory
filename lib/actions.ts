@@ -1,12 +1,20 @@
 "use server";
 
-import { and, desc, eq, ilike, or } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { folders, documents, users } from "@/lib/db/schema";
 import type { Folder, Document } from "@/lib/db/schema";
 import type { WorkspaceDocument } from "@/lib/data";
+
+type ShareDocumentResult = { id: string; shareToken: string };
+type DocumentSortMode =
+  | "updated"
+  | "created"
+  | "name-asc"
+  | "name-desc"
+  | "manual";
 
 /** ログイン中ユーザーIDを取得。未ログインなら例外。全アクションの入口で所有者を確定する。 */
 async function requireUserId(): Promise<string> {
@@ -34,6 +42,65 @@ function assertMutation(
   message: string,
 ): void {
   if (!row) throw new Error(message);
+}
+
+function uniqueIds(ids: string[]): string[] {
+  const trimmed = ids.map((id) => id.trim()).filter(Boolean);
+  return Array.from(new Set(trimmed));
+}
+
+async function requireOwnedDocuments(
+  ids: string[],
+  userId: string,
+): Promise<void> {
+  if (ids.length === 0) throw new Error("ファイルを選択してください。");
+  const rows = await db
+    .select({ id: documents.id })
+    .from(documents)
+    .where(and(eq(documents.userId, userId), inArray(documents.id, ids)));
+
+  if (rows.length !== ids.length) {
+    throw new Error("操作できないファイルが含まれています。");
+  }
+}
+
+async function nextManualSortOrder(userId: string): Promise<number> {
+  const [row] = await db
+    .select({
+      value: sql<number>`coalesce(min(${documents.sortOrder}) - 1, 0)`,
+    })
+    .from(documents)
+    .where(eq(documents.userId, userId));
+
+  return row?.value ?? 0;
+}
+
+function documentSearchOrder(sortMode: DocumentSortMode = "updated") {
+  if (sortMode === "created") {
+    return [
+      desc(documents.createdAt),
+      desc(documents.updatedAt),
+      asc(documents.name),
+    ];
+  }
+  if (sortMode === "name-asc") {
+    return [asc(documents.name), desc(documents.updatedAt)];
+  }
+  if (sortMode === "name-desc") {
+    return [desc(documents.name), desc(documents.updatedAt)];
+  }
+  if (sortMode === "manual") {
+    return [
+      asc(documents.sortOrder),
+      desc(documents.updatedAt),
+      asc(documents.name),
+    ];
+  }
+  return [
+    desc(documents.updatedAt),
+    desc(documents.createdAt),
+    asc(documents.name),
+  ];
 }
 
 // ===== フォルダ =====
@@ -81,6 +148,7 @@ export async function createDocument(input: {
   const userId = await requireUserId();
   const name = input.name.trim() || "無題.md";
   if (input.folderId) await requireOwnedFolder(input.folderId, userId);
+  const sortOrder = await nextManualSortOrder(userId);
   const [row] = await db
     .insert(documents)
     .values({
@@ -88,6 +156,7 @@ export async function createDocument(input: {
       name,
       content: input.content ?? "",
       folderId: input.folderId ?? null,
+      sortOrder,
     })
     .returning();
   return row;
@@ -108,6 +177,7 @@ export async function getDocument(id: string): Promise<Document> {
 export async function searchDocuments(input: {
   query: string;
   folderId?: string | "all" | null;
+  sortMode?: DocumentSortMode;
 }): Promise<WorkspaceDocument[]> {
   const userId = await requireUserId();
   const query = input.query.trim();
@@ -134,12 +204,13 @@ export async function searchDocuments(input: {
       name: documents.name,
       isPublic: documents.isPublic,
       shareToken: documents.shareToken,
+      sortOrder: documents.sortOrder,
       createdAt: documents.createdAt,
       updatedAt: documents.updatedAt,
     })
     .from(documents)
     .where(whereCondition)
-    .orderBy(desc(documents.updatedAt))
+    .orderBy(...documentSearchOrder(input.sortMode))
     .limit(50);
 }
 
@@ -182,6 +253,28 @@ export async function moveDocument(
   assertMutation(row, "ファイルが見つかりません。");
 }
 
+export async function moveDocuments(
+  ids: string[],
+  folderId: string | null,
+): Promise<void> {
+  const userId = await requireUserId();
+  const documentIds = uniqueIds(ids);
+  if (documentIds.length !== ids.length || documentIds.length === 0) {
+    throw new Error("移動するファイルを選択してください。");
+  }
+  if (folderId) await requireOwnedFolder(folderId, userId);
+  await requireOwnedDocuments(documentIds, userId);
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(documents)
+      .set({ folderId, updatedAt: new Date() })
+      .where(
+        and(eq(documents.userId, userId), inArray(documents.id, documentIds)),
+      );
+  });
+}
+
 export async function deleteDocument(id: string): Promise<void> {
   const userId = await requireUserId();
   const [row] = await db
@@ -189,6 +282,41 @@ export async function deleteDocument(id: string): Promise<void> {
     .where(and(eq(documents.id, id), eq(documents.userId, userId)))
     .returning({ id: documents.id });
   assertMutation(row, "ファイルが見つかりません。");
+}
+
+export async function deleteDocuments(ids: string[]): Promise<void> {
+  const userId = await requireUserId();
+  const documentIds = uniqueIds(ids);
+  if (documentIds.length !== ids.length || documentIds.length === 0) {
+    throw new Error("削除するファイルを選択してください。");
+  }
+  await requireOwnedDocuments(documentIds, userId);
+
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(documents)
+      .where(
+        and(eq(documents.userId, userId), inArray(documents.id, documentIds)),
+      );
+  });
+}
+
+export async function reorderDocuments(orderedIds: string[]): Promise<void> {
+  const userId = await requireUserId();
+  const ids = uniqueIds(orderedIds);
+  if (ids.length !== orderedIds.length || ids.length === 0) {
+    throw new Error("並び替えるファイルを選択してください。");
+  }
+  await requireOwnedDocuments(ids, userId);
+
+  await db.transaction(async (tx) => {
+    for (const [index, id] of ids.entries()) {
+      await tx
+        .update(documents)
+        .set({ sortOrder: index })
+        .where(and(eq(documents.id, id), eq(documents.userId, userId)));
+    }
+  });
 }
 
 // ===== 共有 =====
@@ -213,6 +341,56 @@ export async function enableShare(id: string): Promise<string> {
     .returning({ shareToken: documents.shareToken });
   if (!row?.shareToken) throw new Error("共有の有効化に失敗しました。");
   return row.shareToken;
+}
+
+/** 複数ファイルの公開リンクを発行する。公開済みなら既存トークンを再利用する。 */
+export async function enableShareForDocuments(
+  ids: string[],
+): Promise<ShareDocumentResult[]> {
+  const userId = await requireUserId();
+  const documentIds = uniqueIds(ids);
+  if (documentIds.length !== ids.length || documentIds.length === 0) {
+    throw new Error("公開リンクを作成するファイルを選択してください。");
+  }
+
+  const rows = await db
+    .select({
+      id: documents.id,
+      isPublic: documents.isPublic,
+      shareToken: documents.shareToken,
+    })
+    .from(documents)
+    .where(
+      and(eq(documents.userId, userId), inArray(documents.id, documentIds)),
+    );
+
+  if (rows.length !== documentIds.length) {
+    throw new Error("操作できないファイルが含まれています。");
+  }
+
+  const tokenById = new Map<string, string>();
+
+  await db.transaction(async (tx) => {
+    for (const row of rows) {
+      if (row.isPublic && row.shareToken) {
+        tokenById.set(row.id, row.shareToken);
+        continue;
+      }
+
+      const token = randomBytes(16).toString("base64url");
+      await tx
+        .update(documents)
+        .set({ isPublic: true, shareToken: token, updatedAt: new Date() })
+        .where(and(eq(documents.id, row.id), eq(documents.userId, userId)));
+      tokenById.set(row.id, token);
+    }
+  });
+
+  return documentIds.map((id) => {
+    const shareToken = tokenById.get(id);
+    if (!shareToken) throw new Error("共有の有効化に失敗しました。");
+    return { id, shareToken };
+  });
 }
 
 /** 公開を停止する（トークンは破棄）。 */

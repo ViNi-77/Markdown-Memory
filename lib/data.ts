@@ -38,6 +38,7 @@ export async function getWorkspaceData(): Promise<{
         name: documents.name,
         isPublic: documents.isPublic,
         shareToken: documents.shareToken,
+        sortOrder: documents.sortOrder,
         createdAt: documents.createdAt,
         updatedAt: documents.updatedAt,
       })

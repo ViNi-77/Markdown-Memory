@@ -28,6 +28,7 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("drizzle-orm", () => ({
   and: vi.fn((...conditions: unknown[]) => ({ type: "and", conditions })),
+  asc: vi.fn((column: unknown) => ({ type: "asc", column })),
   desc: vi.fn((column: unknown) => ({ type: "desc", column })),
   eq: eqMock,
   ilike: vi.fn((column: unknown, value: unknown) => ({
@@ -35,7 +36,17 @@ vi.mock("drizzle-orm", () => ({
     column,
     value,
   })),
+  inArray: vi.fn((column: unknown, values: unknown[]) => ({
+    type: "inArray",
+    column,
+    values,
+  })),
   or: vi.fn((...conditions: unknown[]) => ({ type: "or", conditions })),
+  sql: vi.fn((strings: TemplateStringsArray, ...values: unknown[]) => ({
+    type: "sql",
+    strings,
+    values,
+  })),
 }));
 
 describe("deleteCurrentUserAccount", () => {
