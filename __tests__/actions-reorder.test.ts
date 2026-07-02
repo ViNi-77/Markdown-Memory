@@ -14,9 +14,9 @@ const {
   orMock,
   selectMock,
   selectWhereMock,
+  updateReturningMock,
   setMock,
   sqlMock,
-  transactionMock,
   updateMock,
   updateWhereMock,
 } = vi.hoisted(() => ({
@@ -43,13 +43,13 @@ const {
   orMock: vi.fn((...conditions: unknown[]) => ({ type: "or", conditions })),
   selectMock: vi.fn(),
   selectWhereMock: vi.fn(),
+  updateReturningMock: vi.fn(),
   setMock: vi.fn(),
   sqlMock: vi.fn((strings: TemplateStringsArray, ...values: unknown[]) => ({
     type: "sql",
     strings,
     values,
   })),
-  transactionMock: vi.fn(),
   updateMock: vi.fn(),
   updateWhereMock: vi.fn(),
 }));
@@ -61,7 +61,7 @@ vi.mock("@/auth", () => ({
 vi.mock("@/lib/db", () => ({
   db: {
     select: selectMock,
-    transaction: transactionMock,
+    update: updateMock,
   },
 }));
 
@@ -87,12 +87,10 @@ describe("reorderDocuments", () => {
     ]);
     fromMock.mockReturnValue({ where: selectWhereMock });
     selectMock.mockReturnValue({ from: fromMock });
-    updateWhereMock.mockResolvedValue(undefined);
+    updateReturningMock.mockResolvedValue([{ id: "doc-id" }]);
+    updateWhereMock.mockReturnValue({ returning: updateReturningMock });
     setMock.mockReturnValue({ where: updateWhereMock });
     updateMock.mockReturnValue({ set: setMock });
-    transactionMock.mockImplementation(async (callback) =>
-      callback({ update: updateMock }),
-    );
   });
 
   it("空配列はDB更新せず明示エラーにする", async () => {
@@ -101,7 +99,7 @@ describe("reorderDocuments", () => {
     );
 
     expect(selectMock).not.toHaveBeenCalled();
-    expect(transactionMock).not.toHaveBeenCalled();
+    expect(updateMock).not.toHaveBeenCalled();
   });
 
   it("重複IDはDB更新せず明示エラーにする", async () => {
@@ -110,7 +108,7 @@ describe("reorderDocuments", () => {
     );
 
     expect(selectMock).not.toHaveBeenCalled();
-    expect(transactionMock).not.toHaveBeenCalled();
+    expect(updateMock).not.toHaveBeenCalled();
   });
 
   it("所有していないIDが含まれる場合は更新しない", async () => {
@@ -124,10 +122,10 @@ describe("reorderDocuments", () => {
       "doc-a",
       "missing",
     ]);
-    expect(transactionMock).not.toHaveBeenCalled();
+    expect(updateMock).not.toHaveBeenCalled();
   });
 
-  it("ログインユーザー所有ファイルだけをtransaction内で手動順へ更新する", async () => {
+  it("ログインユーザー所有ファイルだけを手動順へ更新する", async () => {
     await reorderDocuments(["doc-b", "doc-a", "doc-c"]);
 
     expect(eqMock).toHaveBeenCalledWith(documents.userId, "user-1");
@@ -136,11 +134,11 @@ describe("reorderDocuments", () => {
       "doc-a",
       "doc-c",
     ]);
-    expect(transactionMock).toHaveBeenCalledOnce();
     expect(updateMock).toHaveBeenCalledTimes(3);
     expect(setMock).toHaveBeenNthCalledWith(1, { sortOrder: 0 });
     expect(setMock).toHaveBeenNthCalledWith(2, { sortOrder: 1 });
     expect(setMock).toHaveBeenNthCalledWith(3, { sortOrder: 2 });
     expect(updateWhereMock).toHaveBeenCalledTimes(3);
+    expect(updateReturningMock).toHaveBeenCalledTimes(3);
   });
 });

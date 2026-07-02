@@ -17,9 +17,10 @@ const {
   orMock,
   selectMock,
   sqlMock,
-  transactionMock,
   txDeleteMock,
+  txDeleteReturningMock,
   txDeleteWhereMock,
+  txReturningMock,
   txSetMock,
   txUpdateMock,
   txWhereMock,
@@ -50,9 +51,10 @@ const {
     strings,
     values,
   })),
-  transactionMock: vi.fn(),
   txDeleteMock: vi.fn(),
+  txDeleteReturningMock: vi.fn(),
   txDeleteWhereMock: vi.fn(),
+  txReturningMock: vi.fn(),
   txSetMock: vi.fn(),
   txUpdateMock: vi.fn(),
   txWhereMock: vi.fn(),
@@ -70,8 +72,9 @@ vi.mock("@/auth", () => ({
 
 vi.mock("@/lib/db", () => ({
   db: {
+    delete: txDeleteMock,
     select: selectMock,
-    transaction: transactionMock,
+    update: txUpdateMock,
   },
 }));
 
@@ -102,17 +105,16 @@ describe("bulk document actions", () => {
       const from = vi.fn(() => ({ where }));
       return { from };
     });
-    txWhereMock.mockResolvedValue(undefined);
-    txDeleteWhereMock.mockResolvedValue(undefined);
+    txReturningMock.mockResolvedValue([{ id: "doc-a" }, { id: "doc-b" }]);
+    txDeleteReturningMock.mockResolvedValue([{ id: "doc-a" }, { id: "doc-b" }]);
+    txWhereMock.mockReturnValue({ returning: txReturningMock });
+    txDeleteWhereMock.mockReturnValue({ returning: txDeleteReturningMock });
     txSetMock.mockReturnValue({ where: txWhereMock });
     txUpdateMock.mockReturnValue({ set: txSetMock });
     txDeleteMock.mockReturnValue({ where: txDeleteWhereMock });
-    transactionMock.mockImplementation(async (callback) =>
-      callback({ update: txUpdateMock, delete: txDeleteMock }),
-    );
   });
 
-  it("一括移動は移動先フォルダと所有ファイルを確認してtransactionで更新する", async () => {
+  it("一括移動は移動先フォルダと所有ファイルを確認してまとめて更新する", async () => {
     queueSelectResult([{ id: "folder-1" }]);
     queueSelectResult([{ id: "doc-a" }, { id: "doc-b" }]);
 
@@ -121,11 +123,11 @@ describe("bulk document actions", () => {
     expect(eqMock).toHaveBeenCalledWith(folders.id, "folder-1");
     expect(eqMock).toHaveBeenCalledWith(folders.userId, "user-1");
     expect(inArrayMock).toHaveBeenCalledWith(documents.id, ["doc-a", "doc-b"]);
-    expect(transactionMock).toHaveBeenCalledOnce();
     expect(txSetMock).toHaveBeenCalledWith({
       folderId: "folder-1",
       updatedAt: expect.any(Date),
     });
+    expect(txReturningMock).toHaveBeenCalledWith({ id: documents.id });
   });
 
   it("一括削除は所有していないIDが含まれる場合に更新しない", async () => {
@@ -135,7 +137,7 @@ describe("bulk document actions", () => {
       "操作できないファイルが含まれています。",
     );
 
-    expect(transactionMock).not.toHaveBeenCalled();
+    expect(txDeleteMock).not.toHaveBeenCalled();
   });
 
   it("一括共有は公開済みtokenを再利用し、未公開ファイルだけ更新する", async () => {
@@ -143,13 +145,14 @@ describe("bulk document actions", () => {
       { id: "doc-a", isPublic: true, shareToken: "existing-token" },
       { id: "doc-b", isPublic: false, shareToken: null },
     ]);
+    txReturningMock.mockResolvedValueOnce([{ shareToken: "generated-token" }]);
 
     const result = await enableShareForDocuments(["doc-a", "doc-b"]);
 
     expect(result).toHaveLength(2);
     expect(result[0]).toEqual({ id: "doc-a", shareToken: "existing-token" });
     expect(result[1]?.id).toBe("doc-b");
-    expect(result[1]?.shareToken).toEqual(expect.any(String));
+    expect(result[1]?.shareToken).toBe("generated-token");
     expect(txUpdateMock).toHaveBeenCalledTimes(1);
     expect(txSetMock).toHaveBeenCalledWith({
       isPublic: true,
