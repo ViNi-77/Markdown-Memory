@@ -9,19 +9,28 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MarkdownWorkspace } from "@/components/markdown/MarkdownWorkspace";
 
 const {
+  deleteDocumentsMock,
+  enableShareForDocumentsMock,
   getDocumentMock,
+  moveDocumentsMock,
   reorderDocumentsMock,
   searchDocumentsMock,
   updateDocumentContentMock,
 } = vi.hoisted(() => ({
+  deleteDocumentsMock: vi.fn(),
+  enableShareForDocumentsMock: vi.fn(),
   getDocumentMock: vi.fn(),
+  moveDocumentsMock: vi.fn(),
   reorderDocumentsMock: vi.fn(),
   searchDocumentsMock: vi.fn(),
   updateDocumentContentMock: vi.fn(),
 }));
 
 vi.mock("@/lib/actions", () => ({
+  deleteDocuments: deleteDocumentsMock,
+  enableShareForDocuments: enableShareForDocumentsMock,
   getDocument: getDocumentMock,
+  moveDocuments: moveDocumentsMock,
   reorderDocuments: reorderDocumentsMock,
   searchDocuments: searchDocumentsMock,
   updateDocumentContent: updateDocumentContentMock,
@@ -462,5 +471,107 @@ describe("MarkdownWorkspace", () => {
     expect(
       screen.getByText(/検索中は手動並び替えできません。/),
     ).toBeInTheDocument();
+  });
+
+  it("選択モード中の行クリックは本文表示ではなく選択切替にする", () => {
+    render(
+      <MarkdownWorkspace
+        initialFolders={[]}
+        initialDocuments={[
+          {
+            id: "doc-1",
+            userId: "user-1",
+            folderId: null,
+            name: "memo.md",
+            isPublic: false,
+            shareToken: null,
+            sortOrder: 0,
+            createdAt,
+            updatedAt,
+          },
+        ]}
+        userSlot={<div data-testid="user-slot" />}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "選択" }));
+    fireEvent.click(screen.getByText("memo.md"));
+
+    expect(getDocumentMock).not.toHaveBeenCalled();
+    expect(screen.getByText("1件選択中")).toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", { name: "memo.md を選択" }),
+    ).toBeChecked();
+  });
+
+  it("デモの一括削除は選択ファイルを消し、開いていた本文を閉じる", () => {
+    render(
+      <MarkdownWorkspace
+        demoMode
+        initialFolders={[]}
+        initialDocuments={[
+          {
+            id: "doc-1",
+            userId: "user-1",
+            folderId: null,
+            name: "memo.md",
+            content: "# Memo",
+            isPublic: false,
+            shareToken: null,
+            sortOrder: 0,
+            createdAt,
+            updatedAt,
+          },
+        ]}
+        userSlot={<div data-testid="user-slot" />}
+      />,
+    );
+
+    fireEvent.click(screen.getByText("memo.md"));
+    expect(screen.getByRole("heading", { name: "Memo" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "選択" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "memo.md を選択" }));
+    fireEvent.click(screen.getByText("削除"));
+    const deleteButtons = screen.getAllByRole("button", { name: "削除" });
+    fireEvent.click(deleteButtons[deleteButtons.length - 1]);
+
+    expect(screen.queryByText("memo.md")).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/アップロード・新規作成してください。/),
+    ).toBeInTheDocument();
+  });
+
+  it("デモの一括共有はログイン後利用の案内を表示する", () => {
+    render(
+      <MarkdownWorkspace
+        demoMode
+        initialFolders={[]}
+        initialDocuments={[
+          {
+            id: "doc-1",
+            userId: "user-1",
+            folderId: null,
+            name: "memo.md",
+            content: "# Memo",
+            isPublic: false,
+            shareToken: null,
+            sortOrder: 0,
+            createdAt,
+            updatedAt,
+          },
+        ]}
+        userSlot={<div data-testid="user-slot" />}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "選択" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "memo.md を選択" }));
+    fireEvent.click(screen.getByRole("button", { name: "公開リンク作成" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "デモでは公開リンクを作成できません。",
+    );
+    expect(enableShareForDocumentsMock).not.toHaveBeenCalled();
   });
 });

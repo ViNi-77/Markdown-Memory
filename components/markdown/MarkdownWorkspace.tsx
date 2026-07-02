@@ -108,6 +108,10 @@ type ConfirmActionDialog =
   | { type: "delete-folder"; folder: Folder }
   | { type: "delete-document"; doc: WorkspaceDocument }
   | { type: "disable-share"; doc: WorkspaceDocument };
+type BulkActionDialog =
+  | { type: "move" }
+  | { type: "delete" }
+  | { type: "share-results"; urls: string[] };
 
 const DEFAULT_PANE_WIDTHS: Record<PaneKey, number> = {
   folders: 224,
@@ -270,6 +274,14 @@ export function MarkdownWorkspace({
     WorkspaceDocument[] | null
   >(null);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [bulkActionDialog, setBulkActionDialog] =
+    useState<BulkActionDialog | null>(null);
+  const [bulkMoveFolderId, setBulkMoveFolderId] = useState("root");
+  const [bulkShareCopied, setBulkShareCopied] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [copied, setCopied] = useState(false);
   const [contentCopied, setContentCopied] = useState(false);
@@ -455,14 +467,26 @@ export function MarkdownWorkspace({
         : null,
     [fileSortMode, searchResults],
   );
-  const visibleDocs = serverSearchActive
-    ? (sortedSearchResults ?? [])
-    : localVisibleDocs;
+  const visibleDocs = useMemo(
+    () => (serverSearchActive ? (sortedSearchResults ?? []) : localVisibleDocs),
+    [localVisibleDocs, serverSearchActive, sortedSearchResults],
+  );
+  const visibleDocIds = useMemo(
+    () => new Set(visibleDocs.map((doc) => doc.id)),
+    [visibleDocs],
+  );
+  const visibleSelectedDocIds = useMemo(
+    () =>
+      new Set(Array.from(selectedDocIds).filter((id) => visibleDocIds.has(id))),
+    [selectedDocIds, visibleDocIds],
+  );
   const canReorderVisibleDocs =
     fileSortMode === "manual" &&
     !search.trim() &&
     visibleDocs.length > 1 &&
-    !searchLoading;
+    !searchLoading &&
+    !selectionMode;
+  const selectedCount = visibleSelectedDocIds.size;
 
   // 編集中に保留保存があるままタブを閉じようとしたら警告する（取りこぼし防止）。
   useEffect(() => {
@@ -896,6 +920,148 @@ export function MarkdownWorkspace({
     if (newIndex < 0 || newIndex >= visibleDocs.length) return;
     const orderedVisibleDocs = arrayMove(visibleDocs, oldIndex, newIndex);
     saveManualOrder(buildManualOrderFromVisible(orderedVisibleDocs));
+  }
+
+  function selectedDocumentIdsArray(): string[] {
+    return Array.from(visibleSelectedDocIds);
+  }
+
+  function toggleSelectionMode() {
+    setSelectionMode((current) => {
+      if (current) setSelectedDocIds(new Set());
+      return !current;
+    });
+  }
+
+  function toggleDocumentSelection(id: string) {
+    setSelectedDocIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function selectAllVisibleDocuments() {
+    setSelectedDocIds(new Set(visibleDocs.map((doc) => doc.id)));
+  }
+
+  function clearSelection() {
+    setSelectedDocIds(new Set());
+  }
+
+  function closeBulkSelection() {
+    setSelectionMode(false);
+    setSelectedDocIds(new Set());
+  }
+
+  function updateDocumentCollections(
+    updater: (doc: WorkspaceDocument) => WorkspaceDocument,
+  ) {
+    setDocuments((prev) => prev.map(updater));
+    setSearchResults((prev) => prev?.map(updater) ?? null);
+  }
+
+  function removeDocumentsFromCollections(ids: string[]) {
+    const idSet = new Set(ids);
+    setDocuments((prev) => prev.filter((doc) => !idSet.has(doc.id)));
+    setSearchResults(
+      (prev) => prev?.filter((doc) => !idSet.has(doc.id)) ?? null,
+    );
+  }
+
+  function openBulkMoveDialog() {
+    if (selectedCount === 0) return;
+    setBulkMoveFolderId("root");
+    setBulkActionDialog({ type: "move" });
+  }
+
+  function submitBulkMove() {
+    const ids = selectedDocumentIdsArray();
+    if (ids.length === 0) return;
+    const folderId = bulkMoveFolderId === "root" ? null : bulkMoveFolderId;
+    setBulkActionDialog(null);
+
+    if (demoMode) {
+      const idSet = new Set(ids);
+      updateDocumentCollections((doc) =>
+        idSet.has(doc.id) ? { ...doc, folderId } : doc,
+      );
+      closeBulkSelection();
+      return;
+    }
+
+    run(async () => {
+      await actions.moveDocuments(ids, folderId);
+      const idSet = new Set(ids);
+      updateDocumentCollections((doc) =>
+        idSet.has(doc.id) ? { ...doc, folderId, updatedAt: new Date() } : doc,
+      );
+      closeBulkSelection();
+    });
+  }
+
+  function submitBulkDelete() {
+    const ids = selectedDocumentIdsArray();
+    if (ids.length === 0) return;
+    setBulkActionDialog(null);
+
+    const removeLocally = () => {
+      removeDocumentsFromCollections(ids);
+      if (selectedDocId && ids.includes(selectedDocId)) clearSelectedDocument();
+      closeBulkSelection();
+    };
+
+    if (demoMode) {
+      removeLocally();
+      return;
+    }
+
+    run(async () => {
+      await actions.deleteDocuments(ids);
+      removeLocally();
+    });
+  }
+
+  function submitBulkShare() {
+    const ids = selectedDocumentIdsArray();
+    if (ids.length === 0) return;
+
+    if (demoMode) {
+      setError(
+        "デモでは公開リンクを作成できません。保存と共有はサインイン後に利用できます。",
+      );
+      return;
+    }
+
+    run(async () => {
+      const results = await actions.enableShareForDocuments(ids);
+      const tokenById = new Map(
+        results.map((result) => [result.id, result.shareToken] as const),
+      );
+      updateDocumentCollections((doc) => {
+        const token = tokenById.get(doc.id);
+        return token ? { ...doc, isPublic: true, shareToken: token } : doc;
+      });
+      closeBulkSelection();
+      setBulkShareCopied(false);
+      setBulkActionDialog({
+        type: "share-results",
+        urls: results.map((result) => shareUrl(result.shareToken)),
+      });
+    });
+  }
+
+  async function copyBulkShareUrls(urls: string[]) {
+    try {
+      await navigator.clipboard.writeText(urls.join("\n"));
+      setBulkShareCopied(true);
+      setTimeout(() => setBulkShareCopied(false), 1500);
+    } catch {
+      setError(
+        "共有URL一覧のコピーに失敗しました。ブラウザのクリップボード権限を確認してください。",
+      );
+    }
   }
 
   function handleRenameDoc(doc: WorkspaceDocument) {
@@ -1356,12 +1522,88 @@ export function MarkdownWorkspace({
                 </option>
               ))}
             </select>
+            <Button
+              type="button"
+              variant={selectionMode ? "secondary" : "outline"}
+              size="sm"
+              className="shrink-0"
+              onClick={toggleSelectionMode}
+            >
+              {selectionMode ? "完了" : "選択"}
+            </Button>
           </div>
+          {selectionMode && (
+            <div className="flex flex-col gap-2 rounded-md border border-border bg-background/70 p-2 shadow-2xs">
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <span className="font-medium text-foreground">
+                  {selectedCount}件選択中
+                </span>
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2"
+                    disabled={visibleDocs.length === 0}
+                    onClick={selectAllVisibleDocuments}
+                  >
+                    すべて選択
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2"
+                    disabled={selectedCount === 0}
+                    onClick={clearSelection}
+                  >
+                    解除
+                  </Button>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={selectedCount === 0 || isPending}
+                  onClick={openBulkMoveDialog}
+                >
+                  <FolderIcon />
+                  移動
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  aria-label="公開リンク作成"
+                  disabled={selectedCount === 0 || isPending}
+                  onClick={submitBulkShare}
+                >
+                  <Globe />
+                  公開リンク
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive hover:text-destructive focus-visible:text-destructive"
+                  disabled={selectedCount === 0 || isPending}
+                  onClick={() => setBulkActionDialog({ type: "delete" })}
+                >
+                  <Trash2 />
+                  削除
+                </Button>
+              </div>
+            </div>
+          )}
           {fileSortMode === "manual" && (
             <p className="text-xs leading-relaxed text-muted-foreground">
-              {search.trim()
-                ? "検索中は手動並び替えできません。検索を解除すると順番を変更できます。"
-                : "右端のハンドルをドラッグして順番を変更できます。"}
+              {selectionMode
+                ? "選択モード中は手動並び替えできません。"
+                : search.trim()
+                  ? "検索中は手動並び替えできません。検索を解除すると順番を変更できます。"
+                  : "右端のハンドルをドラッグして順番を変更できます。"}
             </p>
           )}
           {selectedDoc && (
@@ -1426,8 +1668,15 @@ export function MarkdownWorkspace({
                     key={doc.id}
                     doc={doc}
                     selected={selectedDocId === doc.id}
+                    selectionMode={selectionMode}
+                    checked={visibleSelectedDocIds.has(doc.id)}
                     canReorder={canReorderVisibleDocs}
-                    onSelect={() => selectDocument(doc)}
+                    onSelect={() =>
+                      selectionMode
+                        ? toggleDocumentSelection(doc.id)
+                        : selectDocument(doc)
+                    }
+                    onToggleSelection={() => toggleDocumentSelection(doc.id)}
                     onKeyboardReorder={(direction) =>
                       handleKeyboardReorder(doc.id, direction)
                     }
@@ -1931,6 +2180,129 @@ export function MarkdownWorkspace({
       </MobileActionSheet>
 
       <Dialog
+        open={bulkActionDialog?.type === "move"}
+        onOpenChange={(open) => {
+          if (!open) setBulkActionDialog(null);
+        }}
+      >
+        <DialogContent className="gap-4 sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>ファイルを移動</DialogTitle>
+            <DialogDescription>
+              選択中の{selectedCount}件を指定したフォルダへ移動します。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-1.5 text-sm">
+            <label htmlFor="bulk-move-folder" className="font-medium">
+              移動先
+            </label>
+            <select
+              id="bulk-move-folder"
+              value={bulkMoveFolderId}
+              onChange={(event) => setBulkMoveFolderId(event.target.value)}
+              className="h-9 rounded-md border border-input bg-card/80 px-2 text-sm shadow-2xs transition-colors outline-none hover:border-ring/35 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35"
+            >
+              <option value="root">ルート（フォルダなし）</option>
+              {folders.map((folder) => (
+                <option key={folder.id} value={folder.id}>
+                  {folder.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setBulkActionDialog(null)}
+            >
+              キャンセル
+            </Button>
+            <Button
+              type="button"
+              disabled={selectedCount === 0 || isPending}
+              onClick={submitBulkMove}
+            >
+              移動
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={bulkActionDialog?.type === "delete"}
+        onOpenChange={(open) => {
+          if (!open) setBulkActionDialog(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>選択したファイルを削除</AlertDialogTitle>
+            <AlertDialogDescription>
+              選択中の{selectedCount}件を削除します。この操作は取り消せません。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPending}>
+              キャンセル
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={selectedCount === 0 || isPending}
+              onClick={submitBulkDelete}
+            >
+              削除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog
+        open={bulkActionDialog?.type === "share-results"}
+        onOpenChange={(open) => {
+          if (!open) setBulkActionDialog(null);
+        }}
+      >
+        <DialogContent className="gap-4 sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>公開リンクを作成しました</DialogTitle>
+            <DialogDescription>
+              各ファイルの個別公開リンクです。必要な場所へ貼り付けて共有できます。
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            readOnly
+            value={
+              bulkActionDialog?.type === "share-results"
+                ? bulkActionDialog.urls.join("\n")
+                : ""
+            }
+            className="min-h-32 resize-none font-mono text-xs"
+          />
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setBulkActionDialog(null)}
+            >
+              閉じる
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                if (bulkActionDialog?.type === "share-results") {
+                  copyBulkShareUrls(bulkActionDialog.urls);
+                }
+              }}
+            >
+              {bulkShareCopied ? <Check /> : <Copy />}
+              {bulkShareCopied ? "コピーしました" : "URL一覧をコピー"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
         open={Boolean(textActionDialog)}
         onOpenChange={closeTextActionDialog}
       >
@@ -2029,14 +2401,20 @@ export function MarkdownWorkspace({
 function SortableDocumentRow({
   doc,
   selected,
+  selectionMode,
+  checked,
   canReorder,
   onSelect,
+  onToggleSelection,
   onKeyboardReorder,
 }: {
   doc: WorkspaceDocument;
   selected: boolean;
+  selectionMode: boolean;
+  checked: boolean;
   canReorder: boolean;
   onSelect: () => void;
+  onToggleSelection: () => void;
   onKeyboardReorder: (direction: -1 | 1) => void;
 }) {
   const {
@@ -2060,17 +2438,33 @@ function SortableDocumentRow({
       <div
         className={cn(
           "group/document flex items-stretch rounded-md transition-all",
-          selected
-            ? "bg-accent text-accent-foreground shadow-xs ring-1 ring-border/70"
-            : "hover:bg-muted/80 hover:shadow-2xs",
+          checked
+            ? "bg-secondary text-secondary-foreground shadow-xs ring-1 ring-border/70"
+            : selected
+              ? "bg-accent text-accent-foreground shadow-xs ring-1 ring-border/70"
+              : "hover:bg-muted/80 hover:shadow-2xs",
           isDragging &&
             "relative z-10 opacity-80 shadow-md ring-1 ring-ring/40",
         )}
       >
+        {selectionMode && (
+          <label className="flex w-9 shrink-0 cursor-pointer items-center justify-center rounded-l-md">
+            <input
+              type="checkbox"
+              checked={checked}
+              aria-label={`${doc.name} を選択`}
+              onChange={onToggleSelection}
+              className="size-4 rounded border-input accent-primary"
+            />
+          </label>
+        )}
         <button
           type="button"
           onClick={onSelect}
-          className="flex min-w-0 flex-1 flex-col gap-0.5 rounded-l-md px-2.5 py-2 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/35"
+          className={cn(
+            "flex min-w-0 flex-1 flex-col gap-0.5 px-2.5 py-2 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/35",
+            selectionMode ? "rounded-r-md" : "rounded-l-md",
+          )}
         >
           <span className="flex items-center gap-2 truncate text-sm font-medium">
             <FileText className="size-4 shrink-0 text-muted-foreground" />
