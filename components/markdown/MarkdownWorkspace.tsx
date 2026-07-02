@@ -145,12 +145,6 @@ function isFileSortMode(value: string | null): value is FileSortMode {
   return FILE_SORT_OPTIONS.some((option) => option.value === value);
 }
 
-function getInitialFileSortMode(): FileSortMode {
-  if (typeof window === "undefined") return "updated";
-  const stored = window.localStorage.getItem(FILE_SORT_STORAGE);
-  return isFileSortMode(stored) ? stored : "updated";
-}
-
 function compareDocuments(
   a: WorkspaceDocument,
   b: WorkspaceDocument,
@@ -266,9 +260,8 @@ export function MarkdownWorkspace({
   const [mode, setMode] = useState<"preview" | "edit">("preview");
   const [editContent, setEditContent] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
-  const [fileSortMode, setFileSortMode] = useState<FileSortMode>(
-    getInitialFileSortMode,
-  );
+  const [fileSortMode, setFileSortMode] = useState<FileSortMode>("updated");
+  const [fileSortModeLoaded, setFileSortModeLoaded] = useState(false);
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState<
     WorkspaceDocument[] | null
@@ -343,8 +336,22 @@ export function MarkdownWorkspace({
   }, [selectedDocId]);
 
   useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      const stored = window.localStorage.getItem(FILE_SORT_STORAGE);
+      if (isFileSortMode(stored)) setFileSortMode(stored);
+      setFileSortModeLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!fileSortModeLoaded) return;
     window.localStorage.setItem(FILE_SORT_STORAGE, fileSortMode);
-  }, [fileSortMode]);
+  }, [fileSortMode, fileSortModeLoaded]);
 
   // 保留中の編集を即座に保存する（デバウンス待ちを飛ばす）。
   // ファイル切替・プレビュー切替・離脱時に呼び、編集の取りこぼしを防ぐ。
@@ -417,7 +424,11 @@ export function MarkdownWorkspace({
 
     const timer = window.setTimeout(() => {
       actions
-        .searchDocuments({ query, folderId: selectedFolderId })
+        .searchDocuments({
+          query,
+          folderId: selectedFolderId,
+          sortMode: fileSortMode,
+        })
         .then((results) => {
           if (searchRequestIdRef.current !== requestId) return;
           setSearchResults(results);
@@ -440,7 +451,7 @@ export function MarkdownWorkspace({
     }, 250);
 
     return () => window.clearTimeout(timer);
-  }, [demoMode, search, selectedFolderId]);
+  }, [demoMode, fileSortMode, search, selectedFolderId]);
 
   const localVisibleDocs = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -485,6 +496,7 @@ export function MarkdownWorkspace({
     !search.trim() &&
     visibleDocs.length > 1 &&
     !searchLoading &&
+    !isPending &&
     !selectionMode;
   const selectedCount = visibleSelectedDocIds.size;
 
@@ -758,8 +770,19 @@ export function MarkdownWorkspace({
     });
   }
 
-  function clearSelectedDocument() {
-    flushSave();
+  function clearPendingSaveForIds(ids: Set<string>) {
+    const pending = pendingSave.current;
+    if (!pending || !ids.has(pending.id)) return;
+    pendingSave.current = null;
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
+    setSaveState("idle");
+  }
+
+  function clearSelectedDocument(options?: { flushPendingSave?: boolean }) {
+    if (options?.flushPendingSave !== false) flushSave();
     selectedDocIdRef.current = null;
     setSelectedDocId(null);
     setLoadingDocId(null);
@@ -892,11 +915,24 @@ export function MarkdownWorkspace({
   }
 
   function saveManualOrder(orderedDocs: WorkspaceDocument[]) {
+    const previousManualOrder = [...documents].sort((a, b) =>
+      compareDocuments(a, b, "manual"),
+    );
     applyManualOrder(orderedDocs);
 
     if (demoMode) return;
-    run(async () => {
-      await actions.reorderDocuments(orderedDocs.map((doc) => doc.id));
+    startTransition(async () => {
+      try {
+        setError(null);
+        await actions.reorderDocuments(orderedDocs.map((doc) => doc.id));
+      } catch (e) {
+        applyManualOrder(previousManualOrder);
+        setError(
+          e instanceof Error
+            ? e.message
+            : "並び替えの保存に失敗しました。時間をおいて再試行してください。",
+        );
+      }
     });
   }
 
@@ -962,6 +998,26 @@ export function MarkdownWorkspace({
     setSearchResults((prev) => prev?.map(updater) ?? null);
   }
 
+  function updateMovedDocumentsInCollections(
+    ids: string[],
+    folderId: string | null,
+    updatedAt = new Date(),
+  ) {
+    const idSet = new Set(ids);
+    const updateMovedDoc = (doc: WorkspaceDocument) =>
+      idSet.has(doc.id) ? { ...doc, folderId, updatedAt } : doc;
+
+    setDocuments((prev) => prev.map(updateMovedDoc));
+    setSearchResults((prev) => {
+      if (!prev) return null;
+      const updated = prev.map(updateMovedDoc);
+      if (selectedFolderId === "all" || folderId === selectedFolderId) {
+        return updated;
+      }
+      return updated.filter((doc) => !idSet.has(doc.id));
+    });
+  }
+
   function removeDocumentsFromCollections(ids: string[]) {
     const idSet = new Set(ids);
     setDocuments((prev) => prev.filter((doc) => !idSet.has(doc.id)));
@@ -983,20 +1039,14 @@ export function MarkdownWorkspace({
     setBulkActionDialog(null);
 
     if (demoMode) {
-      const idSet = new Set(ids);
-      updateDocumentCollections((doc) =>
-        idSet.has(doc.id) ? { ...doc, folderId } : doc,
-      );
+      updateMovedDocumentsInCollections(ids, folderId);
       closeBulkSelection();
       return;
     }
 
     run(async () => {
       await actions.moveDocuments(ids, folderId);
-      const idSet = new Set(ids);
-      updateDocumentCollections((doc) =>
-        idSet.has(doc.id) ? { ...doc, folderId, updatedAt: new Date() } : doc,
-      );
+      updateMovedDocumentsInCollections(ids, folderId);
       closeBulkSelection();
     });
   }
@@ -1007,8 +1057,12 @@ export function MarkdownWorkspace({
     setBulkActionDialog(null);
 
     const removeLocally = () => {
+      const idSet = new Set(ids);
       removeDocumentsFromCollections(ids);
-      if (selectedDocId && ids.includes(selectedDocId)) clearSelectedDocument();
+      if (selectedDocId && idSet.has(selectedDocId)) {
+        clearPendingSaveForIds(idSet);
+        clearSelectedDocument({ flushPendingSave: false });
+      }
       closeBulkSelection();
     };
 
@@ -1099,24 +1153,12 @@ export function MarkdownWorkspace({
   function handleMoveDoc(doc: WorkspaceDocument, value: string) {
     const folderId = value === "root" ? null : value;
     if (demoMode) {
-      setDocuments((prev) =>
-        prev.map((d) => (d.id === doc.id ? { ...d, folderId } : d)),
-      );
-      setSearchResults(
-        (prev) =>
-          prev?.map((d) => (d.id === doc.id ? { ...d, folderId } : d)) ?? null,
-      );
+      updateMovedDocumentsInCollections([doc.id], folderId);
       return;
     }
     run(async () => {
       await actions.moveDocument(doc.id, folderId);
-      setDocuments((prev) =>
-        prev.map((d) => (d.id === doc.id ? { ...d, folderId } : d)),
-      );
-      setSearchResults(
-        (prev) =>
-          prev?.map((d) => (d.id === doc.id ? { ...d, folderId } : d)) ?? null,
-      );
+      updateMovedDocumentsInCollections([doc.id], folderId);
     });
   }
 
@@ -1125,17 +1167,24 @@ export function MarkdownWorkspace({
   }
 
   function deleteDocFromDialog(doc: WorkspaceDocument) {
+    const idSet = new Set([doc.id]);
     if (demoMode) {
+      clearPendingSaveForIds(idSet);
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
       setSearchResults((prev) => prev?.filter((d) => d.id !== doc.id) ?? null);
-      if (selectedDocId === doc.id) clearSelectedDocument();
+      if (selectedDocId === doc.id) {
+        clearSelectedDocument({ flushPendingSave: false });
+      }
       return;
     }
     run(async () => {
       await actions.deleteDocument(doc.id);
+      clearPendingSaveForIds(idSet);
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
       setSearchResults((prev) => prev?.filter((d) => d.id !== doc.id) ?? null);
-      if (selectedDocId === doc.id) clearSelectedDocument();
+      if (selectedDocId === doc.id) {
+        clearSelectedDocument({ flushPendingSave: false });
+      }
     });
   }
 

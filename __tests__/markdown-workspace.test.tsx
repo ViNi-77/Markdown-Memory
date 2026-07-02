@@ -163,6 +163,7 @@ describe("MarkdownWorkspace", () => {
       expect(searchDocumentsMock).toHaveBeenCalledWith({
         query: "needle",
         folderId: "all",
+        sortMode: "updated",
       }),
     );
     await waitFor(() =>
@@ -207,6 +208,7 @@ describe("MarkdownWorkspace", () => {
       expect(searchDocumentsMock).toHaveBeenCalledWith({
         query: "needle",
         folderId: "all",
+        sortMode: "updated",
       }),
     );
 
@@ -216,6 +218,7 @@ describe("MarkdownWorkspace", () => {
       expect(searchDocumentsMock).toHaveBeenLastCalledWith({
         query: "needle",
         folderId: "folder-1",
+        sortMode: "updated",
       }),
     );
   });
@@ -329,7 +332,7 @@ describe("MarkdownWorkspace", () => {
     ).toHaveAttribute("aria-current", "page");
   });
 
-  it("並び順をファイル名A-Zへ切り替えるとPane 2の表示順を変更する", () => {
+  it("並び順をファイル名A-Zへ切り替えるとPane 2の表示順を変更する", async () => {
     render(
       <MarkdownWorkspace
         initialFolders={[]}
@@ -369,8 +372,10 @@ describe("MarkdownWorkspace", () => {
       "alpha.md",
       "beta.md",
     ]);
-    expect(localStorage.getItem("markdown_memory_file_sort_mode")).toBe(
-      "name-asc",
+    await waitFor(() =>
+      expect(localStorage.getItem("markdown_memory_file_sort_mode")).toBe(
+        "name-asc",
+      ),
     );
   });
 

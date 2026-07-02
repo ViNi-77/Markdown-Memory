@@ -4,6 +4,7 @@ import { searchDocuments } from "@/lib/actions";
 
 const {
   andMock,
+  ascMock,
   authMock,
   descMock,
   eqMock,
@@ -18,6 +19,7 @@ const {
   whereMock,
 } = vi.hoisted(() => ({
   andMock: vi.fn((...conditions: unknown[]) => ({ type: "and", conditions })),
+  ascMock: vi.fn((column: unknown) => ({ type: "asc", column })),
   authMock: vi.fn(),
   descMock: vi.fn((column: unknown) => ({ type: "desc", column })),
   eqMock: vi.fn((column: unknown, value: unknown) => ({
@@ -60,6 +62,7 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("drizzle-orm", () => ({
   and: andMock,
+  asc: ascMock,
   desc: descMock,
   eq: eqMock,
   ilike: ilikeMock,
@@ -112,6 +115,26 @@ describe("searchDocuments", () => {
     expect(ilikeMock).toHaveBeenCalledWith(documents.content, "%needle%");
     expect(eqMock).toHaveBeenCalledWith(documents.userId, "user-1");
     expect(eqMock).toHaveBeenCalledWith(documents.folderId, "folder-1");
+    expect(orderByMock).toHaveBeenCalledWith(
+      { type: "desc", column: documents.updatedAt },
+      { type: "desc", column: documents.createdAt },
+      { type: "asc", column: documents.name },
+    );
+    expect(limitMock).toHaveBeenCalledWith(50);
+  });
+
+  it("指定されたsortModeをlimit前のDB orderByへ反映する", async () => {
+    await searchDocuments({
+      query: "needle",
+      folderId: "all",
+      sortMode: "manual",
+    });
+
+    expect(orderByMock).toHaveBeenCalledWith(
+      { type: "asc", column: documents.sortOrder },
+      { type: "desc", column: documents.updatedAt },
+      { type: "asc", column: documents.name },
+    );
     expect(limitMock).toHaveBeenCalledWith(50);
   });
 

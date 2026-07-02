@@ -28,6 +28,7 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("drizzle-orm", () => ({
   and: vi.fn((...conditions: unknown[]) => ({ type: "and", conditions })),
+  asc: vi.fn((column: unknown) => ({ type: "asc", column })),
   desc: vi.fn((column: unknown) => ({ type: "desc", column })),
   eq: eqMock,
   ilike: vi.fn((column: unknown, value: unknown) => ({

@@ -8,6 +8,7 @@ import {
 
 const {
   andMock,
+  ascMock,
   authMock,
   descMock,
   eqMock,
@@ -24,6 +25,7 @@ const {
   txWhereMock,
 } = vi.hoisted(() => ({
   andMock: vi.fn((...conditions: unknown[]) => ({ type: "and", conditions })),
+  ascMock: vi.fn((column: unknown) => ({ type: "asc", column })),
   authMock: vi.fn(),
   descMock: vi.fn((column: unknown) => ({ type: "desc", column })),
   eqMock: vi.fn((column: unknown, value: unknown) => ({
@@ -75,6 +77,7 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("drizzle-orm", () => ({
   and: andMock,
+  asc: ascMock,
   desc: descMock,
   eq: eqMock,
   ilike: ilikeMock,

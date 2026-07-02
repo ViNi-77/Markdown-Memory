@@ -1,6 +1,6 @@
 "use server";
 
-import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
@@ -9,6 +9,12 @@ import type { Folder, Document } from "@/lib/db/schema";
 import type { WorkspaceDocument } from "@/lib/data";
 
 type ShareDocumentResult = { id: string; shareToken: string };
+type DocumentSortMode =
+  | "updated"
+  | "created"
+  | "name-asc"
+  | "name-desc"
+  | "manual";
 
 /** ログイン中ユーザーIDを取得。未ログインなら例外。全アクションの入口で所有者を確定する。 */
 async function requireUserId(): Promise<string> {
@@ -67,6 +73,34 @@ async function nextManualSortOrder(userId: string): Promise<number> {
     .where(eq(documents.userId, userId));
 
   return row?.value ?? 0;
+}
+
+function documentSearchOrder(sortMode: DocumentSortMode = "updated") {
+  if (sortMode === "created") {
+    return [
+      desc(documents.createdAt),
+      desc(documents.updatedAt),
+      asc(documents.name),
+    ];
+  }
+  if (sortMode === "name-asc") {
+    return [asc(documents.name), desc(documents.updatedAt)];
+  }
+  if (sortMode === "name-desc") {
+    return [desc(documents.name), desc(documents.updatedAt)];
+  }
+  if (sortMode === "manual") {
+    return [
+      asc(documents.sortOrder),
+      desc(documents.updatedAt),
+      asc(documents.name),
+    ];
+  }
+  return [
+    desc(documents.updatedAt),
+    desc(documents.createdAt),
+    asc(documents.name),
+  ];
 }
 
 // ===== フォルダ =====
@@ -143,6 +177,7 @@ export async function getDocument(id: string): Promise<Document> {
 export async function searchDocuments(input: {
   query: string;
   folderId?: string | "all" | null;
+  sortMode?: DocumentSortMode;
 }): Promise<WorkspaceDocument[]> {
   const userId = await requireUserId();
   const query = input.query.trim();
@@ -175,7 +210,7 @@ export async function searchDocuments(input: {
     })
     .from(documents)
     .where(whereCondition)
-    .orderBy(desc(documents.updatedAt))
+    .orderBy(...documentSearchOrder(input.sortMode))
     .limit(50);
 }
 
