@@ -8,6 +8,8 @@ import { folders, documents, users } from "@/lib/db/schema";
 import type { Folder, Document } from "@/lib/db/schema";
 import type { WorkspaceDocument } from "@/lib/data";
 
+type ShareDocumentResult = { id: string; shareToken: string };
+
 /** ログイン中ユーザーIDを取得。未ログインなら例外。全アクションの入口で所有者を確定する。 */
 async function requireUserId(): Promise<string> {
   const session = await auth();
@@ -216,6 +218,28 @@ export async function moveDocument(
   assertMutation(row, "ファイルが見つかりません。");
 }
 
+export async function moveDocuments(
+  ids: string[],
+  folderId: string | null,
+): Promise<void> {
+  const userId = await requireUserId();
+  const documentIds = uniqueIds(ids);
+  if (documentIds.length !== ids.length || documentIds.length === 0) {
+    throw new Error("移動するファイルを選択してください。");
+  }
+  if (folderId) await requireOwnedFolder(folderId, userId);
+  await requireOwnedDocuments(documentIds, userId);
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(documents)
+      .set({ folderId, updatedAt: new Date() })
+      .where(
+        and(eq(documents.userId, userId), inArray(documents.id, documentIds)),
+      );
+  });
+}
+
 export async function deleteDocument(id: string): Promise<void> {
   const userId = await requireUserId();
   const [row] = await db
@@ -223,6 +247,23 @@ export async function deleteDocument(id: string): Promise<void> {
     .where(and(eq(documents.id, id), eq(documents.userId, userId)))
     .returning({ id: documents.id });
   assertMutation(row, "ファイルが見つかりません。");
+}
+
+export async function deleteDocuments(ids: string[]): Promise<void> {
+  const userId = await requireUserId();
+  const documentIds = uniqueIds(ids);
+  if (documentIds.length !== ids.length || documentIds.length === 0) {
+    throw new Error("削除するファイルを選択してください。");
+  }
+  await requireOwnedDocuments(documentIds, userId);
+
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(documents)
+      .where(
+        and(eq(documents.userId, userId), inArray(documents.id, documentIds)),
+      );
+  });
 }
 
 export async function reorderDocuments(orderedIds: string[]): Promise<void> {
@@ -265,6 +306,56 @@ export async function enableShare(id: string): Promise<string> {
     .returning({ shareToken: documents.shareToken });
   if (!row?.shareToken) throw new Error("共有の有効化に失敗しました。");
   return row.shareToken;
+}
+
+/** 複数ファイルの公開リンクを発行する。公開済みなら既存トークンを再利用する。 */
+export async function enableShareForDocuments(
+  ids: string[],
+): Promise<ShareDocumentResult[]> {
+  const userId = await requireUserId();
+  const documentIds = uniqueIds(ids);
+  if (documentIds.length !== ids.length || documentIds.length === 0) {
+    throw new Error("公開リンクを作成するファイルを選択してください。");
+  }
+
+  const rows = await db
+    .select({
+      id: documents.id,
+      isPublic: documents.isPublic,
+      shareToken: documents.shareToken,
+    })
+    .from(documents)
+    .where(
+      and(eq(documents.userId, userId), inArray(documents.id, documentIds)),
+    );
+
+  if (rows.length !== documentIds.length) {
+    throw new Error("操作できないファイルが含まれています。");
+  }
+
+  const tokenById = new Map<string, string>();
+
+  await db.transaction(async (tx) => {
+    for (const row of rows) {
+      if (row.isPublic && row.shareToken) {
+        tokenById.set(row.id, row.shareToken);
+        continue;
+      }
+
+      const token = randomBytes(16).toString("base64url");
+      await tx
+        .update(documents)
+        .set({ isPublic: true, shareToken: token, updatedAt: new Date() })
+        .where(and(eq(documents.id, row.id), eq(documents.userId, userId)));
+      tokenById.set(row.id, token);
+    }
+  });
+
+  return documentIds.map((id) => {
+    const shareToken = tokenById.get(id);
+    if (!shareToken) throw new Error("共有の有効化に失敗しました。");
+    return { id, shareToken };
+  });
 }
 
 /** 公開を停止する（トークンは破棄）。 */
