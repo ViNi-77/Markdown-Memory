@@ -9,10 +9,12 @@ const {
   eqMock,
   fromMock,
   ilikeMock,
+  inArrayMock,
   limitMock,
   orMock,
   orderByMock,
   selectMock,
+  sqlMock,
   whereMock,
 } = vi.hoisted(() => ({
   andMock: vi.fn((...conditions: unknown[]) => ({ type: "and", conditions })),
@@ -29,10 +31,20 @@ const {
     column,
     value,
   })),
+  inArrayMock: vi.fn((column: unknown, values: unknown[]) => ({
+    type: "inArray",
+    column,
+    values,
+  })),
   limitMock: vi.fn(),
   orMock: vi.fn((...conditions: unknown[]) => ({ type: "or", conditions })),
   orderByMock: vi.fn(),
   selectMock: vi.fn(),
+  sqlMock: vi.fn((strings: TemplateStringsArray, ...values: unknown[]) => ({
+    type: "sql",
+    strings,
+    values,
+  })),
   whereMock: vi.fn(),
 }));
 
@@ -51,7 +63,9 @@ vi.mock("drizzle-orm", () => ({
   desc: descMock,
   eq: eqMock,
   ilike: ilikeMock,
+  inArray: inArrayMock,
   or: orMock,
+  sql: sqlMock,
 }));
 
 describe("searchDocuments", () => {
@@ -80,6 +94,7 @@ describe("searchDocuments", () => {
         name: "server-match.md",
         isPublic: false,
         shareToken: null,
+        sortOrder: 0,
         createdAt: new Date("2026-06-16T00:00:00.000Z"),
         updatedAt: new Date("2026-06-16T00:05:00.000Z"),
       },

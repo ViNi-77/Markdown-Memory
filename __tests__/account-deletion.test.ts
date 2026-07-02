@@ -35,7 +35,17 @@ vi.mock("drizzle-orm", () => ({
     column,
     value,
   })),
+  inArray: vi.fn((column: unknown, values: unknown[]) => ({
+    type: "inArray",
+    column,
+    values,
+  })),
   or: vi.fn((...conditions: unknown[]) => ({ type: "or", conditions })),
+  sql: vi.fn((strings: TemplateStringsArray, ...values: unknown[]) => ({
+    type: "sql",
+    strings,
+    values,
+  })),
 }));
 
 describe("deleteCurrentUserAccount", () => {

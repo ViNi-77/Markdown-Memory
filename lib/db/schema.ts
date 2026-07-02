@@ -101,6 +101,7 @@ export const folders = pgTable("folder", {
  * - content: 本文。リロードしても消えないよう DB に永続化する中核。
  * - folderId: 所属フォルダ。ルート直下なら null。フォルダ削除時は null に戻す。
  * - isPublic / shareToken: 共有（公開リンク）用。shareToken は推測不能な一意トークン。
+ * - sortOrder: 手動並び替え用。小さい値ほど Pane 2 の手動順で上に表示する。
  * - updatedAt: 自動保存・「最近更新順」並び替えに使う。
  */
 export const documents = pgTable("document", {
@@ -117,6 +118,7 @@ export const documents = pgTable("document", {
   content: text("content").notNull().default(""),
   isPublic: boolean("is_public").notNull().default(false),
   shareToken: text("share_token").unique(),
+  sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

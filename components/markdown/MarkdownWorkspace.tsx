@@ -1,6 +1,24 @@
 "use client";
 
 import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  type DragEndEvent,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
   type RefObject,
   useCallback,
   useEffect,
@@ -81,6 +99,7 @@ type SaveState = "idle" | "saving" | "saved";
 type PaneKey = "folders" | "files" | "details";
 type MobilePanel = "folders" | "account" | null;
 type MobileView = "files" | "document" | "details";
+type FileSortMode = "updated" | "created" | "name-asc" | "name-desc" | "manual";
 type TextActionDialog =
   | { type: "create-folder" }
   | { type: "rename-folder"; folder: Folder }
@@ -105,9 +124,63 @@ const PANE_LIMITS: Record<PaneKey, { min: number; max: number }> = {
 const DEMO_USER_ID = "demo-user";
 const FEEDBACK_URL =
   "https://github.com/ViNi-77/Markdown-Memory/issues/new/choose";
+const FILE_SORT_STORAGE = "markdown_memory_file_sort_mode";
+const FILE_SORT_OPTIONS: Array<{ value: FileSortMode; label: string }> = [
+  { value: "updated", label: "更新日順" },
+  { value: "created", label: "作成日順" },
+  { value: "name-asc", label: "ファイル名 A-Z" },
+  { value: "name-desc", label: "ファイル名 Z-A" },
+  { value: "manual", label: "手動順" },
+];
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
+}
+
+function isFileSortMode(value: string | null): value is FileSortMode {
+  return FILE_SORT_OPTIONS.some((option) => option.value === value);
+}
+
+function getInitialFileSortMode(): FileSortMode {
+  if (typeof window === "undefined") return "updated";
+  const stored = window.localStorage.getItem(FILE_SORT_STORAGE);
+  return isFileSortMode(stored) ? stored : "updated";
+}
+
+function compareDocuments(
+  a: WorkspaceDocument,
+  b: WorkspaceDocument,
+  sortMode: FileSortMode,
+): number {
+  if (sortMode === "manual") {
+    return (
+      a.sortOrder - b.sortOrder ||
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime() ||
+      a.name.localeCompare(b.name, "ja")
+    );
+  }
+  if (sortMode === "created") {
+    return (
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() ||
+      a.name.localeCompare(b.name, "ja")
+    );
+  }
+  if (sortMode === "name-asc") {
+    return (
+      a.name.localeCompare(b.name, "ja", { sensitivity: "base" }) ||
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+  }
+  if (sortMode === "name-desc") {
+    return (
+      b.name.localeCompare(a.name, "ja", { sensitivity: "base" }) ||
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+  }
+  return (
+    new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime() ||
+    a.name.localeCompare(b.name, "ja")
+  );
 }
 
 function shouldUseMobilePaneNavigation(): boolean {
@@ -155,6 +228,7 @@ function createLocalDocument(input: {
   name: string;
   content?: string;
   folderId?: string | null;
+  sortOrder?: number;
 }): Document {
   const now = new Date();
   return {
@@ -165,6 +239,7 @@ function createLocalDocument(input: {
     content: input.content ?? "",
     isPublic: false,
     shareToken: null,
+    sortOrder: input.sortOrder ?? 0,
     createdAt: now,
     updatedAt: now,
   };
@@ -187,6 +262,9 @@ export function MarkdownWorkspace({
   const [mode, setMode] = useState<"preview" | "edit">("preview");
   const [editContent, setEditContent] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [fileSortMode, setFileSortMode] = useState<FileSortMode>(
+    getInitialFileSortMode,
+  );
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState<
     WorkspaceDocument[] | null
@@ -220,6 +298,17 @@ export function MarkdownWorkspace({
   const mobileScrollReleaseTimer = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const dragSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 5 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
   // Server Action を実行し、失敗時はエラーを表面化する共通ラッパー。
   const run = useCallback((fn: () => Promise<void>) => {
@@ -240,6 +329,10 @@ export function MarkdownWorkspace({
   useEffect(() => {
     selectedDocIdRef.current = selectedDocId;
   }, [selectedDocId]);
+
+  useEffect(() => {
+    window.localStorage.setItem(FILE_SORT_STORAGE, fileSortMode);
+  }, [fileSortMode]);
 
   // 保留中の編集を即座に保存する（デバウンス待ちを飛ばす）。
   // ファイル切替・プレビュー切替・離脱時に呼び、編集の取りこぼしを防ぐ。
@@ -350,15 +443,26 @@ export function MarkdownWorkspace({
           (typeof d.content === "string" && d.content.toLowerCase().includes(q))
         );
       })
-      .sort(
-        (a, b) =>
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-      );
-  }, [documents, selectedFolderId, search]);
+      .sort((a, b) => compareDocuments(a, b, fileSortMode));
+  }, [documents, fileSortMode, selectedFolderId, search]);
   const serverSearchActive = !demoMode && search.trim().length > 0;
+  const sortedSearchResults = useMemo(
+    () =>
+      searchResults
+        ? [...searchResults].sort((a, b) =>
+            compareDocuments(a, b, fileSortMode),
+          )
+        : null,
+    [fileSortMode, searchResults],
+  );
   const visibleDocs = serverSearchActive
-    ? (searchResults ?? [])
+    ? (sortedSearchResults ?? [])
     : localVisibleDocs;
+  const canReorderVisibleDocs =
+    fileSortMode === "manual" &&
+    !search.trim() &&
+    visibleDocs.length > 1 &&
+    !searchLoading;
 
   // 編集中に保留保存があるままタブを閉じようとしたら警告する（取りこぼし防止）。
   useEffect(() => {
@@ -648,10 +752,21 @@ export function MarkdownWorkspace({
 
   // ===== ドキュメント操作 =====
 
+  function nextLocalSortOrder() {
+    return (
+      documents.reduce((minimum, doc) => Math.min(minimum, doc.sortOrder), 0) -
+      1
+    );
+  }
+
   function handleNewDocument() {
     const folderId = selectedFolderId === "all" ? null : selectedFolderId;
     if (demoMode) {
-      const doc = createLocalDocument({ name: "無題.md", folderId });
+      const doc = createLocalDocument({
+        name: "無題.md",
+        folderId,
+        sortOrder: nextLocalSortOrder(),
+      });
       setDocuments((prev) => [doc, ...prev]);
       selectDocument(doc, "edit");
       return;
@@ -669,6 +784,7 @@ export function MarkdownWorkspace({
     if (demoMode) {
       startTransition(async () => {
         let lastDoc: Document | null = null;
+        let sortOrder = nextLocalSortOrder();
         for (const file of Array.from(fileList)) {
           const lower = file.name.toLowerCase();
           if (!lower.endsWith(".md") && !lower.endsWith(".markdown")) {
@@ -679,7 +795,9 @@ export function MarkdownWorkspace({
             name: file.name,
             content: await file.text(),
             folderId,
+            sortOrder,
           });
+          sortOrder -= 1;
           setDocuments((prev) => [doc, ...prev]);
           lastDoc = doc;
         }
@@ -708,6 +826,76 @@ export function MarkdownWorkspace({
       if (lastDoc) selectDocument(lastDoc);
     });
     if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function buildManualOrderFromVisible(
+    orderedVisibleDocs: WorkspaceDocument[],
+  ): WorkspaceDocument[] {
+    const visibleIds = new Set(orderedVisibleDocs.map((doc) => doc.id));
+    let nextVisibleIndex = 0;
+
+    return [...documents]
+      .sort((a, b) => compareDocuments(a, b, "manual"))
+      .map((doc) => {
+        if (!visibleIds.has(doc.id)) return doc;
+        const nextVisibleDoc = orderedVisibleDocs[nextVisibleIndex];
+        nextVisibleIndex += 1;
+        return nextVisibleDoc ?? doc;
+      });
+  }
+
+  function applyManualOrder(orderedDocs: WorkspaceDocument[]) {
+    const orderById = new Map(
+      orderedDocs.map((doc, index) => [doc.id, index] as const),
+    );
+    setDocuments((prev) =>
+      prev.map((doc) => {
+        const nextOrder = orderById.get(doc.id);
+        return typeof nextOrder === "number"
+          ? { ...doc, sortOrder: nextOrder }
+          : doc;
+      }),
+    );
+    setSearchResults(
+      (prev) =>
+        prev?.map((doc) => {
+          const nextOrder = orderById.get(doc.id);
+          return typeof nextOrder === "number"
+            ? { ...doc, sortOrder: nextOrder }
+            : doc;
+        }) ?? null,
+    );
+  }
+
+  function saveManualOrder(orderedDocs: WorkspaceDocument[]) {
+    applyManualOrder(orderedDocs);
+
+    if (demoMode) return;
+    run(async () => {
+      await actions.reorderDocuments(orderedDocs.map((doc) => doc.id));
+    });
+  }
+
+  function handleDocumentDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !canReorderVisibleDocs) return;
+
+    const oldIndex = visibleDocs.findIndex((doc) => doc.id === active.id);
+    const newIndex = visibleDocs.findIndex((doc) => doc.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+
+    const orderedVisibleDocs = arrayMove(visibleDocs, oldIndex, newIndex);
+    saveManualOrder(buildManualOrderFromVisible(orderedVisibleDocs));
+  }
+
+  function handleKeyboardReorder(docId: string, direction: -1 | 1) {
+    if (!canReorderVisibleDocs) return;
+    const oldIndex = visibleDocs.findIndex((doc) => doc.id === docId);
+    if (oldIndex < 0) return;
+    const newIndex = oldIndex + direction;
+    if (newIndex < 0 || newIndex >= visibleDocs.length) return;
+    const orderedVisibleDocs = arrayMove(visibleDocs, oldIndex, newIndex);
+    saveManualOrder(buildManualOrderFromVisible(orderedVisibleDocs));
   }
 
   function handleRenameDoc(doc: WorkspaceDocument) {
@@ -1147,6 +1335,35 @@ export function MarkdownWorkspace({
               className={cn("pl-8", searchLoading && "pr-8")}
             />
           </div>
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="file-sort-mode"
+              className="shrink-0 text-xs font-medium text-muted-foreground"
+            >
+              並び順
+            </label>
+            <select
+              id="file-sort-mode"
+              value={fileSortMode}
+              onChange={(event) =>
+                setFileSortMode(event.target.value as FileSortMode)
+              }
+              className="h-8 min-w-0 flex-1 rounded-md border border-input bg-card/80 px-2 text-sm shadow-2xs transition-colors outline-none hover:border-ring/35 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35"
+            >
+              {FILE_SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {fileSortMode === "manual" && (
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              {search.trim()
+                ? "検索中は手動並び替えできません。検索を解除すると順番を変更できます。"
+                : "右端のハンドルをドラッグして順番を変更できます。"}
+            </p>
+          )}
           {selectedDoc && (
             <div
               data-testid="mobile-current-document"
@@ -1176,49 +1393,50 @@ export function MarkdownWorkspace({
           )}
         </div>
 
-        <ul
-          aria-live="polite"
-          className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:pb-2"
+        <DndContext
+          sensors={dragSensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDocumentDragEnd}
         >
-          {visibleDocs.length === 0 ? (
-            <li className="px-2 py-8 text-center text-sm text-muted-foreground">
-              {searchLoading ? (
-                "検索しています。"
-              ) : search.trim() ? (
-                "一致するファイルがありません。"
-              ) : (
-                <>
-                  ファイルがありません。
-                  <br />
-                  アップロードまたは新規作成してください。
-                </>
-              )}
-            </li>
-          ) : (
-            visibleDocs.map((doc) => (
-              <li key={doc.id}>
-                <button
-                  type="button"
-                  onClick={() => selectDocument(doc)}
-                  className={cn(
-                    "flex w-full flex-col gap-0.5 rounded-md px-2.5 py-2 text-left transition-all",
-                    selectedDocId === doc.id
-                      ? "bg-accent text-accent-foreground shadow-xs ring-1 ring-border/70"
-                      : "hover:bg-muted/80 hover:shadow-2xs",
+          <SortableContext
+            items={visibleDocs.map((doc) => doc.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <ul
+              aria-live="polite"
+              className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:pb-2"
+            >
+              {visibleDocs.length === 0 ? (
+                <li className="px-2 py-8 text-center text-sm text-muted-foreground">
+                  {searchLoading ? (
+                    "検索しています。"
+                  ) : search.trim() ? (
+                    "一致するファイルがありません。"
+                  ) : (
+                    <>
+                      ファイルがありません。
+                      <br />
+                      アップロードまたは新規作成してください。
+                    </>
                   )}
-                >
-                  <span className="flex items-center gap-2 truncate text-sm font-medium">
-                    <FileText className="size-4 shrink-0 text-muted-foreground" />
-                    <span className="truncate">{doc.name}</span>
-                  </span>
-                  <span className="truncate pl-6 text-xs text-muted-foreground">
-                    {formatWorkspaceDateTime(doc.updatedAt)}
-                  </span>
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
+                </li>
+              ) : (
+                visibleDocs.map((doc) => (
+                  <SortableDocumentRow
+                    key={doc.id}
+                    doc={doc}
+                    selected={selectedDocId === doc.id}
+                    canReorder={canReorderVisibleDocs}
+                    onSelect={() => selectDocument(doc)}
+                    onKeyboardReorder={(direction) =>
+                      handleKeyboardReorder(doc.id, direction)
+                    }
+                  />
+                ))
+              )}
+            </ul>
+          </SortableContext>
+        </DndContext>
       </section>
 
       <PaneResizeHandle
@@ -1805,6 +2023,88 @@ export function MarkdownWorkspace({
         </div>
       )}
     </div>
+  );
+}
+
+function SortableDocumentRow({
+  doc,
+  selected,
+  canReorder,
+  onSelect,
+  onKeyboardReorder,
+}: {
+  doc: WorkspaceDocument;
+  selected: boolean;
+  canReorder: boolean;
+  onSelect: () => void;
+  onKeyboardReorder: (direction: -1 | 1) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: doc.id,
+    disabled: !canReorder,
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <li ref={setNodeRef} style={style}>
+      <div
+        className={cn(
+          "group/document flex items-stretch rounded-md transition-all",
+          selected
+            ? "bg-accent text-accent-foreground shadow-xs ring-1 ring-border/70"
+            : "hover:bg-muted/80 hover:shadow-2xs",
+          isDragging &&
+            "relative z-10 opacity-80 shadow-md ring-1 ring-ring/40",
+        )}
+      >
+        <button
+          type="button"
+          onClick={onSelect}
+          className="flex min-w-0 flex-1 flex-col gap-0.5 rounded-l-md px-2.5 py-2 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/35"
+        >
+          <span className="flex items-center gap-2 truncate text-sm font-medium">
+            <FileText className="size-4 shrink-0 text-muted-foreground" />
+            <span className="truncate">{doc.name}</span>
+          </span>
+          <span className="truncate pl-6 text-xs text-muted-foreground">
+            {formatWorkspaceDateTime(doc.updatedAt)}
+          </span>
+        </button>
+        {canReorder && (
+          <button
+            type="button"
+            className="flex w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-r-md text-muted-foreground transition-colors outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-3 focus-visible:ring-ring/35 active:cursor-grabbing"
+            aria-label={`${doc.name} の順番を変更`}
+            title="ドラッグして並び替え"
+            {...attributes}
+            {...listeners}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowUp") {
+                event.preventDefault();
+                onKeyboardReorder(-1);
+                return;
+              }
+              if (event.key === "ArrowDown") {
+                event.preventDefault();
+                onKeyboardReorder(1);
+              }
+            }}
+          >
+            <GripVertical className="size-4" />
+          </button>
+        )}
+      </div>
+    </li>
   );
 }
 

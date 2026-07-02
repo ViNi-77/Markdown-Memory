@@ -1,6 +1,6 @@
 "use server";
 
-import { and, desc, eq, ilike, or } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
@@ -34,6 +34,37 @@ function assertMutation(
   message: string,
 ): void {
   if (!row) throw new Error(message);
+}
+
+function uniqueIds(ids: string[]): string[] {
+  const trimmed = ids.map((id) => id.trim()).filter(Boolean);
+  return Array.from(new Set(trimmed));
+}
+
+async function requireOwnedDocuments(
+  ids: string[],
+  userId: string,
+): Promise<void> {
+  if (ids.length === 0) throw new Error("ファイルを選択してください。");
+  const rows = await db
+    .select({ id: documents.id })
+    .from(documents)
+    .where(and(eq(documents.userId, userId), inArray(documents.id, ids)));
+
+  if (rows.length !== ids.length) {
+    throw new Error("操作できないファイルが含まれています。");
+  }
+}
+
+async function nextManualSortOrder(userId: string): Promise<number> {
+  const [row] = await db
+    .select({
+      value: sql<number>`coalesce(min(${documents.sortOrder}) - 1, 0)`,
+    })
+    .from(documents)
+    .where(eq(documents.userId, userId));
+
+  return row?.value ?? 0;
 }
 
 // ===== フォルダ =====
@@ -81,6 +112,7 @@ export async function createDocument(input: {
   const userId = await requireUserId();
   const name = input.name.trim() || "無題.md";
   if (input.folderId) await requireOwnedFolder(input.folderId, userId);
+  const sortOrder = await nextManualSortOrder(userId);
   const [row] = await db
     .insert(documents)
     .values({
@@ -88,6 +120,7 @@ export async function createDocument(input: {
       name,
       content: input.content ?? "",
       folderId: input.folderId ?? null,
+      sortOrder,
     })
     .returning();
   return row;
@@ -134,6 +167,7 @@ export async function searchDocuments(input: {
       name: documents.name,
       isPublic: documents.isPublic,
       shareToken: documents.shareToken,
+      sortOrder: documents.sortOrder,
       createdAt: documents.createdAt,
       updatedAt: documents.updatedAt,
     })
@@ -189,6 +223,24 @@ export async function deleteDocument(id: string): Promise<void> {
     .where(and(eq(documents.id, id), eq(documents.userId, userId)))
     .returning({ id: documents.id });
   assertMutation(row, "ファイルが見つかりません。");
+}
+
+export async function reorderDocuments(orderedIds: string[]): Promise<void> {
+  const userId = await requireUserId();
+  const ids = uniqueIds(orderedIds);
+  if (ids.length !== orderedIds.length || ids.length === 0) {
+    throw new Error("並び替えるファイルを選択してください。");
+  }
+  await requireOwnedDocuments(ids, userId);
+
+  await db.transaction(async (tx) => {
+    for (const [index, id] of ids.entries()) {
+      await tx
+        .update(documents)
+        .set({ sortOrder: index })
+        .where(and(eq(documents.id, id), eq(documents.userId, userId)));
+    }
+  });
 }
 
 // ===== 共有 =====
