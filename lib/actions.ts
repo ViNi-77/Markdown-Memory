@@ -265,14 +265,17 @@ export async function moveDocuments(
   if (folderId) await requireOwnedFolder(folderId, userId);
   await requireOwnedDocuments(documentIds, userId);
 
-  await db.transaction(async (tx) => {
-    await tx
-      .update(documents)
-      .set({ folderId, updatedAt: new Date() })
-      .where(
-        and(eq(documents.userId, userId), inArray(documents.id, documentIds)),
-      );
-  });
+  const rows = await db
+    .update(documents)
+    .set({ folderId, updatedAt: new Date() })
+    .where(
+      and(eq(documents.userId, userId), inArray(documents.id, documentIds)),
+    )
+    .returning({ id: documents.id });
+
+  if (rows.length !== documentIds.length) {
+    throw new Error("移動できないファイルが含まれています。");
+  }
 }
 
 export async function deleteDocument(id: string): Promise<void> {
@@ -292,13 +295,16 @@ export async function deleteDocuments(ids: string[]): Promise<void> {
   }
   await requireOwnedDocuments(documentIds, userId);
 
-  await db.transaction(async (tx) => {
-    await tx
-      .delete(documents)
-      .where(
-        and(eq(documents.userId, userId), inArray(documents.id, documentIds)),
-      );
-  });
+  const rows = await db
+    .delete(documents)
+    .where(
+      and(eq(documents.userId, userId), inArray(documents.id, documentIds)),
+    )
+    .returning({ id: documents.id });
+
+  if (rows.length !== documentIds.length) {
+    throw new Error("削除できないファイルが含まれています。");
+  }
 }
 
 export async function reorderDocuments(orderedIds: string[]): Promise<void> {
@@ -309,14 +315,14 @@ export async function reorderDocuments(orderedIds: string[]): Promise<void> {
   }
   await requireOwnedDocuments(ids, userId);
 
-  await db.transaction(async (tx) => {
-    for (const [index, id] of ids.entries()) {
-      await tx
-        .update(documents)
-        .set({ sortOrder: index })
-        .where(and(eq(documents.id, id), eq(documents.userId, userId)));
-    }
-  });
+  for (const [index, id] of ids.entries()) {
+    const [row] = await db
+      .update(documents)
+      .set({ sortOrder: index })
+      .where(and(eq(documents.id, id), eq(documents.userId, userId)))
+      .returning({ id: documents.id });
+    assertMutation(row, "並び替えできないファイルが含まれています。");
+  }
 }
 
 // ===== 共有 =====
@@ -370,21 +376,21 @@ export async function enableShareForDocuments(
 
   const tokenById = new Map<string, string>();
 
-  await db.transaction(async (tx) => {
-    for (const row of rows) {
-      if (row.isPublic && row.shareToken) {
-        tokenById.set(row.id, row.shareToken);
-        continue;
-      }
-
-      const token = randomBytes(16).toString("base64url");
-      await tx
-        .update(documents)
-        .set({ isPublic: true, shareToken: token, updatedAt: new Date() })
-        .where(and(eq(documents.id, row.id), eq(documents.userId, userId)));
-      tokenById.set(row.id, token);
+  for (const row of rows) {
+    if (row.isPublic && row.shareToken) {
+      tokenById.set(row.id, row.shareToken);
+      continue;
     }
-  });
+
+    const token = randomBytes(16).toString("base64url");
+    const [updated] = await db
+      .update(documents)
+      .set({ isPublic: true, shareToken: token, updatedAt: new Date() })
+      .where(and(eq(documents.id, row.id), eq(documents.userId, userId)))
+      .returning({ shareToken: documents.shareToken });
+    if (!updated?.shareToken) throw new Error("共有の有効化に失敗しました。");
+    tokenById.set(row.id, updated.shareToken);
+  }
 
   return documentIds.map((id) => {
     const shareToken = tokenById.get(id);
